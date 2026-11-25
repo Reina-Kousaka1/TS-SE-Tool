@@ -4,6 +4,7 @@ using TSSE.Desktop;
 using TSSE.Desktop.Services;
 using TSSE.Desktop.ViewModels;
 using TSSE.GameAdapters.Compatibility;
+using Xunit;
 
 namespace TSSE.Desktop.Tests;
 

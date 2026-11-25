@@ -42,6 +42,6 @@ jobs:
           dotnet-version: "10.0.x"
           architecture: ${{ matrix.arch }}
       - name: Build and run the full test suite
-        run: dotnet test TSSE.NextGen.sln --configuration Release --logger "console;verbosity=normal"
+        run: dotnet test --solution TSSE.NextGen.sln --configuration Release
       - name: Publish the Avalonia desktop app for this target
         run: dotnet publish desktop/TSSE.Desktop/TSSE.Desktop.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained true --output "${{ runner.temp }}/tsse-desktop-${{ matrix.rid }}"

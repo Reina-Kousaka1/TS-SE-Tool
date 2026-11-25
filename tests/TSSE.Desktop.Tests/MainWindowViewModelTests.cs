@@ -1,5 +1,6 @@
 using TSSE.Desktop.Services;
 using TSSE.Desktop.ViewModels;
+using Xunit;
 
 namespace TSSE.Desktop.Tests;
 
@@ -56,7 +57,8 @@ public sealed class MainWindowViewModelTests
         Assert.Equal("Coaches", vehicle.SelectedVehicleCategory);
         Assert.Contains("preview", vehicle.SelectedVehicleMessage, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(30, economy.SelectedWindowDays);
-        Assert.Contains("No account values", economy.AnalyticsNotice, StringComparison.Ordinal);
+        Assert.Contains("local snapshots only", economy.AnalyticsNotice, StringComparison.Ordinal);
+        Assert.Contains("No transaction history or account values", economy.AnalyticsNotice, StringComparison.Ordinal);
     }
 
     [Fact]

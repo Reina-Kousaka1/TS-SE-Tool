@@ -36,7 +36,7 @@
         <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,16">
           <TextBlock Text="WORKSPACE" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" Margin="8,0" />
           <TextBox x:Name="SectionSearch" Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                   Watermark="Search sections"
+                   PlaceholderText="Search sections"
                    AutomationProperties.Name="Search sections" />
         </StackPanel>
 
