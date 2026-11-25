@@ -34,7 +34,7 @@ dotnet test TSSE.NextGen.sln --configuration Release
 dotnet run --project desktop/TSSE.Desktop/TSSE.Desktop.csproj
 ```
 
-The current repository CI additionally publishes self-contained app outputs for the six x64/ARM64 RIDs. No installer or signed distributable is generated in this phase.
+The current repository CI publishes self-contained app outputs for the six x64/ARM64 RIDs, then starts and closes the native app on each runner. Linux uses Xvfb for a virtual display. No installer or signed distributable is generated in this phase.
 
 ## Distribution notes
 

@@ -24,7 +24,7 @@ The parser has only synthetic fixtures. Genuine ETS2/ATS versions, mods, Coaches
 
 The Avalonia desktop project and headless UI/ViewModel tests have been added. It is designed to run natively on Windows, Linux, and macOS, with x64 and ARM64 targets. The six target RIDs are `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, and `osx-arm64`. Navigation now tracks and highlights the selected page; section buttons expose accessible names and help text.
 
-The previous Windows validation used .NET SDK 10.0.404/runtime 10.0.15: the Release solution build passed with zero warnings/errors, all 24 then-existing tests passed, a self-contained `win-x64` publish succeeded, and the published application started and closed as a native process. Its window handle and title (`TS-SE Tool — Next Generation`) were observed. Desktop automation could not inspect the window because its access call returned `GetCursorPos: access denied`; visual layout and interaction remain unverified. The current environment exposes only .NET SDK 8.0.425, so the new preference work has not yet received local .NET 10 validation. CI is the required validation path for these changes. Linux, macOS, and ARM64 native lifecycle remain untested locally.
+The previous Windows validation used .NET SDK 10.0.404/runtime 10.0.15: the Release solution build passed with zero warnings/errors, all 24 then-existing tests passed, a self-contained `win-x64` publish succeeded, and the published application started and closed as a native process. Its window handle and title (`TS-SE Tool — Next Generation`) were observed. Desktop automation could not inspect the window because its access call returned `GetCursorPos: access denied`; visual layout and interaction remain unverified. The current environment exposes only .NET SDK 8.0.425, so the new preference work has not yet received local .NET 10 validation. CI is the required validation path. The CI workflow now also launches and gracefully closes the native executable on each of the six target runners; this latest workflow change is not yet validated. Linux, macOS, and ARM64 native lifecycle remain unverified pending that run.
 
 ## Phoenix / Elixir decision history
 
@@ -50,7 +50,7 @@ The navigation accessibility change was validated by push run [45680427306](http
 ## Remaining work — still Phase 2
 
 1. Check completion of the macOS ARM64 job in the README-only run 45681937591; the navigation-accessibility code commit already passed all six targets in run 45680427306.
-2. Verify native-window launch, visual rendering, interaction, and graceful close on Linux and macOS, including ARM64 where hardware or CI permits. Windows x64 launch and close have been verified; its visual rendering and interaction still need inspection.
+2. Complete the native startup/shutdown smoke matrix on all six targets, then inspect visual rendering and user interaction on the supported desktop environments. The standalone Windows x64 launch and close were verified earlier; its visual rendering and interaction still need inspection.
 3. Complete parser/container/version verification using representative safe fixtures before enabling read-only profile discovery.
 4. Add full semantic roundtrip, save-version and crash-recovery tests before even considering game-specific writes. Keep writes disabled until these pass.
 5. Finish accessible interaction, persistent local theme preferences, localization, and packaging/signing tests for Windows, Linux, and macOS.

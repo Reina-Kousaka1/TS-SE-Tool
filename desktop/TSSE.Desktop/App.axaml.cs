@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using TSSE.Desktop.Services;
 using TSSE.Desktop.ViewModels;
@@ -31,8 +32,20 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow(provider.GetRequiredService<MainWindowViewModel>());
+            var mainWindow = new MainWindow(provider.GetRequiredService<MainWindowViewModel>());
+            desktop.MainWindow = mainWindow;
             desktop.Exit += (_, _) => provider.Dispose();
+
+            if (Environment.GetEnvironmentVariable("TSSE_DESKTOP_CI_SMOKE_TEST") == "1")
+            {
+                var smokeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+                smokeTimer.Tick += (_, _) =>
+                {
+                    smokeTimer.Stop();
+                    desktop.MainWindow?.Close();
+                };
+                mainWindow.Opened += (_, _) => smokeTimer.Start();
+            }
         }
 
         base.OnFrameworkInitializationCompleted();

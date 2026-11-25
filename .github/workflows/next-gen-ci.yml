@@ -45,3 +45,52 @@ jobs:
         run: dotnet test --solution TSSE.NextGen.sln --configuration Release
       - name: Publish the Avalonia desktop app for this target
         run: dotnet publish desktop/TSSE.Desktop/TSSE.Desktop.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained true --output "${{ runner.temp }}/tsse-desktop-${{ matrix.rid }}"
+      - name: Start and gracefully close the published Windows desktop app
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:TSSE_DESKTOP_CI_SMOKE_TEST = '1'
+          $appPath = Join-Path $env:RUNNER_TEMP 'tsse-desktop-${{ matrix.rid }}\TSSE.Desktop.exe'
+          $process = Start-Process -FilePath $appPath -PassThru
+          if (-not $process.WaitForExit(25000)) {
+            $process.Kill()
+            throw 'The Avalonia desktop process did not close after its window startup smoke test.'
+          }
+          if ($process.ExitCode -ne 0) {
+            throw "The Avalonia desktop process exited with code $($process.ExitCode)."
+          }
+      - name: Start and gracefully close the published Linux/macOS desktop app
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TSSE_APP_PATH: ${{ runner.temp }}/tsse-desktop-${{ matrix.rid }}/TSSE.Desktop
+        run: |
+          cat > "$RUNNER_TEMP/desktop-smoke.py" <<'PY'
+          import os
+          import subprocess
+          import sys
+
+          env = os.environ.copy()
+          env["TSSE_DESKTOP_CI_SMOKE_TEST"] = "1"
+          process = subprocess.Popen([env["TSSE_APP_PATH"]], env=env)
+          try:
+              exit_code = process.wait(timeout=25)
+          except subprocess.TimeoutExpired:
+              process.terminate()
+              try:
+                  process.wait(timeout=5)
+              except subprocess.TimeoutExpired:
+                  process.kill()
+                  process.wait()
+              sys.exit("The Avalonia desktop process did not close after its window startup smoke test.")
+
+          if exit_code != 0:
+              sys.exit(f"The Avalonia desktop process exited with code {exit_code}.")
+          print("The native Avalonia window opened and the desktop process closed cleanly.")
+          PY
+
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            xvfb-run -a python3 "$RUNNER_TEMP/desktop-smoke.py"
+          else
+            python3 "$RUNNER_TEMP/desktop-smoke.py"
+          fi
