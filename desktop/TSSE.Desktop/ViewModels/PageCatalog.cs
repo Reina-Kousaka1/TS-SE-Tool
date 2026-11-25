@@ -4,68 +4,86 @@ namespace TSSE.Desktop.ViewModels;
 
 public sealed class PageCatalog
 {
-    public PageCatalog(IFoundationStatusService statusService)
+    private readonly IUiTextCatalog _text;
+
+    public PageCatalog(IFoundationStatusService statusService, IUiTextCatalog text)
     {
+        ArgumentNullException.ThrowIfNull(statusService);
+        _text = text ?? throw new ArgumentNullException(nameof(text));
         FoundationStatus status = statusService.GetCurrent();
+        string adapters = status.VerifiedAdapterCount.ToString(_text.Culture);
+
         Sections =
         [
             new SectionViewModel(
-                "command-center", "Command Center", "OVERVIEW",
-                "A clear view of the controller foundation and the capabilities that are actually available.",
-                "FOUNDATION ONLY", "No profile is connected",
-                "The app does not scan or open game profiles yet. Nothing is read from your machine.",
+                "command-center", T("page.command.title"), T("page.command.eyebrow"),
+                T("page.command.subtitle"), T("page.command.status"), T("page.command.emptyTitle"),
+                T("page.command.emptyMessage"),
                 [
-                    new StatusCardViewModel("VERIFIED ADAPTERS", status.VerifiedAdapterCount.ToString(), "Exact game/save versions with reviewed support."),
-                    new StatusCardViewModel("SAVEGAME READS", status.CanReadGameSaves ? "Enabled" : "Unavailable", status.CanReadGameSaves ? "Read-only adapters are registered." : "No verified parser or profile reader is registered."),
-                    new StatusCardViewModel("SAVEGAME WRITES", status.CanWriteGameSaves ? "Enabled" : "Disabled", "Writes remain disabled until game-specific validation and recovery are proven.")
-                ]),
+                    new StatusCardViewModel(T("command.adapters.label"), adapters, T("command.adapters.detail")),
+                    new StatusCardViewModel(T("command.reads.label"),
+                        T(status.CanReadGameSaves ? "command.reads.enabled" : "command.reads.unavailable"),
+                        T(status.CanReadGameSaves ? "command.reads.detailEnabled" : "command.reads.detailUnavailable")),
+                    new StatusCardViewModel(T("command.writes.label"),
+                        T(status.CanWriteGameSaves ? "command.writes.enabled" : "command.writes.disabled"),
+                        T("command.writes.detail"))
+                ], _text),
             new SectionViewModel(
-                "savegame-explorer", "Savegame Explorer", "FILES & PROFILES",
-                "Prepare a safe, read-only overview of local ETS2 and ATS profiles.",
-                "PREVIEW", "Profile discovery is not active",
-                "No files have been scanned. A supported parser and explicit folder permission are required before read-only discovery can be enabled.",
-                [new StatusCardViewModel("DISCOVERY", "Not enabled", "No game folders or save files were accessed.")]),
+                "savegame-explorer", T("page.save.title"), T("page.save.eyebrow"),
+                T("page.save.subtitle"), T("page.save.status"), T("page.save.emptyTitle"),
+                T("page.save.emptyMessage"),
+                [new StatusCardViewModel(T("save.discovery.label"), T("save.discovery.value"), T("save.discovery.detail"))], _text),
             new SectionViewModel(
-                "vehicle-studio", "Vehicle Studio", "VEHICLE WORKSPACE",
-                "Truck, trailer and coach editing concepts without loading or changing vehicle data.",
-                "PREVIEW", "No vehicle data loaded",
-                "The editor is an interface preview only. Vehicle fields, mod data and Coaches DLC schemas are not yet verified.",
-                [new StatusCardViewModel("DATA SOURCE", "None", "A compatible, verified savegame adapter is required.")]),
+                "vehicle-studio", T("page.vehicle.title"), T("page.vehicle.eyebrow"),
+                T("page.vehicle.subtitle"), T("page.vehicle.status"), T("page.vehicle.emptyTitle"),
+                T("page.vehicle.emptyMessage"),
+                [new StatusCardViewModel(T("vehicle.dataSource.label"), T("vehicle.dataSource.value"), T("vehicle.dataSource.detail"))], _text),
             new SectionViewModel(
-                "economy-intelligence", "Economy Intelligence", "LOCAL ANALYTICS",
-                "A future local-only view of recorded transactions and snapshot-based balance changes.",
-                "PREVIEW", "No snapshots available",
-                "No account values or historical events are shown. Calculated balance differences will remain separate from recorded transactions.",
-                [new StatusCardViewModel("SNAPSHOT HISTORY", "0", "No profile has been read or imported."),
-                 new StatusCardViewModel("TRANSACTIONS", "Not loaded", "No historical transactions are inferred from balances.")]),
+                "economy-intelligence", T("page.economy.title"), T("page.economy.eyebrow"),
+                T("page.economy.subtitle"), T("page.economy.status"), T("page.economy.emptyTitle"),
+                T("page.economy.emptyMessage"),
+                [
+                    new StatusCardViewModel(T("economy.snapshots.label"), T("economy.snapshots.value"), T("economy.snapshots.detail")),
+                    new StatusCardViewModel(T("economy.transactions.label"), T("economy.transactions.value"), T("economy.transactions.detail"))
+                ], _text),
             new SectionViewModel(
-                "time-machine", "Savegame Time Machine", "SNAPSHOT HISTORY",
-                "Compare local snapshots only after a verified read-only pipeline exists.",
-                "PREVIEW", "Nothing to compare",
-                "No backup, restore point or savegame has been created by this prototype.",
-                [new StatusCardViewModel("RESTORE ACTIONS", "Unavailable", "This screen cannot replace or restore files.")]),
+                "time-machine", T("page.time.title"), T("page.time.eyebrow"),
+                T("page.time.subtitle"), T("page.time.status"), T("page.time.emptyTitle"),
+                T("page.time.emptyMessage"),
+                [new StatusCardViewModel(T("time.restore.label"), T("time.restore.value"), T("time.restore.detail"))], _text),
             new SectionViewModel(
-                "compatibility-lab", "Compatibility Lab", "VERSION SUPPORT",
-                "Make supported game and save versions explicit before enabling any parser.",
-                "UNVERIFIED", "No game versions are registered",
-                "Unknown game IDs and save versions stay unsupported. This foundation does not claim ETS2, ATS, mod or Coaches compatibility.",
-                [new StatusCardViewModel("REGISTERED VERSIONS", status.VerifiedAdapterCount.ToString(), "The compatibility registry starts empty.")]),
+                "compatibility-lab", T("page.compatibility.title"), T("page.compatibility.eyebrow"),
+                T("page.compatibility.subtitle"), T("page.compatibility.status"), T("page.compatibility.emptyTitle"),
+                T("page.compatibility.emptyMessage"),
+                [new StatusCardViewModel(T("compatibility.versions.label"), adapters, T("compatibility.versions.detail"))], _text),
             new SectionViewModel(
-                "diagnostics-center", "Diagnostics Center", "SYSTEM STATUS",
-                "Show real foundation and validation status without fabricating health or game data.",
-                "FOUNDATION ONLY", "No game diagnostics source",
-                "The desktop app is running locally. No game process or save directory is being monitored.",
-                [new StatusCardViewModel("ENGINE", status.EngineState, "Sourced from the current foundation status service."),
-                 new StatusCardViewModel("PROFILE MONITORING", "Off", "No background profile watcher is installed.")]),
+                "diagnostics-center", T("page.diagnostics.title"), T("page.diagnostics.eyebrow"),
+                T("page.diagnostics.subtitle"), T("page.diagnostics.status"), T("page.diagnostics.emptyTitle"),
+                T("page.diagnostics.emptyMessage"),
+                [
+                    new StatusCardViewModel(T("diagnostics.engine.label"), LocalizeEngineState(status.EngineState), T("diagnostics.engine.detail")),
+                    new StatusCardViewModel(T("diagnostics.profileMonitoring.label"),
+                        T("diagnostics.profileMonitoring.value"), T("diagnostics.profileMonitoring.detail"))
+                ], _text),
             new SectionViewModel(
-                "settings", "Settings", "PREFERENCES",
-                "Local interface preferences and clear security boundaries.",
-                "AVAILABLE", "Theme choice is remembered locally",
-                "Theme preference is stored locally on this device. The application has no cloud account, remote service or profile-write setting.",
-                [new StatusCardViewModel("THEME PREFERENCE", "Local only", "The dark/light choice is saved under the operating system's local application data directory."),
-                 new StatusCardViewModel("DATA POLICY", "Local prototype", "No savegame data is collected or transmitted.")])
+                "settings", T("page.settings.title"), T("page.settings.eyebrow"),
+                T("page.settings.subtitle"), T("page.settings.status"), T("page.settings.emptyTitle"),
+                T("page.settings.emptyMessage"),
+                [
+                    new StatusCardViewModel(T("settings.theme.label"), T("settings.theme.value"), T("settings.theme.detail")),
+                    new StatusCardViewModel(T("settings.dataPolicy.label"), T("settings.dataPolicy.value"), T("settings.dataPolicy.detail")),
+                    new StatusCardViewModel(T("settings.languageCardLabel"), _text.CurrentLanguageName, T("settings.languageDetail"))
+                ], _text)
         ];
     }
 
     public IReadOnlyList<SectionViewModel> Sections { get; }
+
+    private string T(string key) => _text.Get(key);
+
+    private string LocalizeEngineState(string engineState) => engineState switch
+    {
+        "Foundation only" => T("diagnostics.engine.foundationOnly"),
+        _ => engineState
+    };
 }

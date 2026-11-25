@@ -6,14 +6,16 @@ namespace TSSE.Desktop.ViewModels;
 public sealed class MainWindowViewModel : ObservableObject
 {
     private readonly IThemeService _themeService;
+    private readonly IUiTextCatalog _text;
     private readonly IReadOnlyList<NavigationItemViewModel> _allNavigationItems;
     private string _searchQuery = string.Empty;
     private SectionViewModel _currentPage;
 
-    public MainWindowViewModel(INavigationService navigationService, IThemeService themeService)
+    public MainWindowViewModel(INavigationService navigationService, IThemeService themeService, IUiTextCatalog text)
     {
         ArgumentNullException.ThrowIfNull(navigationService);
         _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+        _text = text ?? throw new ArgumentNullException(nameof(text));
         _currentPage = navigationService.CurrentPage;
         _allNavigationItems = navigationService.Items;
         foreach (NavigationItemViewModel item in _allNavigationItems)
@@ -33,6 +35,15 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public ObservableCollection<NavigationItemViewModel> FilteredNavigationItems { get; }
     public RelayCommand<NavigationItemViewModel> NavigateCommand { get; }
+    public string WorkspaceLabel => _text.Get("shell.workspace");
+    public string SearchPlaceholder => _text.Get("shell.search");
+    public string SearchAccessibleName => _text.Get("shell.search");
+    public string SafeModeLabel => _text.Get("shell.safeMode");
+    public string SafeModeDetail => _text.Get("shell.safeModeDetail");
+    public string LocalWorkspaceLabel => _text.Get("shell.localWorkspace");
+    public string FoundationPreviewLabel => _text.Get("shell.foundationPreview");
+    public string ThemePreferenceAccessibleName => _text.Get("shell.themePreferenceAccessibleName");
+    public string DarkThemeLabel => _text.Get("shell.darkTheme");
 
     public string SearchQuery
     {

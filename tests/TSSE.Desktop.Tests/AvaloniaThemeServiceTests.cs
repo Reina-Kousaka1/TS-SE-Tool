@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -16,13 +17,14 @@ public sealed class AvaloniaThemeServiceTests
         string root = Path.Combine(AppContext.BaseDirectory, "theme-service-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         App application = Assert.IsType<App>(Application.Current);
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en-US"));
 
         try
         {
             var store = new LocalThemePreferenceStore(root);
             store.SaveIsDark(false);
 
-            var service = new AvaloniaThemeService(application, store);
+            var service = new AvaloniaThemeService(application, store, text);
 
             Assert.False(service.IsDark);
             Assert.Equal(ThemeVariant.Light, application.RequestedThemeVariant);
@@ -35,14 +37,14 @@ public sealed class AvaloniaThemeServiceTests
             Assert.Equal("Theme preference saved locally.", service.PreferenceStatus);
 
             File.WriteAllText(Path.Combine(root, "theme.preference"), "malformed");
-            var malformedStoreService = new AvaloniaThemeService(application, store);
+            var malformedStoreService = new AvaloniaThemeService(application, store, text);
 
             Assert.True(malformedStoreService.IsDark);
             Assert.Contains("Could not read", malformedStoreService.PreferenceStatus, StringComparison.Ordinal);
 
             string blockedPath = Path.Combine(root, "existing-file");
             File.WriteAllText(blockedPath, "file");
-            var blockedService = new AvaloniaThemeService(application, new LocalThemePreferenceStore(blockedPath));
+            var blockedService = new AvaloniaThemeService(application, new LocalThemePreferenceStore(blockedPath), text);
             blockedService.SetDark(false);
 
             Assert.False(blockedService.IsDark);

@@ -12,6 +12,9 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\*.json" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\TSSE.GameAdapters\TSSE.GameAdapters.csproj" />
     <ProjectReference Include="..\..\src\TSSE.Savegames\TSSE.Savegames.csproj" />
   </ItemGroup>

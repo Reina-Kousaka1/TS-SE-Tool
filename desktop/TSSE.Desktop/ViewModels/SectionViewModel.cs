@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using TSSE.Desktop.Services;
 
 namespace TSSE.Desktop.ViewModels;
 
 public sealed class SectionViewModel : ObservableObject
 {
+    private readonly IUiTextCatalog _text;
     private string _selectedVehicleCategory = "Trucks";
     private int _selectedWindowDays = 7;
 
@@ -15,8 +17,10 @@ public sealed class SectionViewModel : ObservableObject
         string statusLabel,
         string emptyStateTitle,
         string emptyStateMessage,
-        IEnumerable<StatusCardViewModel> statusCards)
+        IEnumerable<StatusCardViewModel> statusCards,
+        IUiTextCatalog text)
     {
+        _text = text ?? throw new ArgumentNullException(nameof(text));
         PageKey = pageKey;
         Title = title;
         Eyebrow = eyebrow;
@@ -25,6 +29,15 @@ public sealed class SectionViewModel : ObservableObject
         EmptyStateTitle = emptyStateTitle;
         EmptyStateMessage = emptyStateMessage;
         StatusCards = new ObservableCollection<StatusCardViewModel>(statusCards);
+        SettingsStorageHeading = _text.Get("settings.storage.heading");
+        SettingsStorageMessage = _text.Get("settings.storage.message");
+        VehicleCategoryHeading = _text.Get("vehicle.category.heading");
+        TrucksLabel = _text.Get("vehicle.category.trucks");
+        TrailersLabel = _text.Get("vehicle.category.trailers");
+        CoachesLabel = _text.Get("vehicle.category.coaches");
+        AnalyticsWindowHeading = _text.Get("analytics.window.heading");
+        SevenDaysLabel = _text.Get("analytics.window.sevenDays");
+        ThirtyDaysLabel = _text.Get("analytics.window.thirtyDays");
         SelectVehicleCategoryCommand = new RelayCommand<string>(SelectVehicleCategory);
         SelectAnalyticsWindowCommand = new RelayCommand<string>(SelectAnalyticsWindow);
     }
@@ -40,11 +53,21 @@ public sealed class SectionViewModel : ObservableObject
     public bool IsVehicleStudio => PageKey == "vehicle-studio";
     public bool IsEconomyIntelligence => PageKey == "economy-intelligence";
     public bool IsSettings => PageKey == "settings";
+    public string SettingsStorageHeading { get; }
+    public string SettingsStorageMessage { get; }
+    public string VehicleCategoryHeading { get; }
+    public string TrucksLabel { get; }
+    public string TrailersLabel { get; }
+    public string CoachesLabel { get; }
+    public string AnalyticsWindowHeading { get; }
+    public string SevenDaysLabel { get; }
+    public string ThirtyDaysLabel { get; }
     public string SelectedVehicleCategory => _selectedVehicleCategory;
     public int SelectedWindowDays => _selectedWindowDays;
-    public string SelectedWindowLabel => $"{_selectedWindowDays}-day window selected";
-    public string SelectedVehicleMessage => $"{_selectedVehicleCategory} view is a preview. No compatible savegame is loaded.";
-    public string AnalyticsNotice => $"The {_selectedWindowDays}-day view will show local snapshots only. No transaction history or account values are currently loaded.";
+    public string SelectedVehicleCategoryLabel => _text.Get($"vehicle.category.{_selectedVehicleCategory.ToLowerInvariant()}");
+    public string SelectedWindowLabel => _text.Format("analytics.window.selected", _selectedWindowDays);
+    public string SelectedVehicleMessage => _text.Format("vehicle.selectedPreview", SelectedVehicleCategoryLabel);
+    public string AnalyticsNotice => _text.Format("analytics.notice", _selectedWindowDays);
     public RelayCommand<string> SelectVehicleCategoryCommand { get; }
     public RelayCommand<string> SelectAnalyticsWindowCommand { get; }
 
@@ -54,7 +77,10 @@ public sealed class SectionViewModel : ObservableObject
             return;
 
         if (SetProperty(ref _selectedVehicleCategory, category, nameof(SelectedVehicleCategory)))
+        {
+            OnPropertyChanged(nameof(SelectedVehicleCategoryLabel));
             OnPropertyChanged(nameof(SelectedVehicleMessage));
+        }
     }
 
     private void SelectAnalyticsWindow(string value)

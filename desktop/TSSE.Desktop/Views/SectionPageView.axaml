@@ -19,9 +19,9 @@
         <Border IsVisible="{Binding IsSettings}" Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
         <StackPanel Spacing="10">
-          <TextBlock Text="LOCAL PREFERENCE STORAGE" FontSize="10" FontWeight="Bold"
+          <TextBlock Text="{Binding SettingsStorageHeading}" FontSize="10" FontWeight="Bold"
                      Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
-          <TextBlock Text="Theme selection is saved on this device. No account, cloud service, or game profile is used for this setting."
+          <TextBlock Text="{Binding SettingsStorageMessage}"
                      FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
@@ -29,11 +29,11 @@
       <Border IsVisible="{Binding IsVehicleStudio}" Background="{DynamicResource SurfaceBrush}"
               BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
         <StackPanel Spacing="12">
-          <TextBlock Text="VEHICLE CATEGORY" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
+          <TextBlock Text="{Binding VehicleCategoryHeading}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Trucks" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trucks" />
-            <Button Content="Trailers" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trailers" />
-            <Button Content="Coaches" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Coaches" />
+            <Button Content="{Binding TrucksLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trucks" />
+            <Button Content="{Binding TrailersLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trailers" />
+            <Button Content="{Binding CoachesLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Coaches" />
           </StackPanel>
           <TextBlock Text="{Binding SelectedVehicleMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
         </StackPanel>
@@ -42,10 +42,10 @@
       <Border IsVisible="{Binding IsEconomyIntelligence}" Background="{DynamicResource SurfaceBrush}"
               BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
         <StackPanel Spacing="12">
-          <TextBlock Text="ANALYSIS WINDOW" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
+          <TextBlock Text="{Binding AnalyticsWindowHeading}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="7 days" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="7" />
-            <Button Content="30 days" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="30" />
+            <Button Content="{Binding SevenDaysLabel}" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="7" />
+            <Button Content="{Binding ThirtyDaysLabel}" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="30" />
             <TextBlock Text="{Binding SelectedWindowLabel}" FontSize="12" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
           </StackPanel>
           <TextBlock Text="{Binding AnalyticsNotice}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />

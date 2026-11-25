@@ -1,6 +1,6 @@
 # Phase 2 — Next Generation Rebuild
 
-**Status: in progress.** Foundation and Avalonia UI are one combined Phase 2. There is no separate UI-migration Phase 3. Run [45688114218](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45688114218) passed the .NET 10 build, full tests and self-contained publish on five targets; native startup and shutdown passed on Linux x64/ARM64, Windows x64/ARM64 and macOS Intel. The macOS ARM64 job and its targeted rerun were cancelled after 15 minutes before any step ran. The push workflow now validates those five targets automatically; a separate macOS ARM64 workflow only runs when its request marker changes after review of the runner-assignment evidence by Architect or a documented architecture self-review. This split does not count macOS ARM64 as validated. The latest run [45717243801](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45717243801) on `4eccf0d` passed build, all 33 tests, self-contained publish, and native startup/shutdown on the five automatic targets; it did not request macOS ARM64. The app's Windows x64 window title was observed locally, but visual layout and interaction remain unverified. Phase 2 stays open pending macOS ARM64 validation, UI interaction review, real game-save compatibility evidence, and packaging/signing checks.
+**Status: in progress.** Foundation and Avalonia UI are one combined Phase 2. There is no separate UI-migration Phase 3. Run [45688114218](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45688114218) passed the .NET 10 build, full tests and self-contained publish on five targets; native startup and shutdown passed on Linux x64/ARM64, Windows x64/ARM64 and macOS Intel. The macOS ARM64 job and its targeted rerun were cancelled after 15 minutes before any step ran. The push workflow now validates those five targets automatically; a separate macOS ARM64 workflow only runs when its request marker changes after review of the runner-assignment evidence by a documented architecture review. This split does not count macOS ARM64 as validated. The latest successful run [45718009085](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45718009085) on `b237c35` passed build, all 33 tests, self-contained publish, and native startup/shutdown on the five automatic targets; it did not request macOS ARM64. The app's Windows x64 window title was observed locally, but visual layout and interaction remain unverified. Phase 2 stays open pending macOS ARM64 validation, UI interaction review, real game-save compatibility evidence, and packaging/signing checks.
 
 ## Current architecture
 
@@ -8,6 +8,7 @@
 - `desktop/TSSE.Desktop` is the native desktop application, built with Avalonia 12.2.0, MVVM, Microsoft dependency injection, and a central Fluent theme with dark and light variants.
 - The app contains navigation and interface previews for Command Center, Savegame Explorer, Vehicle Studio, Economy Intelligence, Savegame Time Machine, Compatibility Lab, Diagnostics Center, and Settings. Search filters the sections; vehicle category and analytics-window controls change preview state.
 - Dark/light theme selection is now remembered in a small local preference file. The window reports when the preference could not be read or saved; this setting stores no game or savegame data.
+- The interface ships embedded English and German text resources. It follows the operating-system UI culture at startup and falls back to English for other cultures; Settings shows the resolved language. A language change requires restarting the app.
 - Screens show only current foundation facts and explicit empty states. There are no sample balances, vehicles, profiles, snapshots, game diagnoses, or fabricated events.
 - No profile scanning or real game-save reading is enabled. Save writes, restore actions, and background profile monitoring are disabled.
 - Electron, Phoenix, Elixir, JavaScript UI assets, and TypeScript are not part of the new target architecture.
@@ -46,6 +47,8 @@ No Architect tool was available. In accordance with `AGENTS.md`, this documented
 
 ## Validation history
 
+- Latest verified .NET 10 run before the current localization changes: [45718009085](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45718009085) on `b237c35` passed all 33 tests, self-contained publish, and native startup/shutdown on Linux x64/ARM64, Windows x64/ARM64, and macOS Intel. macOS ARM64 was not requested.
+
 - Earlier foundation commit: 17/17 synthetic .NET tests passed using a temporary `net8.0` target override with SDK 8.0.425. This was a compatibility smoke test, not a .NET 10 validation.
 - Earlier Phoenix experiment: `npm ci` and asset bundling passed with Node 24 on Windows. Its Phoenix/OTP test suite did not run locally.
 - Earlier .NET bridge: a manual local JSON-lines status request returned `foundation-only`, zero verified adapters, and writes disabled.
@@ -60,6 +63,14 @@ No Architect tool was available. In accordance with `AGENTS.md`, this documented
 2. Inspect visual rendering and user interaction on the supported desktop environments. Native launch/close is verified on Windows x64/ARM64, Linux x64/ARM64, and macOS Intel; macOS ARM64 remains unverified.
 3. Complete parser/container/version verification using representative safe fixtures before enabling read-only profile discovery.
 4. Add full semantic roundtrip, save-version and crash-recovery tests before even considering game-specific writes. Keep writes disabled until these pass.
-5. Finish accessible interaction, localization, and packaging/signing tests for Windows, Linux, and macOS.
+5. Complete accessible interaction and packaging/signing tests for Windows, Linux, and macOS. English/German localization and unsupported-culture fallback are implemented; their full .NET 10 CI validation is pending.
 
 There is no separate Phase 3 for these items. They remain in Phase 2 until the completion gate above is met.
+
+## Architecture self-review — interface localization (2026-11-26)
+
+No separate Architect tool was available in this session, so this is the implementation agent's documented self-review, not an independent review. The reviewed changes keep localization inside the Avalonia desktop assembly: embedded English and German JSON resources are read through `IUiTextCatalog`, selected once from `CurrentUICulture` at startup, and unsupported languages resolve to English. View models supply localized visible and accessible labels; the UI does not load external resource files or interpret localized strings as markup. Existing empty states and savegame-write restrictions remain intact.
+
+Evidence checked: all resource keys match; each paired formatted message is checked for matching format-argument indices; the language catalog has explicit English/German/unsupported-culture coverage; constructor call sites and XAML bindings were inspected; `git diff --check` passes. A source-linked .NET 8 resource smoke harness also passed embedded-resource lookup, German selection, formatted output, and English fallback. The real project targets .NET 10, unavailable in the local environment, so the Avalonia headless tests and full application build still require the .NET 10 CI run.
+
+Decision and limits: the process culture is fixed for the lifetime of the app, so changing the operating-system language requires an app restart. English remains the fallback. Resource lookup fails fast on a missing key rather than displaying an invented value. Remaining risks are full .NET 10 compile/test validation, visual review of German text in the desktop layout, and untranslated brand/decoration glyphs that are not user-facing prose. The feature does not enable game-profile access or savegame writes.

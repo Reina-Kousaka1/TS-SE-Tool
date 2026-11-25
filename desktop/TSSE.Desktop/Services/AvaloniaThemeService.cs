@@ -7,21 +7,23 @@ public sealed class AvaloniaThemeService : IThemeService
 {
     private readonly App _application;
     private readonly IThemePreferenceStore _preferenceStore;
+    private readonly IUiTextCatalog _text;
 
-    public AvaloniaThemeService(App application, IThemePreferenceStore preferenceStore)
+    public AvaloniaThemeService(App application, IThemePreferenceStore preferenceStore, IUiTextCatalog text)
     {
         _application = application ?? throw new ArgumentNullException(nameof(application));
         _preferenceStore = preferenceStore ?? throw new ArgumentNullException(nameof(preferenceStore));
+        _text = text ?? throw new ArgumentNullException(nameof(text));
 
         try
         {
             IsDark = _preferenceStore.LoadIsDark();
-            PreferenceStatus = "Theme preference is stored on this device.";
+            PreferenceStatus = _text.Get("theme.preference.stored");
         }
         catch (Exception exception) when (IsPreferenceError(exception))
         {
             IsDark = true;
-            PreferenceStatus = "Could not read the local theme preference; using dark theme for this session.";
+            PreferenceStatus = _text.Get("theme.preference.readFailed");
         }
 
         ApplyTheme();
@@ -38,11 +40,11 @@ public sealed class AvaloniaThemeService : IThemeService
         try
         {
             _preferenceStore.SaveIsDark(isDark);
-            PreferenceStatus = "Theme preference saved locally.";
+            PreferenceStatus = _text.Get("theme.preference.saved");
         }
         catch (Exception exception) when (IsPreferenceError(exception))
         {
-            PreferenceStatus = "Theme changed for this session; the local preference could not be saved.";
+            PreferenceStatus = _text.Get("theme.preference.saveFailed");
         }
     }
 

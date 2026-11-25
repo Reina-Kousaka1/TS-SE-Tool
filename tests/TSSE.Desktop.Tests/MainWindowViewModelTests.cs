@@ -1,3 +1,4 @@
+using System.Globalization;
 using TSSE.Desktop.Services;
 using TSSE.Desktop.ViewModels;
 using Xunit;
@@ -92,12 +93,47 @@ public sealed class MainWindowViewModelTests
         Assert.Equal(theme.PreferenceStatus, viewModel.ThemePreferenceStatus);
     }
 
+    [Theory]
+    [InlineData("en-US", "Command Center", "English", "Search sections", "Dark theme")]
+    [InlineData("de-DE", "Steuerzentrale", "Deutsch", "Bereiche suchen", "Dunkles Theme")]
+    [InlineData("fr-FR", "Command Center", "English", "Search sections", "Dark theme")]
+    public void System_culture_localizes_the_shell_and_falls_back_to_English(
+        string cultureName,
+        string expectedFirstPage,
+        string expectedLanguage,
+        string expectedSearch,
+        string expectedTheme)
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo(cultureName));
+        var catalog = new PageCatalog(
+            new FoundationStatusService(new TSSE.GameAdapters.Compatibility.GameAdapterRegistry()), text);
+        var theme = new TestThemeService();
+        var viewModel = new MainWindowViewModel(new NavigationService(catalog), theme, text);
+
+        Assert.Equal(expectedFirstPage, viewModel.CurrentPage.Title);
+        Assert.Equal(expectedLanguage, text.CurrentLanguageName);
+        Assert.Equal(expectedSearch, viewModel.SearchPlaceholder);
+        Assert.Equal(expectedTheme, viewModel.DarkThemeLabel);
+
+        SectionViewModel settings = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "settings").Page;
+        Assert.Contains(settings.StatusCards, card => card.Value == expectedLanguage);
+
+        SectionViewModel vehicle = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "vehicle-studio").Page;
+        vehicle.SelectVehicleCategoryCommand.Execute("Coaches");
+        Assert.Contains(expectedLanguage == "Deutsch" ? "Reisebusse" : "Coaches", vehicle.SelectedVehicleMessage, StringComparison.Ordinal);
+
+        SectionViewModel economy = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "economy-intelligence").Page;
+        economy.SelectAnalyticsWindowCommand.Execute("30");
+        Assert.Contains(expectedLanguage == "Deutsch" ? "30-Tage-Ansicht" : "30-day view", economy.AnalyticsNotice, StringComparison.Ordinal);
+    }
+
     private static MainWindowViewModel CreateViewModel(TestThemeService? theme = null)
     {
         var registry = new TSSE.GameAdapters.Compatibility.GameAdapterRegistry();
-        var catalog = new PageCatalog(new FoundationStatusService(registry));
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en-US"));
+        var catalog = new PageCatalog(new FoundationStatusService(registry), text);
         var navigation = new NavigationService(catalog);
-        return new MainWindowViewModel(navigation, theme ?? new TestThemeService());
+        return new MainWindowViewModel(navigation, theme ?? new TestThemeService(), text);
     }
 
     private sealed class TestThemeService : IThemeService

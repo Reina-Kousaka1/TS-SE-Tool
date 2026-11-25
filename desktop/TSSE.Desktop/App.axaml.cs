@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -20,11 +21,15 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         var registrations = new ServiceCollection();
+        registrations.AddSingleton<IUiTextCatalog>(_ => new UiTextCatalog(CultureInfo.CurrentUICulture));
         registrations.AddSingleton<GameAdapterRegistry>();
         registrations.AddSingleton<IFoundationStatusService, FoundationStatusService>();
         registrations.AddSingleton<IThemePreferenceStore, LocalThemePreferenceStore>();
         registrations.AddSingleton<IThemeService>(provider =>
-            new AvaloniaThemeService(this, provider.GetRequiredService<IThemePreferenceStore>()));
+            new AvaloniaThemeService(
+                this,
+                provider.GetRequiredService<IThemePreferenceStore>(),
+                provider.GetRequiredService<IUiTextCatalog>()));
         registrations.AddSingleton<PageCatalog>();
         registrations.AddSingleton<INavigationService, NavigationService>();
         registrations.AddSingleton<MainWindowViewModel>();
