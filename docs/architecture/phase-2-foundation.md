@@ -35,7 +35,7 @@ This prototype was a superseded experiment. Its implementation has now been remo
 
 Runs [45638941710](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45638941710) and [45646310995](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45646310995) both recorded `failure` immediately after creation. GitHub's run API returned zero jobs; both runs had no check runs, logs, or artifacts. The connector does not expose the associated check-suite diagnostics or repository Actions settings, so the precise cause is undetermined. The earlier workflow's runner labels are listed by GitHub for public repositories, so there is no evidence here that those labels caused the zero-job result.
 
-The workflow has been replaced with one .NET/Avalonia matrix that builds and tests the solution and publishes the desktop app for each of the six RIDs. A subsequent run is required to determine whether the no-job failure is resolved or depends on repository-side Actions configuration.
+The workflow has been replaced with one .NET/Avalonia matrix that builds and tests the solution and publishes the desktop app for each of the six RIDs. The push of commit `e355b732e840a72d2975cb932fe834505118006d` did not create a run in the Actions API. A manual `workflow_dispatch` against this fork returned HTTP 500 and created no run. Thus the new workflow has not yet executed, and the cause of the earlier zero-job failures or the missing run remains unconfirmed; repository-side Actions configuration and platform-side dispatch handling have not been isolated.
 
 ## Validation history
 
