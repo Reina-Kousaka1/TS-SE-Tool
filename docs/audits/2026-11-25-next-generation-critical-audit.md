@@ -193,7 +193,7 @@ Erforderliche CI-Gates: Format-/Buildprüfung für .NET 10, Unit-/Property-/Fuzz
 
 - **Fork:** vorhanden, echter Fork von LIPtoH/TS-SE-Tool, Apache-2.0-Hinweise erhalten.
 - **Audit-Branch:** audit/critical-next-gen-2026-11-25, basierend auf master.
-- **Commit/Push:** wird in diesem Arbeitsgang nach Review des Berichts ausgeführt und anschließend anhand des Remote-Branches verifiziert.
+- **Commit/Push:** Der Bericht wurde auf diesem Branch committet und gepusht; der Remote-Branch-Kopf wurde anschließend verifiziert.
 - **Stable-Bereitschaft:** nicht gegeben. Der P0-Schreibpfad, fehlende Roundtrip-/Crash-Tests und ungeklärte ETS2/ATS-1.60+-Kompatibilität verhindern eine belastbare Stable-Aussage.
 - **Offene Blocker:** kein überprüfbarer aktueller Save-v97-Testbestand, kein vollständiger Coaches-DLC-Nachweis, unbekannte Vollständigkeit der PR-Decoder-/Asset-Provenienz, keine automatisierte Test-/CI-Basis und kein lokaler .NET-10/Elixir/WiX-Buildnachweis.
 
