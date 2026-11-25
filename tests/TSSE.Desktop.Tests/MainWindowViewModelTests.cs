@@ -45,6 +45,23 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public void Navigation_selection_tracks_the_current_page()
+    {
+        MainWindowViewModel viewModel = CreateViewModel();
+        NavigationItemViewModel commandCenter = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "command-center");
+        NavigationItemViewModel target = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "compatibility-lab");
+
+        Assert.True(commandCenter.IsSelected);
+        Assert.False(target.IsSelected);
+
+        viewModel.NavigateCommand.Execute(target);
+
+        Assert.False(commandCenter.IsSelected);
+        Assert.True(target.IsSelected);
+        Assert.Single(viewModel.FilteredNavigationItems, item => item.IsSelected);
+    }
+
+    [Fact]
     public void Vehicle_categories_and_analytics_windows_only_change_preview_state()
     {
         MainWindowViewModel viewModel = CreateViewModel();

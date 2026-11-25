@@ -16,11 +16,18 @@ public sealed class MainWindowViewModel : ObservableObject
         _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
         _currentPage = navigationService.CurrentPage;
         _allNavigationItems = navigationService.Items;
+        foreach (NavigationItemViewModel item in _allNavigationItems)
+            item.SetSelected(item.PageKey == _currentPage.PageKey);
+
         FilteredNavigationItems = new ObservableCollection<NavigationItemViewModel>(_allNavigationItems);
         NavigateCommand = new RelayCommand<NavigationItemViewModel>(item =>
         {
             if (navigationService.Navigate(item.PageKey))
+            {
                 CurrentPage = navigationService.CurrentPage;
+                foreach (NavigationItemViewModel navigationItem in _allNavigationItems)
+                    navigationItem.SetSelected(navigationItem.PageKey == CurrentPage.PageKey);
+            }
         });
     }
 

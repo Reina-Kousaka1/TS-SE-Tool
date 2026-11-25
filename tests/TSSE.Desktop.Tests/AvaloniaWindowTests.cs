@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
 using TSSE.Desktop;
 using TSSE.Desktop.Services;
 using TSSE.Desktop.ViewModels;
@@ -26,6 +27,13 @@ public sealed class AvaloniaWindowTests
             Assert.NotNull(window.FindControl<ContentControl>("PageHost"));
             Assert.IsType<SectionViewModel>(window.FindControl<ContentControl>("PageHost")?.Content);
             Assert.Equal("Command Center", viewModel.CurrentPage.Title);
+
+            Button[] navigationButtons = window.GetVisualDescendants()
+                .OfType<Button>()
+                .Where(button => button.Classes.Contains("nav-item"))
+                .ToArray();
+            Assert.Equal(8, navigationButtons.Length);
+            Assert.Single(navigationButtons, button => button.Classes.Contains("selected"));
         }
         finally
         {

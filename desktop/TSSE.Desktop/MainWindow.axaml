@@ -45,8 +45,11 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate>
                 <Button Classes="nav-item"
+                        Classes.selected="{Binding IsSelected}"
                         Command="{Binding $parent[Window].DataContext.NavigateCommand}"
                         CommandParameter="{Binding}"
+                        AutomationProperties.Name="{Binding Title}"
+                        AutomationProperties.HelpText="{Binding Page.Subtitle}"
                         HorizontalContentAlignment="Stretch"
                         Padding="10,9"
                         Margin="0,2">

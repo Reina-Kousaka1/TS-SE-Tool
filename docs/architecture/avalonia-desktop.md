@@ -6,13 +6,13 @@
 - **Presentation pattern:** MVVM with `INotifyPropertyChanged`, commands, a navigation service, and page view models. UI state is separate from the savegame parser.
 - **Dependency injection:** `Microsoft.Extensions.DependencyInjection` owns the foundation status, compatibility registry, navigation, theme, and main-window view models.
 - **Theme:** one Fluent control theme and central theme dictionaries with dark and light palettes.
-- **UI tests:** Avalonia headless plus xUnit v3 for a control-tree/window-load smoke test; regular unit tests cover view-model state, filtering, navigation, theme delegation, and preview controls.
+- **UI tests:** Avalonia headless plus xUnit v3 for a control-tree/window-load smoke test; regular unit tests cover view-model state, filtering, selected-page navigation, theme delegation, and preview controls.
 
 Avalonia's current desktop platform matrix includes Windows x64/ARM64, Linux x64/ARM64 across listed distributions, and macOS x64/ARM64. Linux uses X11 directly; Wayland is available through an opt-in backend package. These are framework capabilities, not verified build or runtime results for this application. See the [official supported-platform matrix](https://docs.avaloniaui.net/docs/supported-platforms), [DI/MVVM guide](https://docs.avaloniaui.net/docs/app-development/dependency-injection), and [headless xUnit guide](https://docs.avaloniaui.net/docs/testing/headless-xunit).
 
 ## Application composition
 
-`Program` starts Avalonia's classic desktop lifetime. `App` registers the current empty `GameAdapterRegistry`, a status service, theme service, page catalog, navigation service and main-window view model in the DI container. The main window owns a searchable navigation rail and a content presenter. The section view displays facts from the foundation service alongside explicit preview/empty states.
+`Program` starts Avalonia's classic desktop lifetime. `App` registers the current empty `GameAdapterRegistry`, a status service, theme service, page catalog, navigation service and main-window view model in the DI container. The main window owns a searchable navigation rail, tracks the selected page, highlights it, and exposes each section's accessible name and help text. A content presenter displays the current page. The section view displays facts from the foundation service alongside explicit preview/empty states.
 
 The window can resize in the desktop layout; cards wrap inside a scrolling content area. The 7/30-day and Truck/Trailer/Coach selectors only update preview state. They do not query game data or claim those editors are implemented.
 
