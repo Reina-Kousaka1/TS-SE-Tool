@@ -8,4 +8,5 @@ public sealed record LocalBalanceSnapshot(
     DateTimeOffset CapturedAt,
     decimal? Cash,
     decimal? BankBalance,
-    decimal? NetWorth);
+    decimal? NetWorth,
+    string? ProfileId = null);

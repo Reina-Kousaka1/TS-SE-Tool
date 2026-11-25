@@ -113,6 +113,7 @@ public sealed class LocalSnapshotStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.SnapshotId);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.GameId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileId);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.SaveVersion);
     }

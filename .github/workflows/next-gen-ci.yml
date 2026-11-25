@@ -1,4 +1,4 @@
-name: Next-generation Avalonia foundation CI
+name: Next-generation Avalonia CI (five automatic targets)
 
 on:
   push:
@@ -31,9 +31,6 @@ jobs:
           - runner: macos-26-intel
             arch: x64
             rid: osx-x64
-          - runner: macos-26
-            arch: arm64
-            rid: osx-arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

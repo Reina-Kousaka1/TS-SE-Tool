@@ -35,8 +35,8 @@ public sealed class FoundationIntegrationTests
         };
         var snapshots = new[]
         {
-            new LocalBalanceSnapshot("s1", "ETS2", "synthetic", "unknown", end.AddDays(-7), 200m, 1000m, 1500m),
-            new LocalBalanceSnapshot("s2", "ETS2", "synthetic", "unknown", end, 400m, 1300m, 1900m)
+            new LocalBalanceSnapshot("s1", "ETS2", "synthetic", "unknown", end.AddDays(-7), 200m, 1000m, 1500m, "profile-1"),
+            new LocalBalanceSnapshot("s2", "ETS2", "synthetic", "unknown", end, 400m, 1300m, 1900m, "profile-1")
         };
 
         AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, transactions, snapshots);
@@ -49,13 +49,29 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
-    public void Analytics_OmitsSnapshotDeltaWhenInputContainsMultipleProfiles()
+    public void Analytics_OmitsSnapshotDeltaWhenInputContainsMultipleProfilesWithSameLabel()
     {
         DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
         var snapshots = new[]
         {
-            new LocalBalanceSnapshot("a1", "ETS2", "profile-a", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m),
-            new LocalBalanceSnapshot("b1", "ETS2", "profile-b", "unknown", end.AddDays(-1), 900m, 9_000m, 9_500m)
+            new LocalBalanceSnapshot("a1", "ETS2", "same-label", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m, "profile-a"),
+            new LocalBalanceSnapshot("b1", "ETS2", "same-label", "unknown", end.AddDays(-1), 900m, 9_000m, 9_500m, "profile-b")
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
+
+        Assert.Null(report.BalanceDelta);
+        Assert.Null(report.NetWorthDelta);
+    }
+
+    [Fact]
+    public void Analytics_OmitsSnapshotDeltaWhenStableProfileIdentityIsMissing()
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("old-a", "ETS2", "same-label", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m),
+            new LocalBalanceSnapshot("old-b", "ETS2", "same-label", "unknown", end, 200m, 1_500m, 1_700m)
         };
 
         AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
@@ -102,7 +118,7 @@ public sealed class FoundationIntegrationTests
             var store = new LocalSnapshotStore(path);
             var snapshot = new LocalBalanceSnapshot(
                 "snapshot-1", "ETS2", "synthetic", "unknown",
-                DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null);
+                DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null, "profile-1");
 
             FileCommitResult result = await store.AppendAsync(snapshot, TestContext.Current.CancellationToken);
             IReadOnlyList<LocalBalanceSnapshot> readBack = await store.ReadAsync(TestContext.Current.CancellationToken);
@@ -110,6 +126,44 @@ public sealed class FoundationIntegrationTests
             Assert.Equal(FileCommitStatus.Succeeded, result.Status);
             Assert.Single(readBack);
             Assert.Equal(snapshot, readBack[0]);
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SnapshotStore_RejectsNewSnapshotsWithoutStableProfileIdentity()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "tsse-snapshot-" + Guid.NewGuid().ToString("N"), "history.json");
+        var store = new LocalSnapshotStore(path);
+        var snapshot = new LocalBalanceSnapshot(
+            "snapshot-legacy", "ETS2", "synthetic", "unknown",
+            DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null);
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => store.AppendAsync(snapshot, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SnapshotStore_ReadsLegacySnapshotsWithoutStableProfileIdentity()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "tsse-legacy-snapshot-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string path = Path.Combine(directory, "history.json");
+            await File.WriteAllTextAsync(path,
+                "[{\"snapshotId\":\"old-1\",\"gameId\":\"ETS2\",\"profileLabel\":\"old\",\"saveVersion\":\"unknown\",\"capturedAt\":\"2026-11-25T12:00:00Z\",\"cash\":10,\"bankBalance\":20,\"netWorth\":null}]",
+                TestContext.Current.CancellationToken);
+
+            IReadOnlyList<LocalBalanceSnapshot> snapshots = await new LocalSnapshotStore(path)
+                .ReadAsync(TestContext.Current.CancellationToken);
+
+            LocalBalanceSnapshot snapshot = Assert.Single(snapshots);
+            Assert.Null(snapshot.ProfileId);
         }
         finally
         {
