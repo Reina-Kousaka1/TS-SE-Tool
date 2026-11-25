@@ -9,6 +9,7 @@ using Xunit;
 
 namespace TSSE.Desktop.Tests;
 
+[Collection("Avalonia UI")]
 public sealed class AvaloniaWindowTests
 {
     [AvaloniaFact]
@@ -27,6 +28,8 @@ public sealed class AvaloniaWindowTests
             Assert.NotNull(window.FindControl<ContentControl>("PageHost"));
             Assert.IsType<SectionViewModel>(window.FindControl<ContentControl>("PageHost")?.Content);
             Assert.Equal("Command Center", viewModel.CurrentPage.Title);
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == viewModel.ThemePreferenceStatus);
 
             Button[] navigationButtons = window.GetVisualDescendants()
                 .OfType<Button>()
@@ -44,6 +47,7 @@ public sealed class AvaloniaWindowTests
     private sealed class TestThemeService : IThemeService
     {
         public bool IsDark { get; private set; } = true;
+        public string PreferenceStatus => "Theme preference is stored on this device.";
         public void SetDark(bool isDark) => IsDark = isDark;
     }
 }

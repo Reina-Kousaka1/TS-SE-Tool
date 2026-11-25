@@ -21,7 +21,9 @@ public partial class App : Application
         var registrations = new ServiceCollection();
         registrations.AddSingleton<GameAdapterRegistry>();
         registrations.AddSingleton<IFoundationStatusService, FoundationStatusService>();
-        registrations.AddSingleton<IThemeService>(_ => new AvaloniaThemeService(this));
+        registrations.AddSingleton<IThemePreferenceStore, LocalThemePreferenceStore>();
+        registrations.AddSingleton<IThemeService>(provider =>
+            new AvaloniaThemeService(this, provider.GetRequiredService<IThemePreferenceStore>()));
         registrations.AddSingleton<PageCatalog>();
         registrations.AddSingleton<INavigationService, NavigationService>();
         registrations.AddSingleton<MainWindowViewModel>();

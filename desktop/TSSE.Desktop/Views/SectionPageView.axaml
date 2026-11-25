@@ -16,6 +16,16 @@
         <Border Grid.Row="2" Grid.ColumnSpan="2" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,0,0" />
       </Grid>
 
+        <Border IsVisible="{Binding IsSettings}" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
+        <StackPanel Spacing="10">
+          <TextBlock Text="LOCAL PREFERENCE STORAGE" FontSize="10" FontWeight="Bold"
+                     Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
+          <TextBlock Text="Theme selection is saved on this device. No account, cloud service, or game profile is used for this setting."
+                     FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <Border IsVisible="{Binding IsVehicleStudio}" Background="{DynamicResource SurfaceBrush}"
               BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
         <StackPanel Spacing="12">

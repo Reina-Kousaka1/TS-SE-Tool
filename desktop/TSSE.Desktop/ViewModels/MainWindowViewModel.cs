@@ -60,8 +60,11 @@ public sealed class MainWindowViewModel : ObservableObject
 
             _themeService.SetDark(value);
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ThemePreferenceStatus));
         }
     }
+
+    public string ThemePreferenceStatus => _themeService.PreferenceStatus;
 
     private void RefreshNavigation()
     {

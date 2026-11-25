@@ -89,6 +89,7 @@ public sealed class MainWindowViewModelTests
         Assert.False(viewModel.IsDarkTheme);
         Assert.False(theme.IsDark);
         Assert.Equal(1, theme.ChangeCount);
+        Assert.Equal(theme.PreferenceStatus, viewModel.ThemePreferenceStatus);
     }
 
     private static MainWindowViewModel CreateViewModel(TestThemeService? theme = null)
@@ -103,11 +104,13 @@ public sealed class MainWindowViewModelTests
     {
         public bool IsDark { get; private set; } = true;
         public int ChangeCount { get; private set; }
+        public string PreferenceStatus { get; private set; } = "Theme preference has not changed.";
 
         public void SetDark(bool isDark)
         {
             IsDark = isDark;
             ChangeCount++;
+            PreferenceStatus = "Theme preference saved locally.";
         }
     }
 }

@@ -84,8 +84,14 @@
             <TextBlock Text="•" Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="Foundation preview" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
           </StackPanel>
-          <ToggleSwitch x:Name="ThemeSwitch" Grid.Column="1" Content="Dark theme" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}"
-                        AutomationProperties.Name="Dark theme" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+            <TextBlock Text="{Binding ThemePreferenceStatus}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300"
+                       AutomationProperties.Name="Theme preference status"
+                       AutomationProperties.HelpText="{Binding ThemePreferenceStatus}" />
+            <ToggleSwitch x:Name="ThemeSwitch" Content="Dark theme" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}"
+                          AutomationProperties.Name="Dark theme" />
+          </StackPanel>
         </Grid>
       </Border>
 

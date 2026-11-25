@@ -60,9 +60,10 @@ public sealed class PageCatalog
             new SectionViewModel(
                 "settings", "Settings", "PREFERENCES",
                 "Local interface preferences and clear security boundaries.",
-                "AVAILABLE", "Appearance applies to this session",
-                "Theme selection is not persisted yet. The application has no cloud account, remote service or profile-write setting.",
-                [new StatusCardViewModel("DATA POLICY", "Local prototype", "No savegame data is collected or transmitted.")])
+                "AVAILABLE", "Theme choice is remembered locally",
+                "Theme preference is stored locally on this device. The application has no cloud account, remote service or profile-write setting.",
+                [new StatusCardViewModel("THEME PREFERENCE", "Local only", "The dark/light choice is saved under the operating system's local application data directory."),
+                 new StatusCardViewModel("DATA POLICY", "Local prototype", "No savegame data is collected or transmitted.")])
         ];
     }
 

@@ -39,6 +39,7 @@ public sealed class SectionViewModel : ObservableObject
     public ObservableCollection<StatusCardViewModel> StatusCards { get; }
     public bool IsVehicleStudio => PageKey == "vehicle-studio";
     public bool IsEconomyIntelligence => PageKey == "economy-intelligence";
+    public bool IsSettings => PageKey == "settings";
     public string SelectedVehicleCategory => _selectedVehicleCategory;
     public int SelectedWindowDays => _selectedWindowDays;
     public string SelectedWindowLabel => $"{_selectedWindowDays}-day window selected";
