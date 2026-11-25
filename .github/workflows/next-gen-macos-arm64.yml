@@ -1,4 +1,5 @@
-# Do not modify the request marker until the required architect review is complete.
+# Do not modify the request marker until the runner-assignment evidence is reviewed
+# by Architect or a clearly documented architecture self-review.
 name: Explicit macOS ARM64 validation
 
 on:
