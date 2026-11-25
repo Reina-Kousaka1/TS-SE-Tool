@@ -45,3 +45,11 @@ The `.NET` CI matrix includes Windows ARM64. The current setup-beam action adver
 3. Add recovery journal semantics and fault-injection coverage for filesystem failures and process interruption; assess filesystem guarantees on Windows, Linux, and macOS.
 4. Build one native desktop host proof of concept, starting with Windows WebView2, and verify private runtime launch, authenticated profile read-only flow, and clean shutdown. Repeat with WebKitGTK and WKWebView before claiming cross-platform support.
 5. Add per-target packaging and offline-install tests. Do not use real profile writes until specific compatibility and recovery checks pass.
+
+## Validation snapshot (2026-11-25)
+
+- The synthetic .NET test suite passed 17/17 tests using a temporary `net8.0` target override with SDK 8.0.425. This is a compatibility smoke test only; the committed projects target .NET 10 and have not yet been built with a .NET 10 SDK.
+- The local JavaScript asset install and bundle passed with Node.js 24 on Windows.
+- Erlang/OTP, Elixir, and `actionlint` were not installed locally. The Phoenix tests and OTP-to-.NET process integration were therefore not run locally. The .NET bridge was separately started and answered a local JSON-lines status request.
+- GitHub Actions run `45638941710` for the initial implementation commit completed with failure before any jobs were created. The API reported zero jobs, zero check runs, and no logs. The cause is undetermined, so no GitHub-hosted platform matrix result is claimed.
+- No native WebView host, real ETS2/ATS save compatibility, game-specific serialization, real-profile write, ARM64 runtime integration on Windows, or installer has been tested.
