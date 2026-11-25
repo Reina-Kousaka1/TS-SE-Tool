@@ -1,6 +1,6 @@
 # Phase 2 — Next Generation Rebuild
 
-**Status: in progress.** Foundation and Avalonia UI are one combined Phase 2. There is no separate UI-migration Phase 3. The Windows x64 application has now started and closed successfully, and the six-target .NET 10 build/test/publish matrix passed on the navigation-accessibility commit. Phase 2 remains open while native lifecycle and interaction on other platforms, and game-save compatibility, remain unverified.
+**Status: in progress.** Foundation and Avalonia UI are one combined Phase 2. There is no separate UI-migration Phase 3. Run [45688114218](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45688114218) passed the .NET 10 build, full tests and self-contained publish on five targets; native startup and shutdown passed on Linux x64/ARM64, Windows x64/ARM64 and macOS Intel. The macOS ARM64 job and its targeted rerun were cancelled after 15 minutes before any step ran. The app's Windows x64 window title was observed locally, but visual layout and interaction remain unverified. Phase 2 stays open pending macOS ARM64 validation, UI interaction review, real game-save compatibility evidence, and packaging/signing checks.
 
 ## Current architecture
 
