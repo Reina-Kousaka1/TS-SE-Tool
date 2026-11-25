@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 namespace TSSE.Core.IO;
 
 /// <summary>
-/// Stages and validates bytes before replacing a file. This is not connected to live game saves.
+/// Snapshots, stages, and validates bytes before replacing a file. This is not connected to live game saves.
 /// Callers must supply a validator and an expected hash for existing targets.
 /// </summary>
 public sealed class AtomicFileTransaction
@@ -30,9 +30,12 @@ public sealed class AtomicFileTransaction
         if (newContents.IsEmpty || newContents.Length > MaximumPayloadBytes)
             return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "payload_size_invalid");
 
+        byte[] payload = newContents.ToArray();
+        ReadOnlyMemory<byte> stableContents = payload;
+
         try
         {
-            if (!validator(newContents))
+            if (!validator(stableContents))
                 return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "validation_rejected");
         }
         catch
@@ -112,12 +115,12 @@ public sealed class AtomicFileTransaction
                 bufferSize: 64 * 1024,
                 FileOptions.Asynchronous | FileOptions.WriteThrough))
             {
-                await stream.WriteAsync(newContents, cancellationToken).ConfigureAwait(false);
+                await stream.WriteAsync(stableContents, cancellationToken).ConfigureAwait(false);
                 stream.Flush(flushToDisk: true);
             }
 
             string stagedHash = await HashFileAsync(stagedPath, cancellationToken).ConfigureAwait(false);
-            if (!HashesEqual(stagedHash, HashBytes(newContents.Span)))
+            if (!HashesEqual(stagedHash, HashBytes(payload)))
                 return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "staged_hash_mismatch");
 
             if (targetExists)
@@ -134,7 +137,7 @@ public sealed class AtomicFileTransaction
             }
 
             string committedHash = await HashFileAsync(fullPath, cancellationToken).ConfigureAwait(false);
-            if (!HashesEqual(committedHash, HashBytes(newContents.Span)))
+            if (!HashesEqual(committedHash, HashBytes(payload)))
                 return new FileCommitResult(
                     FileCommitStatus.RecoveryRequired,
                     BackupPath: File.Exists(backupPath) ? backupPath : null,

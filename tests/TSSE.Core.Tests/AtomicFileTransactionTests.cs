@@ -49,6 +49,30 @@ public sealed class AtomicFileTransactionTests
     }
 
     [Fact]
+    public async Task Commit_ValidatesAndWritesTheSamePayloadSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "new-snapshot.json");
+        byte[] callerBuffer = "validated synthetic bytes"u8.ToArray();
+        byte[] validatedPayload = callerBuffer.ToArray();
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            callerBuffer,
+            expectedOriginalSha256: null,
+            candidate =>
+            {
+                bool isExpectedPayload = candidate.Span.SequenceEqual(validatedPayload);
+                callerBuffer[0] = (byte)'X';
+                return isExpectedPayload;
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.Succeeded, result.Status);
+        Assert.Equal(validatedPayload, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task StaleOriginalHash_RejectsConcurrentChange()
     {
         using var directory = new TemporaryDirectory();
