@@ -49,6 +49,22 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
+    public void Analytics_OmitsSnapshotDeltaWhenInputContainsMultipleProfiles()
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("a1", "ETS2", "profile-a", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m),
+            new LocalBalanceSnapshot("b1", "ETS2", "profile-b", "unknown", end.AddDays(-1), 900m, 9_000m, 9_500m)
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
+
+        Assert.Null(report.BalanceDelta);
+        Assert.Null(report.NetWorthDelta);
+    }
+
+    [Fact]
     public void Bridge_ReturnsActualReadOnlyFoundationCapabilities()
     {
         const string request = "{\"protocolVersion\":1,\"requestId\":\"health-1\",\"method\":\"engine.status\"}";

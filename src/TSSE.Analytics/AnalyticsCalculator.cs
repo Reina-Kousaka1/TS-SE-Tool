@@ -4,6 +4,12 @@ namespace TSSE.Analytics;
 
 public static class AnalyticsCalculator
 {
+    /// <summary>Calculates recorded transaction totals and, when unambiguous, local snapshot deltas.</summary>
+    /// <remarks>
+    /// Snapshot deltas are omitted unless every in-window snapshot has a non-empty game ID and profile label
+    /// and all snapshots identify the same game/profile pair. The caller must pass transactions for the
+    /// selected profile because transaction records do not currently carry profile identity.
+    /// </remarks>
     public static AnalyticsWindow Calculate(
         DateTimeOffset end,
         int days,
@@ -29,7 +35,17 @@ public static class AnalyticsCalculator
             .OrderBy(item => item.CapturedAt)
             .ToList();
 
-        if (windowSnapshots.Count >= 2)
+        bool snapshotsIdentifyOneProfile = windowSnapshots.Count > 0
+            && windowSnapshots.All(item =>
+                !string.IsNullOrWhiteSpace(item.GameId)
+                && !string.IsNullOrWhiteSpace(item.ProfileLabel))
+            && windowSnapshots
+                .Select(item => (item.GameId, item.ProfileLabel))
+                .Distinct()
+                .Take(2)
+                .Count() == 1;
+
+        if (windowSnapshots.Count >= 2 && snapshotsIdentifyOneProfile)
         {
             LocalBalanceSnapshot first = windowSnapshots[0];
             LocalBalanceSnapshot last = windowSnapshots[^1];
