@@ -1,0 +1,18 @@
+# Synthetic syntax-only fixture. Not copied from a game save.
+SiiNunit
+{
+  economy : _nameless.synthetic
+  {
+    bank: 1234567890
+    optional_value: nil
+    counter[0]: 3130117026
+    signed_boundary: -9223372036854775808
+    unsigned_boundary: 18446744073709551615
+    mod_payload: "retain {quoted} data"
+    extension_ref: _nameless.mod
+  }
+  mod_extension : _nameless.mod
+  {
+    opaque: "unknown block field"
+  }
+}

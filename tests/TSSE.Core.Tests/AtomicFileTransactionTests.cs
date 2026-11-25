@@ -1,0 +1,185 @@
+using System.Security.Cryptography;
+using TSSE.Core.IO;
+using Xunit;
+
+namespace TSSE.Core.Tests;
+
+public sealed class AtomicFileTransactionTests
+{
+    [Fact]
+    public async Task Commit_ReplacesTargetAndKeepsOriginalBackup()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "old synthetic bytes"u8.ToArray();
+        byte[] updated = "new synthetic bytes"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            updated,
+            Hash(original),
+            bytes => bytes.Span.SequenceEqual(updated),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.Succeeded, result.Status);
+        Assert.Equal(updated, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+        Assert.NotNull(result.BackupPath);
+        Assert.Equal(original, await File.ReadAllBytesAsync(result.BackupPath!, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ValidationFailure_LeavesTargetByteIdentical()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "synthetic original"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            "invalid output"u8.ToArray(),
+            Hash(original),
+            _ => false,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.ValidationRejected, result.Status);
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+        Assert.Single(Directory.GetFiles(directory.Path));
+    }
+
+    [Fact]
+    public async Task StaleOriginalHash_RejectsConcurrentChange()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] expected = "before"u8.ToArray();
+        byte[] concurrent = "concurrent change"u8.ToArray();
+        await File.WriteAllBytesAsync(path, concurrent, TestContext.Current.CancellationToken);
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            "new"u8.ToArray(),
+            Hash(expected),
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.Conflict, result.Status);
+        Assert.Equal(concurrent, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ReplaceFailure_ReportsUnchangedAndPreservesOriginal()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "synthetic original"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+
+        var transaction = new AtomicFileTransaction(new ThrowingReplacer());
+        FileCommitResult result = await transaction.CommitAsync(
+            path,
+            "new content"u8.ToArray(),
+            Hash(original),
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task PartialReplaceFailure_RequiresRecoveryAndKeepsOriginalBackup()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "synthetic original"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+
+        var transaction = new AtomicFileTransaction(new PartiallyMutatingReplacer(original));
+        FileCommitResult result = await transaction.CommitAsync(
+            path,
+            "new content"u8.ToArray(),
+            Hash(original),
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.RecoveryRequired, result.Status);
+        Assert.NotNull(result.BackupPath);
+        Assert.NotNull(result.RecoveryArtifactPath);
+        Assert.Equal(original, await File.ReadAllBytesAsync(result.BackupPath!, TestContext.Current.CancellationToken));
+        Assert.True(File.Exists(result.RecoveryArtifactPath));
+        Assert.NotEqual(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task NewTarget_IsCreatedWithoutOverwritingAnExistingFile()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "new-snapshot.json");
+        byte[] contents = "[]"u8.ToArray();
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            contents,
+            expectedOriginalSha256: null,
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.Succeeded, result.Status);
+        Assert.Equal(contents, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task MissingParentDirectory_ReportsFailureWithoutCreatingFiles()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "missing", "synthetic.sii");
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            "candidate"u8.ToArray(),
+            expectedOriginalSha256: null,
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal("target_directory_missing", result.ErrorCode);
+        Assert.Empty(Directory.GetFiles(directory.Path, "*", SearchOption.AllDirectories));
+    }
+
+    private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
+
+    private sealed class ThrowingReplacer : IAtomicFileReplacer
+    {
+        public void Replace(string stagedPath, string targetPath, string backupPath) =>
+            throw new IOException("synthetic injected replace failure");
+    }
+
+    private sealed class PartiallyMutatingReplacer(byte[] original) : IAtomicFileReplacer
+    {
+        public void Replace(string stagedPath, string targetPath, string backupPath)
+        {
+            File.WriteAllBytes(backupPath, original);
+            File.WriteAllText(targetPath, "synthetic uncertain bytes");
+            throw new IOException("synthetic failure after target mutation");
+        }
+    }
+
+    private sealed class TemporaryDirectory : IDisposable
+    {
+        public TemporaryDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "tsse-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(Path);
+        }
+
+        public string Path { get; }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+                Directory.Delete(Path, recursive: true);
+        }
+    }
+}

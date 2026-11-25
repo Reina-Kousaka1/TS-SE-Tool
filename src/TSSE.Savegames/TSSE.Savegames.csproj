@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>TSSE.Savegames</AssemblyName>
+    <RootNamespace>TSSE.Savegames</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TSSE.Core\TSSE.Core.csproj" />
+  </ItemGroup>
+</Project>

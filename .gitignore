@@ -259,3 +259,15 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# Next-generation local runtime build products and credentials
+runtime/tsse_runtime/_build/
+runtime/tsse_runtime/deps/
+runtime/tsse_runtime/node_modules/
+runtime/tsse_runtime/priv/static/assets/app.js
+runtime/tsse_runtime/priv/static/cache_manifest.json
+runtime/tsse_runtime/.env
+runtime/tsse_runtime/.env.*
+!runtime/tsse_runtime/.env.example
+runtime/tsse_runtime/*.dump
+runtime/tsse_runtime/*.tar.gz
