@@ -143,7 +143,7 @@ public sealed class FoundationIntegrationTests
             "snapshot-legacy", "ETS2", "synthetic", "unknown",
             DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null);
 
-        await Assert.ThrowsAsync<ArgumentException>(
+        await Assert.ThrowsAsync<ArgumentNullException>(
             () => store.AppendAsync(snapshot, TestContext.Current.CancellationToken));
     }
 
