@@ -4,9 +4,9 @@ Truck Simulator Save Editor Tool
 ## Description
 Small tool for editing save files of Euro Truck Simulator 2 and American Truck Simulator.
 
-## Next-generation foundation (experimental)
+## Next Generation — Phase 2 in progress
 
-A separate .NET 10 / Elixir-Phoenix foundation is being developed alongside this Windows .NET Framework application. It is not yet a replacement and does not edit real game saves. See [the Phase 2 implementation status](docs/architecture/phase-2-foundation.md) and [cross-platform desktop-host assessment](docs/architecture/cross-platform-hosts.md).
+The combined .NET 10 / Avalonia rebuild is being developed alongside the existing Windows .NET Framework application. The new desktop app has navigation and interface previews, but it does not discover or read real profiles and does not edit game saves. See the [Phase 2 status](docs/architecture/phase-2-foundation.md) and [Avalonia architecture](docs/architecture/avalonia-desktop.md). Run it with the .NET 10 SDK using `dotnet run --project desktop/TSSE.Desktop/TSSE.Desktop.csproj`.
 
 ## OS
 Windows x64

@@ -1,5 +1,17 @@
-# Native desktop hosts: not implemented yet
+# TS-SE Tool desktop preview
 
-The current prototype is a loopback-only Phoenix LiveView runtime with an OTP-managed .NET console bridge. It is not a native desktop executable and does not claim to embed WebView2, WebKitGTK, or WKWebView.
+This is the Avalonia 12.2.0 native desktop app for the single combined Phase 2 rebuild. It targets .NET 10, uses MVVM and Microsoft dependency injection, and provides a shared dark/light Fluent theme.
 
-Host feasibility and platform requirements are recorded in [the Phase 2 architecture note](../../docs/architecture/phase-2-foundation.md). Native host code, profile discovery, window lifecycle integration, and desktop end-to-end tests remain work for a later phase.
+## Run
+
+Install the .NET 10 SDK, then run from the repository root:
+
+```powershell
+dotnet run --project desktop/TSSE.Desktop/TSSE.Desktop.csproj
+```
+
+## Interface status
+
+The app includes Command Center, Savegame Explorer, Vehicle Studio, Economy Intelligence, Savegame Time Machine, Compatibility Lab, Diagnostics Center, and Settings. Navigation search, Truck/Trailer/Coach preview selection, 7/30-day preview selection, and in-session theme switching are wired.
+
+These are interface previews. The app does not scan for profiles or open saves. It shows no fabricated player, vehicle, money, transaction, snapshot, or diagnostic data. Savegame writes and restore actions are absent. The real .NET 10 desktop launch and OS-specific builds remain subject to the CI/platform validation in [Phase 2 status](../../docs/architecture/phase-2-foundation.md).

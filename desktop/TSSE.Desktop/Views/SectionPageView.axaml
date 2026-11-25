@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="TSSE.Desktop.Views.SectionPageView">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+    <StackPanel Margin="34,30,34,36" Spacing="22">
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="8">
+          <TextBlock Text="{Binding Eyebrow}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" LetterSpacing="1.5" />
+          <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="SemiBold" />
+        </StackPanel>
+        <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="16" Padding="12,7" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" />
+        </Border>
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Subtitle}" FontSize="14"
+                   Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,11,0,0" />
+        <Border Grid.Row="2" Grid.ColumnSpan="2" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,0,0" />
+      </Grid>
+
+      <Border IsVisible="{Binding IsVehicleStudio}" Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
+        <StackPanel Spacing="12">
+          <TextBlock Text="VEHICLE CATEGORY" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Trucks" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trucks" />
+            <Button Content="Trailers" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trailers" />
+            <Button Content="Coaches" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Coaches" />
+          </StackPanel>
+          <TextBlock Text="{Binding SelectedVehicleMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+        </StackPanel>
+      </Border>
+
+      <Border IsVisible="{Binding IsEconomyIntelligence}" Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
+        <StackPanel Spacing="12">
+          <TextBlock Text="ANALYSIS WINDOW" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="7 days" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="7" />
+            <Button Content="30 days" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="30" />
+            <TextBlock Text="{Binding SelectedWindowLabel}" FontSize="12" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
+          </StackPanel>
+          <TextBlock Text="{Binding AnalyticsNotice}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <ItemsControl ItemsSource="{Binding StatusCards}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Width="286" MinHeight="136" Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="17" Margin="0,0,12,12">
+              <StackPanel Spacing="12">
+                <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1" />
+                <TextBlock Text="{Binding Value}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource DividerBrush}"
+              BorderThickness="1" CornerRadius="16" Padding="20">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+          <Border Width="38" Height="38" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}">
+            <TextBlock Text="i" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="6">
+            <TextBlock Text="{Binding EmptyStateTitle}" FontSize="14" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding EmptyStateMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:TSSE.Desktop.ViewModels"
+        xmlns:views="using:TSSE.Desktop.Views"
+        x:Class="TSSE.Desktop.MainWindow"
+        x:Name="RootWindow"
+        Title="TS-SE Tool — Next Generation"
+        Width="1360"
+        Height="900"
+        MinWidth="820"
+        MinHeight="640"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+  <Window.DataTemplates>
+    <DataTemplate DataType="{x:Type vm:SectionViewModel}">
+      <views:SectionPageView />
+    </DataTemplate>
+  </Window.DataTemplates>
+  <Grid ColumnDefinitions="248,*" RowDefinitions="Auto,*">
+    <Border Grid.RowSpan="2"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource DividerBrush}"
+            BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="18,22,16,18">
+        <StackPanel Orientation="Horizontal" Spacing="12" Margin="4,0,0,22">
+          <Border Width="38" Height="38" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}">
+            <TextBlock Text="T" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="TS-SE TOOL" FontSize="14" FontWeight="Bold" LetterSpacing="1.3" />
+            <TextBlock Text="NEXT GENERATION" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.1" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,16">
+          <TextBlock Text="WORKSPACE" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" Margin="8,0" />
+          <TextBox x:Name="SectionSearch" Text="{Binding SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                   Watermark="Search sections"
+                   AutomationProperties.Name="Search sections" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding FilteredNavigationItems}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="nav-item"
+                        Command="{Binding $parent[Window].DataContext.NavigateCommand}"
+                        CommandParameter="{Binding}"
+                        HorizontalContentAlignment="Stretch"
+                        Padding="10,9"
+                        Margin="0,2">
+                  <Grid ColumnDefinitions="30,*">
+                    <TextBlock Grid.Column="0" Text="{Binding Glyph}" FontSize="16"
+                               Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <Border Grid.Row="3" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="12" Padding="12" Margin="0,14,0,0">
+          <StackPanel Spacing="6">
+            <TextBlock Text="SAFE MODE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}" LetterSpacing="1.1" />
+            <TextBlock Text="No verified game adapter. Save changes are unavailable." FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Column="1" RowDefinitions="72,*">
+      <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="26,0">
+        <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Border Width="8" Height="8" CornerRadius="4" Background="{DynamicResource AccentBrush}" />
+            <TextBlock Text="LOCAL WORKSPACE" FontSize="11" FontWeight="SemiBold" LetterSpacing="1.1" />
+            <TextBlock Text="•" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="Foundation preview" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+          <ToggleSwitch x:Name="ThemeSwitch" Grid.Column="1" Content="Dark theme" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}"
+                        AutomationProperties.Name="Dark theme" />
+        </Grid>
+      </Border>
+
+      <ContentControl x:Name="PageHost" Grid.Row="1" Content="{Binding CurrentPage}" />
+    </Grid>
+  </Grid>
+</Window>

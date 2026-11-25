@@ -1,3 +1,3 @@
 # Linux packaging: planned
 
-Target: native GTK/WebKitGTK host, self-contained .NET bridge, and OTP release. Build and test DEB and RPM separately; evaluate AppImage only after its WebKitGTK dependency strategy is proven. No Linux host or package is implemented in this phase.
+Target: self-contained Avalonia .NET 10 desktop application for Linux x64 and ARM64. Validate X11 native libraries and graphics dependencies on each target distribution, then build and test DEB and RPM separately. Decide Wayland and AppImage support only after platform testing. No Linux package is implemented yet.

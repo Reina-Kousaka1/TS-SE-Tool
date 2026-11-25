@@ -1,3 +1,3 @@
 # Windows packaging: planned
 
-Target: self-contained .NET bridge and OTP release inside a native WebView2 desktop host, packaged as MSI/WiX. Select and test Evergreen or Fixed Version WebView2 distribution before claiming offline support. No WiX project or installer is implemented in this phase.
+Target: self-contained Avalonia .NET 10 desktop application for Windows x64 and ARM64, packaged as MSI/WiX after target builds, clean-machine installation and upgrade tests. Avalonia uses its Win32 backend; this app has no WebView2, browser, Phoenix, or OTP dependency. No WiX project or installer is implemented yet.
