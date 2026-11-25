@@ -18,7 +18,7 @@ The SII syntax document and atomic file transaction remain intact. The parser pr
 
 `GameAdapterRegistry` starts empty. No game or save version is verified for reading or writing, so the UI cannot open or edit a production profile. The analytics library keeps recorded transactions distinct from snapshot-derived balance differences; it has no profile-backed history in the desktop app. Snapshot deltas require a stable `ProfileId`; older local snapshots without one remain readable but are excluded from delta calculations. Callers must also scope transaction inputs to one profile because transaction records do not carry profile identity.
 
-The parser has only synthetic fixtures. Genuine ETS2/ATS versions, mods, Coaches DLC, unknown-field roundtrips, and complete serializer behavior remain unverified. A successful generic atomic transaction is not evidence of a safe game-save edit.
+The parser has only synthetic fixtures. The referenced [PR #147](https://github.com/LIPtoH/TS-SE-Tool/pull/147) reports local roundtrips over 21 ATS v97 saves, but its 64 changed files include no save-format fixtures, so that result cannot be reproduced from the PR. [PR #149](https://github.com/LIPtoH/TS-SE-Tool/pull/149) describes an ETS2 1.61 compatibility update and says ATS was not tested; its 1,318 changed files also include no save-format fixtures. Neither report is treated as compatibility evidence for this foundation, and no code was copied from them. Genuine ETS2/ATS saves, mods, Coaches DLC, unknown-field roundtrips, and complete serializer behavior remain unverified. A successful generic atomic transaction is not evidence of a safe game-save edit.
 
 ## Avalonia application status
 
