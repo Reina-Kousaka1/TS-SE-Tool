@@ -145,7 +145,9 @@ public sealed class AvaloniaWindowTests
             window.Show();
             Button vehicleStudio = FindNavigationButton(window, "Vehicle Studio");
             Assert.True(vehicleStudio.Focus());
+            Assert.True(vehicleStudio.IsFocused);
 
+            window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
             window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
 
             Assert.Equal("Vehicle Studio", viewModel.CurrentPage.Title);
@@ -153,7 +155,9 @@ public sealed class AvaloniaWindowTests
             Button coaches = Assert.Single(window.GetVisualDescendants().OfType<Button>(),
                 button => button.Content?.ToString() == "Coaches");
             Assert.True(coaches.Focus());
+            Assert.True(coaches.IsFocused);
 
+            window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
             window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
 
             Assert.Equal("Coaches", viewModel.CurrentPage.SelectedVehicleCategory);
