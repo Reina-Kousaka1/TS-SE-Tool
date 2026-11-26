@@ -34,12 +34,12 @@ dotnet test TSSE.NextGen.sln --configuration Release
 dotnet run --project desktop/TSSE.Desktop/TSSE.Desktop.csproj
 ```
 
-The current repository CI publishes self-contained app outputs for the six x64/ARM64 RIDs, then starts and closes the native app on each runner. Linux uses Xvfb for a virtual display. No installer or signed distributable is generated in this phase.
+The main CI publishes self-contained app outputs and starts/closes the native app on five automatic targets: Windows x64/ARM64, Linux x64/ARM64, and macOS Intel. macOS ARM64 has a separate manually triggered validation workflow and is not yet confirmed. Linux uses Xvfb for virtual display.
 
 ## Distribution notes
 
-- **Windows:** Avalonia's Win32 backend; publish separate x64 and ARM64 bundles. Package as MSI/WiX only after clean-machine installation and upgrade checks.
-- **Linux:** Avalonia X11 backend with distro dependencies including X11, fontconfig and Skia-related native libraries. Test DEB and RPM separately; decide Wayland support and AppImage only after platform testing.
-- **macOS:** Avalonia's native Objective-C++ backend. Publish Intel and Apple Silicon bundles, then test code signing, hardened runtime, notarization and DMG installation.
+- **Windows:** Avalonia's Win32 backend; x64 and ARM64 publish and startup are CI-validated. MSI/WiX packaging and clean-machine installation/upgrade checks are still planned.
+- **Linux:** Avalonia X11 backend. CI builds and installs DEB and RPM packages on Ubuntu 24.04 x64/ARM64, then launches and removes them. The RPM is installed on Ubuntu with dependency resolution disabled; Fedora-family dependency resolution/runtime and other distributions remain unverified. Wayland and AppImage are not tested.
+- **macOS:** Avalonia's native Objective-C++ backend. Intel publish/startup is CI-validated. Apple Silicon packaging/runtime, code signing, hardened runtime, notarization and DMG installation remain unverified.
 
-Self-contained .NET output removes the requirement for a separately installed .NET runtime, but it does not bundle every operating-system native library. Packaging must declare or include the required platform libraries and be validated on clean systems.
+Self-contained .NET output removes the requirement for a separately installed .NET runtime, but it does not bundle every operating-system native library. Linux packages declare platform dependencies, but clean Fedora-family dependency resolution and installs on other distributions are still required before wider distribution.

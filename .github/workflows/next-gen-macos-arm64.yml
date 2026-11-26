@@ -26,6 +26,10 @@ jobs:
         run: dotnet test --solution TSSE.NextGen.sln --configuration Release
       - name: Publish the Avalonia desktop app for macOS ARM64
         run: dotnet publish desktop/TSSE.Desktop/TSSE.Desktop.csproj --configuration Release --runtime osx-arm64 --self-contained true --output "${{ runner.temp }}/tsse-desktop-osx-arm64"
+      - name: Build and mount-test macOS ARM64 app bundle and DMG
+        run: |
+          bash packaging/macos/build-bundle.sh "${{ runner.temp }}/tsse-desktop-osx-arm64" "${{ runner.temp }}/tsse-packages-osx-arm64" osx-arm64
+          bash packaging/macos/verify-bundle.sh "${{ runner.temp }}/tsse-packages-osx-arm64" osx-arm64
       - name: Start and gracefully close the published desktop app
         shell: bash
         env:

@@ -4,7 +4,7 @@ The repository can build validation packages for the self-contained Avalonia app
 
 ## Build and verify
 
-The GitHub Actions Linux jobs install `rpm`, build both packages from their matching self-contained publish directory, verify package metadata and architecture, install each package on the disposable Ubuntu runner, launch the installed app under Xvfb, and remove each package. The Debian package installs its declared Ubuntu 24.04 dependencies. The RPM is installed with dependency resolution disabled because the runner is Ubuntu; Fedora-family dependency resolution and runtime compatibility are not yet verified.
+GitHub Actions run [45726994656](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45726994656) installed `rpm`, built both packages from their matching self-contained publish directories, verified package metadata and architecture, installed each package on disposable Ubuntu 24.04 x64/ARM64 runners, launched the installed app under Xvfb, and removed each package. The Debian package installed its declared Ubuntu 24.04 dependencies. The RPM was installed with dependency resolution disabled because the runner is Ubuntu; Fedora-family dependency resolution and runtime compatibility are not yet verified.
 
 To build locally on Ubuntu 24.04, install `dpkg-deb`, `rpm`, and `rpmbuild`, then run:
 
