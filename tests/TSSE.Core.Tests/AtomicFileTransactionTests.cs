@@ -49,6 +49,27 @@ public sealed class AtomicFileTransactionTests
     }
 
     [Fact]
+    public async Task ValidationException_LeavesTargetByteIdenticalAndCreatesNoArtifacts()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "synthetic original"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path,
+            "candidate bytes"u8.ToArray(),
+            Hash(original),
+            _ => throw new InvalidDataException("synthetic validation failure"),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.ValidationRejected, result.Status);
+        Assert.Equal("validation_failed", result.ErrorCode);
+        Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+        Assert.Equal(path, Assert.Single(Directory.GetFiles(directory.Path)));
+    }
+
+    [Fact]
     public async Task Commit_ValidatesAndWritesTheSamePayloadSnapshot()
     {
         using var directory = new TemporaryDirectory();
