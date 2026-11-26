@@ -43,7 +43,11 @@ public partial class App : Application
 
             if (Environment.GetEnvironmentVariable("TSSE_DESKTOP_CI_SMOKE_TEST") == "1")
             {
-                var smokeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+                bool captureNativeWindow = Environment.GetEnvironmentVariable("TSSE_DESKTOP_CI_SCREENSHOT") == "1";
+                var smokeTimer = new DispatcherTimer
+                {
+                    Interval = captureNativeWindow ? TimeSpan.FromSeconds(20) : TimeSpan.FromMilliseconds(1500)
+                };
                 smokeTimer.Tick += (_, _) =>
                 {
                     smokeTimer.Stop();

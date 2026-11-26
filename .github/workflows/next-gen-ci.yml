@@ -56,7 +56,11 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends -y rpm
+          packages=(rpm)
+          if [[ "${{ matrix.rid }}" == "linux-x64" ]]; then
+            packages+=(imagemagick xdotool)
+          fi
+          sudo apt-get install --no-install-recommends -y "${packages[@]}"
       - name: Build and install-test Linux DEB and RPM packages
         if: runner.os == 'Linux'
         run: |
@@ -87,11 +91,22 @@ jobs:
         env:
           TSSE_APP_PATH: ${{ runner.temp }}/tsse-desktop-${{ matrix.rid }}/TSSE.Desktop
         run: |
+          if [[ "$RUNNER_OS" == "Linux" && "${{ matrix.rid }}" == "linux-x64" ]]; then
+            export TSSE_DESKTOP_SCREENSHOT_PATH="$RUNNER_TEMP/tsse-native-desktop.png"
+          fi
           if [[ "$RUNNER_OS" == "Linux" ]]; then
-            xvfb-run -a python3 packaging/shared/desktop-smoke.py
+            xvfb-run -a -s "-screen 0 1600x1000x24" python3 packaging/shared/desktop-smoke.py
           else
             python3 packaging/shared/desktop-smoke.py
           fi
+      - name: Upload native Linux x64 desktop screenshot
+        if: matrix.rid == 'linux-x64'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: avalonia-native-linux-x64-window
+          path: ${{ runner.temp }}/tsse-native-desktop.png
+          if-no-files-found: error
+          retention-days: 1
 
   fedora-rpm:
     name: Fedora 45 RPM on ${{ matrix.runner }} (${{ matrix.arch }})
