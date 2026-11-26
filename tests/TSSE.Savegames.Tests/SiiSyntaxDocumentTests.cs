@@ -83,6 +83,97 @@ public sealed class SiiSyntaxDocumentTests
     }
 
     [Fact]
+    public void Parser_RejectsTextOverTheConfiguredCharacterLimit()
+    {
+        SiiSyntaxParseLimits limits = CreateLimits(maximumCharacters: 8, maximumLineLength: 8);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.Parse("root {\n}\n", limits));
+
+        Assert.Contains("character limit", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Parser_RejectsTooManyLinesBeforeBuildingTheDocument()
+    {
+        SiiSyntaxParseLimits limits = CreateLimits(maximumLines: 1);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.Parse("root {\n}\n", limits));
+
+        Assert.Contains("line limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(2, exception.LineNumber);
+    }
+
+    [Fact]
+    public void Parser_RejectsAnOverlongLineBeforeAllocatingItsLineString()
+    {
+        SiiSyntaxParseLimits limits = CreateLimits(maximumLineLength: 5);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.Parse("root {\n}\n", limits));
+
+        Assert.Contains("length limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(1, exception.LineNumber);
+    }
+
+    [Fact]
+    public void Parser_RejectsExcessiveBlockNesting()
+    {
+        SiiSyntaxParseLimits limits = CreateLimits(maximumNestingDepth: 1);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.Parse("root {\n child {\n }\n}", limits));
+
+        Assert.Contains("nesting limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(2, exception.LineNumber);
+    }
+
+    [Fact]
+    public void Parser_RejectsTooManyBlocks()
+    {
+        SiiSyntaxParseLimits limits = CreateLimits(maximumBlocks: 1);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.Parse("root { child { } }", limits));
+
+        Assert.Contains("block limit", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Parser_RejectsTooManyFieldsAcrossTheDocument()
+    {
+        SiiSyntaxParseLimits limits = CreateLimits(maximumFields: 1);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.Parse("root {\n first: 1\n second: 2\n}", limits));
+
+        Assert.Contains("field limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(3, exception.LineNumber);
+    }
+
+    [Fact]
+    public void FieldEditRetainsTheLimitsUsedToParseTheOriginalDocument()
+    {
+        const string input = "root {\n value: 1\n}";
+        SiiSyntaxParseLimits limits = CreateLimits(
+            maximumCharacters: input.Length + 2,
+            maximumLineLength: input.Length + 2);
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input, limits);
+
+        Assert.Throws<SiiSyntaxException>(
+            () => document.WithFieldValue("root", null, "value", new string('9', 16)));
+        Assert.Equal(input, document.ToText());
+    }
+
+    [Fact]
+    public void ParseLimitsMustBePositiveAndInternallyConsistent()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiiSyntaxParseLimits(0, 1, 1, 1, 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new SiiSyntaxParseLimits(10, 1, 1, 1, 1, 11));
+    }
+
+    [Fact]
     public void WithFieldValue_RejectsAmbiguousAndStructuralEdits()
     {
         const string input = "root {\n item : a {\n value: 1\n value: 2\n }\n}";
@@ -91,4 +182,13 @@ public sealed class SiiSyntaxDocumentTests
         Assert.Throws<InvalidOperationException>(() => document.WithFieldValue("item", "a", "value", "3"));
         Assert.Throws<ArgumentException>(() => document.WithFieldValue("item", "a", "missing", "4\n forged: true"));
     }
+
+    private static SiiSyntaxParseLimits CreateLimits(
+        int maximumCharacters = 1_024,
+        int maximumLines = 128,
+        int maximumBlocks = 128,
+        int maximumFields = 128,
+        int maximumNestingDepth = 128,
+        int maximumLineLength = 512) =>
+        new(maximumCharacters, maximumLines, maximumBlocks, maximumFields, maximumNestingDepth, maximumLineLength);
 }
