@@ -31,7 +31,7 @@ public static class FileSystemPathSafety
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
-        string current = Path.GetFullPath(path);
+        string current = NormalizeKnownSystemPathAliases(Path.GetFullPath(path));
         while (true)
         {
             if (IsReparsePointIfPresent(current))
@@ -43,6 +43,26 @@ public static class FileSystemPathSafety
 
             current = parent;
         }
+    }
+
+    private static string NormalizeKnownSystemPathAliases(string path)
+    {
+        if (!OperatingSystem.IsMacOS())
+            return path;
+
+        string root = Path.GetPathRoot(path)!;
+        foreach (string aliasName in new[] { "etc", "tmp", "var" })
+        {
+            string aliasPath = Path.Combine(root, aliasName);
+            if (!string.Equals(path, aliasPath, StringComparison.Ordinal) &&
+                !path.StartsWith(aliasPath + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+                continue;
+
+            string physicalPath = Path.Combine(root, "private", aliasName);
+            return physicalPath + path[aliasPath.Length..];
+        }
+
+        return path;
     }
 
     private static bool IsDanglingSymbolicLink(string path)
