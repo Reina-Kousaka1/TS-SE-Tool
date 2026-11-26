@@ -52,34 +52,59 @@ try:
             raise RuntimeError("The native Avalonia window was not visible on the Xvfb display.")
 
         os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
-        capture = subprocess.run(
-            ["import", "-window", window_id, screenshot_path],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        if capture.returncode != 0:
-            raise RuntimeError(f"Native window screenshot failed: {capture.stderr.strip()}")
-        with open(screenshot_path, "rb") as screenshot:
-            if screenshot.read(8) != b"\x89PNG\r\n\x1a\n":
-                raise RuntimeError("Native window screenshot was not a valid PNG.")
-        inspection = subprocess.run(
-            ["identify", "-format", "%w %h %k", screenshot_path],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        if inspection.returncode != 0:
-            raise RuntimeError(f"Native window screenshot inspection failed: {inspection.stderr.strip()}")
-        try:
-            width, height, color_count = map(int, inspection.stdout.split())
-        except ValueError as error:
-            raise RuntimeError("Native window screenshot inspection returned invalid dimensions.") from error
-        if width < 820 or height < 640 or color_count < 16:
+        capture_deadline = time.monotonic() + 5
+        dimensions = None
+        last_dimensions = None
+        while time.monotonic() < capture_deadline:
+            if process.poll() is not None:
+                raise RuntimeError(
+                    f"The Avalonia desktop process exited before its window rendered (code {process.returncode}).")
+
+            try:
+                capture = subprocess.run(
+                    ["import", "-window", window_id, screenshot_path],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+            except subprocess.TimeoutExpired as error:
+                raise RuntimeError("Native window screenshot capture timed out.") from error
+            if capture.returncode != 0:
+                raise RuntimeError(f"Native window screenshot failed: {capture.stderr.strip()}")
+            with open(screenshot_path, "rb") as screenshot:
+                if screenshot.read(8) != b"\x89PNG\r\n\x1a\n":
+                    raise RuntimeError("Native window screenshot was not a valid PNG.")
+            try:
+                inspection = subprocess.run(
+                    ["identify", "-format", "%w %h %k", screenshot_path],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+            except subprocess.TimeoutExpired as error:
+                raise RuntimeError("Native window screenshot inspection timed out.") from error
+            if inspection.returncode != 0:
+                raise RuntimeError(f"Native window screenshot inspection failed: {inspection.stderr.strip()}")
+            try:
+                width, height, color_count = map(int, inspection.stdout.split())
+            except ValueError as error:
+                raise RuntimeError("Native window screenshot inspection returned invalid dimensions.") from error
+            last_dimensions = width, height, color_count
+
+            if width >= 820 and height >= 640 and color_count >= 16:
+                dimensions = width, height, color_count
+                break
+            time.sleep(0.25)
+
+        if dimensions is None:
+            if last_dimensions is None:
+                raise RuntimeError("Native window screenshot validation did not run before its deadline.")
+            width, height, color_count = last_dimensions
             raise RuntimeError(
                 f"Native window screenshot is unexpectedly blank or small: {width}x{height}, {color_count} colors.")
+        width, height, color_count = dimensions
         print(
             f"Captured native Avalonia window at {width}x{height} with {color_count} colors: {screenshot_path}.")
 
