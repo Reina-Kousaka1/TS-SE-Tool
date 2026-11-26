@@ -25,7 +25,7 @@ public sealed class SiiSyntaxDocument
 
         List<SourceLine> lines = SplitLines(text);
         var builders = new Stack<BlockBuilder>();
-        var blocks = new List<SiiBlock>();
+        var closedBlocks = new List<(int StartLine, int StartColumn, SiiBlock Block)>();
         string? pendingHeader = null;
 
         for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
@@ -79,7 +79,7 @@ public sealed class SiiSyntaxDocument
                         throw new SiiSyntaxException("Block opening has no header", lineIndex + 1);
 
                     (string type, string? id) = ParseHeader(header, lineIndex + 1);
-                    builders.Push(new BlockBuilder(type, id, lineIndex));
+                    builders.Push(new BlockBuilder(type, id, lineIndex, charIndex));
                     pendingHeader = null;
                 }
                 else if (current == '}')
@@ -89,12 +89,12 @@ public sealed class SiiSyntaxDocument
                         throw new SiiSyntaxException("Unexpected block closing brace", lineIndex + 1);
 
                     BlockBuilder closed = builders.Pop();
-                    blocks.Add(new SiiBlock(
+                    closedBlocks.Add((closed.StartLine, closed.StartColumn, new SiiBlock(
                         closed.Type,
                         closed.Id,
                         closed.StartLine + 1,
                         lineIndex + 1,
-                        new ReadOnlyCollection<SiiField>(closed.Fields)));
+                        new ReadOnlyCollection<SiiField>(closed.Fields))));
                 }
             }
 
@@ -120,10 +120,14 @@ public sealed class SiiSyntaxDocument
             throw new SiiSyntaxException($"Block '{open.Type}' was not closed", lines.Count);
         }
 
-        if (blocks.Count == 0)
+        if (closedBlocks.Count == 0)
             throw new SiiSyntaxException("Document contains no SII blocks", 1);
 
-        blocks.Sort((left, right) => left.StartLine.CompareTo(right.StartLine));
+        List<SiiBlock> blocks = closedBlocks
+            .OrderBy(item => item.StartLine)
+            .ThenBy(item => item.StartColumn)
+            .Select(item => item.Block)
+            .ToList();
         return new SiiSyntaxDocument(new ReadOnlyCollection<SourceLine>(lines), blocks);
     }
 
@@ -273,11 +277,12 @@ public sealed class SiiSyntaxDocument
 
     private sealed record SourceLine(string Text, string Terminator);
 
-    private sealed class BlockBuilder(string type, string? id, int startLine)
+    private sealed class BlockBuilder(string type, string? id, int startLine, int startColumn)
     {
         public string Type { get; } = type;
         public string? Id { get; } = id;
         public int StartLine { get; } = startLine;
+        public int StartColumn { get; } = startColumn;
         public List<SiiField> Fields { get; } = [];
     }
 }

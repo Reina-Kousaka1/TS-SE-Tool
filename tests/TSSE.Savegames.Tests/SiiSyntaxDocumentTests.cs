@@ -49,6 +49,18 @@ public sealed class SiiSyntaxDocumentTests
     }
 
     [Fact]
+    public void Parser_PreservesSourceOrderWhenNestedBlocksStartOnTheSameLine()
+    {
+        const string input = "root { child : a { value: 1 } }";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        Assert.Equal(input, document.ToText());
+        Assert.Equal(new[] { "root", "child" }, document.Blocks.Select(block => block.Type));
+        Assert.Equal(new string?[] { null, "a" }, document.Blocks.Select(block => block.Id));
+    }
+
+    [Fact]
     public void Parser_RejectsUnbalancedBracesBeforeAnyWriteLayerCanUseIt()
     {
         Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse("root {\n child: 1\n"));
