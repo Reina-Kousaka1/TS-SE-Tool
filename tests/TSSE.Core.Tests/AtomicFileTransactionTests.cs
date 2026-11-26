@@ -93,6 +93,31 @@ public sealed class AtomicFileTransactionTests
     }
 
     [Fact]
+    public async Task ConcurrentChangeDuringReplace_RequiresRecoveryAndPreservesActualPreimage()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "expected original"u8.ToArray();
+        byte[] concurrent = "concurrent update"u8.ToArray();
+        byte[] updated = "new synthetic bytes"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+
+        var transaction = new AtomicFileTransaction(new ConcurrentChangeReplacer(concurrent));
+        FileCommitResult result = await transaction.CommitAsync(
+            path,
+            updated,
+            Hash(original),
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.RecoveryRequired, result.Status);
+        Assert.Equal("target_changed_during_replace", result.ErrorCode);
+        Assert.NotNull(result.BackupPath);
+        Assert.Equal(concurrent, await File.ReadAllBytesAsync(result.BackupPath!, TestContext.Current.CancellationToken));
+        Assert.Equal(updated, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task ReplaceFailure_ReportsUnchangedAndPreservesOriginal()
     {
         using var directory = new TemporaryDirectory();
@@ -187,6 +212,17 @@ public sealed class AtomicFileTransactionTests
             File.WriteAllBytes(backupPath, original);
             File.WriteAllText(targetPath, "synthetic uncertain bytes");
             throw new IOException("synthetic failure after target mutation");
+        }
+    }
+
+    private sealed class ConcurrentChangeReplacer(byte[] concurrent) : IAtomicFileReplacer
+    {
+        public void Replace(string stagedPath, string targetPath, string backupPath)
+        {
+            File.WriteAllBytes(targetPath, concurrent);
+            byte[] stagedContents = File.ReadAllBytes(stagedPath);
+            File.WriteAllBytes(backupPath, concurrent);
+            File.WriteAllBytes(targetPath, stagedContents);
         }
     }
 

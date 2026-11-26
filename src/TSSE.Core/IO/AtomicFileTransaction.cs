@@ -130,6 +130,18 @@ public sealed class AtomicFileTransaction
                     return new FileCommitResult(FileCommitStatus.Conflict, ErrorCode: "target_changed_before_replace");
 
                 _replacer.Replace(stagedPath, fullPath, backupPath);
+
+                if (!File.Exists(backupPath))
+                    return new FileCommitResult(
+                        FileCommitStatus.RecoveryRequired,
+                        ErrorCode: "replacement_backup_missing");
+
+                string replacedOriginalHash = await HashFileAsync(backupPath, cancellationToken).ConfigureAwait(false);
+                if (!HashesEqual(replacedOriginalHash, originalHash))
+                    return new FileCommitResult(
+                        FileCommitStatus.RecoveryRequired,
+                        BackupPath: backupPath,
+                        ErrorCode: "target_changed_during_replace");
             }
             else
             {
