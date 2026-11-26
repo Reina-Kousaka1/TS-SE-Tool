@@ -90,13 +90,43 @@ public sealed class SiiSyntaxDocumentTests
         Assert.Equal(input, document.ToText());
         Assert.Equal(new[] { "root", "child", "child" }, document.Blocks.Select(block => block.Type));
         Assert.Equal(new string?[] { null, "a", "b" }, document.Blocks.Select(block => block.Id));
+        SiiBlock[] children = document.Blocks.Skip(1).ToArray();
+        Assert.All(children, block =>
+        {
+            Assert.Equal(1, block.NestingDepth);
+            Assert.Equal(1, block.ParentStartLine);
+            Assert.Equal(1, block.ParentStartColumn);
+        });
+    }
+
+    [Fact]
+    public void Parser_ReportsNestedBlockOwnershipAndColumns()
+    {
+        const string input = "root {\n child : a {\n  nested {\n  }\n }\n}";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        SiiBlock root = Assert.Single(document.Blocks, block => block.Type == "root");
+        SiiBlock child = Assert.Single(document.Blocks, block => block.Type == "child");
+        SiiBlock nested = Assert.Single(document.Blocks, block => block.Type == "nested");
+        Assert.Equal(0, root.NestingDepth);
+        Assert.Null(root.ParentStartLine);
+        Assert.Equal(1, root.StartColumn);
+        Assert.Equal(1, child.NestingDepth);
+        Assert.Equal(child.StartLine, nested.ParentStartLine);
+        Assert.Equal(child.StartColumn, nested.ParentStartColumn);
+        Assert.Equal(2, nested.NestingDepth);
     }
 
     [Fact]
     public void Parser_RejectsUnbalancedBracesBeforeAnyWriteLayerCanUseIt()
     {
-        Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse("root {\n child: 1\n"));
-        Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse("}\n"));
+        SiiSyntaxException unclosed = Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse("root {\n child: 1\n"));
+        SiiSyntaxException unexpectedClose = Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse("}\n"));
+
+        Assert.Equal(SiiSyntaxErrorCode.UnclosedBlock, unclosed.ErrorCode);
+        Assert.Equal(SiiSyntaxErrorCode.UnexpectedClosingBrace, unexpectedClose.ErrorCode);
+        Assert.Equal(1, unexpectedClose.ColumnNumber);
     }
 
     [Theory]
@@ -108,6 +138,85 @@ public sealed class SiiSyntaxDocumentTests
         SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse(input));
 
         Assert.Equal(1, exception.LineNumber);
+        Assert.Equal(SiiSyntaxErrorCode.NoBlocks, exception.ErrorCode);
+    }
+
+    [Fact]
+    public void Parser_PreservesAndSurfacesUnclassifiedLinesAndRejectsEditingThem()
+    {
+        const string input = "SiiNunit\n{\n root : _nameless.synthetic {\n  future syntax without a delimiter\n  future_value: <opaque payload>\n }\n}\n";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        Assert.Equal(input, document.ToText());
+        SiiOpaqueLine opaqueLine = Assert.Single(document.OpaqueLines);
+        Assert.Equal(4, opaqueLine.LineNumber);
+        Assert.Equal("  future syntax without a delimiter", opaqueLine.RawLine);
+        Assert.Equal("root", opaqueLine.ContainingBlockType);
+        Assert.Equal("_nameless.synthetic", opaqueLine.ContainingBlockId);
+        Assert.Contains(Assert.Single(document.Blocks, block => block.Type == "root").Fields,
+            field => field.Name == "future_value" && field.RawValue == " <opaque payload>");
+        Assert.Throws<InvalidOperationException>(() => document.WithFieldValue(
+            "root", "_nameless.synthetic", "future_value", "<replacement>"));
+    }
+
+    [Fact]
+    public void Parser_ReportsInlineUnclassifiedSyntaxInsteadOfDroppingItsSemanticsSilently()
+    {
+        const string input = "root { unknown inline syntax }";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        Assert.Equal(input, document.ToText());
+        SiiOpaqueLine opaqueLine = Assert.Single(document.OpaqueLines);
+        Assert.Equal(1, opaqueLine.LineNumber);
+        Assert.Equal("root", opaqueLine.ContainingBlockType);
+        Assert.Equal(input, opaqueLine.RawLine);
+    }
+
+    [Fact]
+    public void Parser_PreservesDuplicateOpaqueReferencesWithoutClaimingToResolveThem()
+    {
+        const string input = "future_object : _nameless.synthetic {\n ref: _nameless.external\n ref: _nameless.external\n}\n";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        Assert.Equal(input, document.ToText());
+        SiiBlock block = Assert.Single(document.Blocks);
+        Assert.Equal("future_object", block.Type);
+        Assert.Equal(2, block.Fields.Count(field => field.Name == "ref" && field.Value == "_nameless.external"));
+        Assert.Empty(document.OpaqueLines);
+    }
+
+    [Fact]
+    public void Parser_PreservesAnUnclassifiedTopLevelTrailer()
+    {
+        const string input = "root {\n value: 1\n}\nfuture trailer syntax\n";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        Assert.Equal(input, document.ToText());
+        SiiOpaqueLine line = Assert.Single(document.OpaqueLines);
+        Assert.Equal(4, line.LineNumber);
+        Assert.Null(line.ContainingBlockType);
+        Assert.Equal("future trailer syntax", line.RawLine);
+    }
+
+    [Fact]
+    public void ReaderParserRoundtripsLargeValidInputWithinRaisedExplicitLimits()
+    {
+        string largeValue = new('x', 1_100_000);
+        string input = $"root {{\n payload: \"{largeValue}\"\n}}";
+        SiiSyntaxParseLimits limits = CreateLimits(
+            maximumCharacters: 1_200_000,
+            maximumLines: 4,
+            maximumLineLength: 1_150_000);
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.ParseReader(new StringReader(input), limits);
+
+        Assert.Equal(input, document.ToText());
+        Assert.Equal(1, document.Blocks.Count);
+        Assert.Empty(document.OpaqueLines);
     }
 
     [Fact]

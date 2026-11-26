@@ -15,14 +15,19 @@ public sealed class SiiSyntaxDocument
     private SiiSyntaxDocument(
         IReadOnlyList<SourceLine> lines,
         IReadOnlyList<SiiBlock> blocks,
+        IReadOnlyList<SiiOpaqueLine> opaqueLines,
         SiiSyntaxParseLimits limits)
     {
         _lines = lines;
         _limits = limits;
         Blocks = new ReadOnlyCollection<SiiBlock>(blocks.ToList());
+        OpaqueLines = new ReadOnlyCollection<SiiOpaqueLine>(opaqueLines.ToList());
     }
 
     public IReadOnlyList<SiiBlock> Blocks { get; }
+
+    /// <summary>Unclassified source lines. These remain present in <see cref="ToText"/>.</summary>
+    public IReadOnlyList<SiiOpaqueLine> OpaqueLines { get; }
 
     public static SiiSyntaxDocument Parse(string text)
         => Parse(text, SiiSyntaxParseLimits.Default);
@@ -54,7 +59,7 @@ public sealed class SiiSyntaxDocument
             if (read == 0)
                 break;
             if (read > remaining)
-                throw new SiiSyntaxException("Document exceeds the configured character limit", 1);
+                throw new SiiSyntaxException("Document exceeds the configured character limit", 1, SiiSyntaxErrorCode.DocumentLimitExceeded);
 
             for (int index = 0; index < read; index++)
             {
@@ -62,7 +67,7 @@ public sealed class SiiSyntaxDocument
                 if (current == '\r')
                 {
                     if (completedLines >= limits.MaximumLines)
-                        throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber);
+                        throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber, SiiSyntaxErrorCode.LineLimitExceeded);
 
                     completedLines++;
                     lineNumber++;
@@ -75,7 +80,7 @@ public sealed class SiiSyntaxDocument
                     if (!previousWasCarriageReturn)
                     {
                         if (completedLines >= limits.MaximumLines)
-                            throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber);
+                            throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber, SiiSyntaxErrorCode.LineLimitExceeded);
 
                         completedLines++;
                         lineNumber++;
@@ -88,13 +93,13 @@ public sealed class SiiSyntaxDocument
                 else
                 {
                     if (completedLines >= limits.MaximumLines)
-                        throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber);
+                        throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber, SiiSyntaxErrorCode.LineLimitExceeded);
 
                     previousWasCarriageReturn = false;
                     lastCharacterWasLineTerminator = false;
                     lineLength++;
                     if (lineLength > limits.MaximumLineLength)
-                        throw new SiiSyntaxException("Line exceeds the configured length limit", lineNumber);
+                        throw new SiiSyntaxException("Line exceeds the configured length limit", lineNumber, SiiSyntaxErrorCode.LineLengthExceeded);
                 }
             }
 
@@ -105,7 +110,7 @@ public sealed class SiiSyntaxDocument
             ? completedLines + 1
             : completedLines;
         if (lineCount > limits.MaximumLines)
-            throw new SiiSyntaxException("Document exceeds the configured line limit", limits.MaximumLines + 1);
+            throw new SiiSyntaxException("Document exceeds the configured line limit", limits.MaximumLines + 1, SiiSyntaxErrorCode.LineLimitExceeded);
 
         return Parse(text.ToString(), limits);
     }
@@ -116,11 +121,12 @@ public sealed class SiiSyntaxDocument
         ArgumentNullException.ThrowIfNull(limits);
 
         if (text.Length > limits.MaximumCharacters)
-            throw new SiiSyntaxException("Document exceeds the configured character limit", 1);
+            throw new SiiSyntaxException("Document exceeds the configured character limit", 1, SiiSyntaxErrorCode.DocumentLimitExceeded);
 
         List<SourceLine> lines = SplitLines(text, limits);
         var builders = new Stack<BlockBuilder>();
         var closedBlocks = new List<(int StartLine, int StartColumn, SiiBlock Block)>();
+        var opaqueLines = new List<SiiOpaqueLine>();
         string? pendingHeader = null;
         int fieldCount = 0;
 
@@ -170,16 +176,24 @@ public sealed class SiiSyntaxDocument
                 {
                     sawStructuralBrace = true;
                     if (builders.Count >= limits.MaximumNestingDepth)
-                        throw new SiiSyntaxException("Document exceeds the configured nesting limit", lineIndex + 1);
+                        throw new SiiSyntaxException("Document exceeds the configured nesting limit", lineIndex + 1, SiiSyntaxErrorCode.NestingLimitExceeded, charIndex + 1);
 
                     string header = line[headerSegmentStart..charIndex].Trim();
                     if (header.Length == 0)
                         header = pendingHeader ?? string.Empty;
                     if (header.Length == 0)
-                        throw new SiiSyntaxException("Block opening has no header", lineIndex + 1);
+                        throw new SiiSyntaxException("Block opening has no header", lineIndex + 1, SiiSyntaxErrorCode.MissingBlockHeader, charIndex + 1);
 
-                    (string type, string? id) = ParseHeader(header, lineIndex + 1);
-                    builders.Push(new BlockBuilder(type, id, lineIndex, charIndex));
+                    (string type, string? id) = ParseHeader(header, lineIndex + 1, Math.Max(1, headerSegmentStart + 1));
+                    BlockBuilder? parent = builders.TryPeek(out BlockBuilder? parentBuilder) ? parentBuilder : null;
+                    builders.Push(new BlockBuilder(
+                        type,
+                        id,
+                        lineIndex,
+                        charIndex,
+                        builders.Count,
+                        parent is null ? null : parent.StartLine + 1,
+                        parent is null ? null : parent.StartColumn + 1));
                     pendingHeader = null;
                     headerSegmentStart = charIndex + 1;
                 }
@@ -187,10 +201,13 @@ public sealed class SiiSyntaxDocument
                 {
                     sawStructuralBrace = true;
                     if (builders.Count == 0)
-                        throw new SiiSyntaxException("Unexpected block closing brace", lineIndex + 1);
+                        throw new SiiSyntaxException("Unexpected block closing brace", lineIndex + 1, SiiSyntaxErrorCode.UnexpectedClosingBrace, charIndex + 1);
 
                     if (closedBlocks.Count >= limits.MaximumBlocks)
-                        throw new SiiSyntaxException("Document exceeds the configured block limit", lineIndex + 1);
+                        throw new SiiSyntaxException("Document exceeds the configured block limit", lineIndex + 1, SiiSyntaxErrorCode.BlockLimitExceeded, charIndex + 1);
+
+                    if (!string.IsNullOrWhiteSpace(line[headerSegmentStart..charIndex]))
+                        AddOpaqueLine(opaqueLines, lineIndex + 1, line, builders.Peek());
 
                     BlockBuilder closed = builders.Pop();
                     closedBlocks.Add((closed.StartLine, closed.StartColumn, new SiiBlock(
@@ -198,16 +215,27 @@ public sealed class SiiSyntaxDocument
                         closed.Id,
                         closed.StartLine + 1,
                         lineIndex + 1,
+                        closed.StartColumn + 1,
+                        closed.NestingDepth,
+                        closed.ParentStartLine,
+                        closed.ParentStartColumn,
                         new ReadOnlyCollection<SiiField>(closed.Fields))));
                     headerSegmentStart = charIndex + 1;
                 }
             }
 
             if (inQuotedString)
-                throw new SiiSyntaxException("Unterminated quoted value", lineIndex + 1);
+                throw new SiiSyntaxException("Unterminated quoted value", lineIndex + 1, SiiSyntaxErrorCode.UnterminatedQuotedValue, line.Length + 1);
 
             if (sawStructuralBrace)
+            {
+                if (!string.IsNullOrWhiteSpace(line[headerSegmentStart..]))
+                {
+                    BlockBuilder? owner = builders.TryPeek(out BlockBuilder? currentBuilder) ? currentBuilder : null;
+                    AddOpaqueLine(opaqueLines, lineIndex + 1, line, owner);
+                }
                 continue;
+            }
 
             if (lineIndex + 1 < lines.Count && lines[lineIndex + 1].Text.Trim() == "{")
             {
@@ -218,28 +246,33 @@ public sealed class SiiSyntaxDocument
             if (builders.Count > 0 && TryParseField(line, lineIndex + 1, out SiiField field))
             {
                 if (fieldCount >= limits.MaximumFields)
-                    throw new SiiSyntaxException("Document exceeds the configured field limit", lineIndex + 1);
+                    throw new SiiSyntaxException("Document exceeds the configured field limit", lineIndex + 1, SiiSyntaxErrorCode.FieldLimitExceeded);
 
                 builders.Peek().Fields.Add(field);
                 fieldCount++;
+            }
+            else
+            {
+                BlockBuilder? owner = builders.TryPeek(out BlockBuilder? currentBuilder) ? currentBuilder : null;
+                AddOpaqueLine(opaqueLines, lineIndex + 1, line, owner);
             }
         }
 
         if (builders.Count > 0)
         {
             BlockBuilder open = builders.Peek();
-            throw new SiiSyntaxException($"Block '{open.Type}' was not closed", lines.Count);
+            throw new SiiSyntaxException($"Block '{open.Type}' was not closed", lines.Count, SiiSyntaxErrorCode.UnclosedBlock);
         }
 
         if (closedBlocks.Count == 0)
-            throw new SiiSyntaxException("Document contains no SII blocks", 1);
+            throw new SiiSyntaxException("Document contains no SII blocks", 1, SiiSyntaxErrorCode.NoBlocks);
 
         List<SiiBlock> blocks = closedBlocks
             .OrderBy(item => item.StartLine)
             .ThenBy(item => item.StartColumn)
             .Select(item => item.Block)
             .ToList();
-        return new SiiSyntaxDocument(new ReadOnlyCollection<SourceLine>(lines), blocks, limits);
+        return new SiiSyntaxDocument(new ReadOnlyCollection<SourceLine>(lines), blocks, opaqueLines, limits);
     }
 
     public SiiSyntaxDocument WithFieldValue(string blockType, string? blockId, string fieldName, string rawValue)
@@ -251,6 +284,9 @@ public sealed class SiiSyntaxDocument
         if (rawValue.Contains('\r') || rawValue.Contains('\n') ||
             !string.Equals(rawValue, rawValue.Trim(), StringComparison.Ordinal))
             throw new ArgumentException("A replacement value must be a single unpadded SII value.", nameof(rawValue));
+
+        if (OpaqueLines.Count > 0)
+            throw new InvalidOperationException("The document contains unclassified syntax and cannot be edited safely.");
 
         List<SiiBlock> matchingBlocks = Blocks
             .Where(block => block.Type == blockType && block.Id == blockId)
@@ -311,20 +347,22 @@ public sealed class SiiSyntaxDocument
         for (int i = 0; i < left.Count; i++)
         {
             if (left[i].Type != right[i].Type || left[i].Id != right[i].Id ||
-                left[i].StartLine != right[i].StartLine || left[i].EndLine != right[i].EndLine)
+                left[i].StartLine != right[i].StartLine || left[i].EndLine != right[i].EndLine ||
+                left[i].StartColumn != right[i].StartColumn || left[i].NestingDepth != right[i].NestingDepth ||
+                left[i].ParentStartLine != right[i].ParentStartLine || left[i].ParentStartColumn != right[i].ParentStartColumn)
                 return false;
         }
 
         return true;
     }
 
-    private static (string Type, string? Id) ParseHeader(string header, int lineNumber)
+    private static (string Type, string? Id) ParseHeader(string header, int lineNumber, int columnNumber)
     {
         int colon = header.IndexOf(':');
         string type = (colon < 0 ? header : header[..colon]).Trim();
         string? id = colon < 0 ? null : header[(colon + 1)..].Trim();
         if (type.Length == 0 || (colon >= 0 && string.IsNullOrWhiteSpace(id)))
-            throw new SiiSyntaxException("Invalid block header", lineNumber);
+            throw new SiiSyntaxException("Invalid block header", lineNumber, SiiSyntaxErrorCode.InvalidBlockHeader, columnNumber);
 
         return (type, id);
     }
@@ -357,9 +395,9 @@ public sealed class SiiSyntaxDocument
                 continue;
 
             if (index - start > limits.MaximumLineLength)
-                throw new SiiSyntaxException("Line exceeds the configured length limit", result.Count + 1);
+                throw new SiiSyntaxException("Line exceeds the configured length limit", result.Count + 1, SiiSyntaxErrorCode.LineLengthExceeded);
             if (result.Count >= limits.MaximumLines)
-                throw new SiiSyntaxException("Document exceeds the configured line limit", result.Count + 1);
+                throw new SiiSyntaxException("Document exceeds the configured line limit", result.Count + 1, SiiSyntaxErrorCode.LineLimitExceeded);
 
             string terminator;
             if (text[index] == '\r' && index + 1 < text.Length && text[index + 1] == '\n')
@@ -380,9 +418,9 @@ public sealed class SiiSyntaxDocument
         if (start < text.Length || result.Count == 0 || text.Length > 0 && text[^1] is not ('\r' or '\n'))
         {
             if (text.Length - start > limits.MaximumLineLength)
-                throw new SiiSyntaxException("Line exceeds the configured length limit", result.Count + 1);
+                throw new SiiSyntaxException("Line exceeds the configured length limit", result.Count + 1, SiiSyntaxErrorCode.LineLengthExceeded);
             if (result.Count >= limits.MaximumLines)
-                throw new SiiSyntaxException("Document exceeds the configured line limit", result.Count + 1);
+                throw new SiiSyntaxException("Document exceeds the configured line limit", result.Count + 1, SiiSyntaxErrorCode.LineLimitExceeded);
 
             result.Add(new SourceLine(text[start..], string.Empty));
         }
@@ -398,14 +436,35 @@ public sealed class SiiSyntaxDocument
         return builder.ToString();
     }
 
+    private static void AddOpaqueLine(
+        ICollection<SiiOpaqueLine> opaqueLines,
+        int lineNumber,
+        string rawLine,
+        BlockBuilder? containingBlock) =>
+        opaqueLines.Add(new SiiOpaqueLine(
+            lineNumber,
+            rawLine,
+            containingBlock?.Type,
+            containingBlock?.Id));
+
     private sealed record SourceLine(string Text, string Terminator);
 
-    private sealed class BlockBuilder(string type, string? id, int startLine, int startColumn)
+    private sealed class BlockBuilder(
+        string type,
+        string? id,
+        int startLine,
+        int startColumn,
+        int nestingDepth,
+        int? parentStartLine,
+        int? parentStartColumn)
     {
         public string Type { get; } = type;
         public string? Id { get; } = id;
         public int StartLine { get; } = startLine;
         public int StartColumn { get; } = startColumn;
+        public int NestingDepth { get; } = nestingDepth;
+        public int? ParentStartLine { get; } = parentStartLine;
+        public int? ParentStartColumn { get; } = parentStartColumn;
         public List<SiiField> Fields { get; } = [];
     }
 }
