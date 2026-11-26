@@ -5,6 +5,9 @@
     <RootNamespace>TSSE.Analytics</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="TSSE.Integration.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TSSE.Core\TSSE.Core.csproj" />
   </ItemGroup>
 </Project>

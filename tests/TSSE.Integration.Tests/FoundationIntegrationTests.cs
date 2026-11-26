@@ -248,6 +248,54 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
+    public async Task SnapshotStore_BoundedReadStopsAtTheFirstOverflowByte()
+    {
+        var source = new NonSeekableCountingStream(System.Text.Encoding.ASCII.GetBytes("0123456789"));
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => LocalSnapshotStore.ReadBoundedBytesAsync(
+                source,
+                maximumBytes: 8,
+                cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Equal(9, source.BytesRead);
+        Assert.False(source.IsDisposed);
+    }
+
+    [Fact]
+    public async Task SnapshotStore_BoundedReadAcceptsExactLimitWithoutTakingOwnership()
+    {
+        byte[] content = System.Text.Encoding.ASCII.GetBytes("12345678");
+        var source = new NonSeekableCountingStream(content);
+
+        byte[] result = await LocalSnapshotStore.ReadBoundedBytesAsync(
+            source,
+            maximumBytes: content.Length,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(content, result);
+        Assert.Equal(content.Length, source.BytesRead);
+        Assert.False(source.IsDisposed);
+    }
+
+    [Fact]
+    public async Task SnapshotStore_BoundedReadDetectsGrowthAfterInitialLengthCheck()
+    {
+        var source = new GrowingSeekableStream(
+            System.Text.Encoding.ASCII.GetBytes("123456789"),
+            reportedLength: 8);
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => LocalSnapshotStore.ReadBoundedBytesAsync(
+                source,
+                maximumBytes: 8,
+                cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Equal(9, source.BytesRead);
+        Assert.False(source.IsDisposed);
+    }
+
+    [Fact]
     public async Task SnapshotStore_RejectsNewSnapshotsWithoutStableProfileIdentity()
     {
         string path = Path.Combine(Path.GetTempPath(), "tsse-snapshot-" + Guid.NewGuid().ToString("N"), "history.json");
@@ -454,4 +502,78 @@ public sealed class FoundationIntegrationTests
     private static bool SkipWindowsLinkTestsOutsideGitHubActions() =>
         OperatingSystem.IsWindows() &&
         !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
+
+    private sealed class NonSeekableCountingStream(byte[] content) : Stream
+    {
+        private readonly MemoryStream _source = new(content);
+
+        public int BytesRead { get; private set; }
+        public bool IsDisposed { get; private set; }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            int requested = Math.Min(buffer.Length, 3);
+            int read = _source.Read(buffer[..requested]);
+            BytesRead += read;
+            return read;
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(Read(buffer.Span));
+        }
+
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            if (disposing)
+                _source.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class GrowingSeekableStream(byte[] content, long reportedLength) : MemoryStream(content)
+    {
+        public int BytesRead { get; private set; }
+        public bool IsDisposed { get; private set; }
+
+        public override long Length => reportedLength;
+
+        public override int Read(Span<byte> buffer)
+        {
+            int read = base.Read(buffer);
+            BytesRead += read;
+            return read;
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return ValueTask.FromResult(Read(buffer.Span));
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
+        }
+    }
 }

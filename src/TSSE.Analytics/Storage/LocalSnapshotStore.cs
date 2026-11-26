@@ -35,12 +35,15 @@ public sealed class LocalSnapshotStore
             if (!File.Exists(_path))
                 return Array.Empty<LocalBalanceSnapshot>();
 
-            if (new FileInfo(_path).Length > AtomicFileTransaction.MaximumPayloadBytes)
-                throw new InvalidDataException("The local snapshot file exceeds the supported size limit.");
+            byte[] bytes;
+            await using (var stream = OpenSnapshotFile())
+            {
+                bytes = await ReadBoundedBytesAsync(
+                    stream,
+                    AtomicFileTransaction.MaximumPayloadBytes,
+                    cancellationToken).ConfigureAwait(false);
+            }
 
-            byte[] bytes = await File.ReadAllBytesAsync(_path, cancellationToken).ConfigureAwait(false);
-            if (bytes.LongLength > AtomicFileTransaction.MaximumPayloadBytes)
-                throw new InvalidDataException("The local snapshot file exceeds the supported size limit.");
             return Deserialize(bytes);
         }
         finally
@@ -67,14 +70,25 @@ public sealed class LocalSnapshotStore
             Directory.CreateDirectory(directory);
             EnsureSafeSnapshotPath();
 
-            if (File.Exists(_path) && new FileInfo(_path).Length > AtomicFileTransaction.MaximumPayloadBytes)
-                return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "snapshot_file_too_large");
+            byte[]? original = null;
+            if (File.Exists(_path))
+            {
+                try
+                {
+                    await using var stream = OpenSnapshotFile();
+                    original = await ReadBoundedBytesAsync(
+                        stream,
+                        AtomicFileTransaction.MaximumPayloadBytes,
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (InvalidDataException)
+                {
+                    return new FileCommitResult(
+                        FileCommitStatus.ValidationRejected,
+                        ErrorCode: "snapshot_file_too_large");
+                }
+            }
 
-            byte[]? original = File.Exists(_path)
-                ? await File.ReadAllBytesAsync(_path, cancellationToken).ConfigureAwait(false)
-                : null;
-            if (original is { LongLength: > AtomicFileTransaction.MaximumPayloadBytes })
-                return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "snapshot_file_too_large");
             List<LocalBalanceSnapshot> all = original is null ? [] : Deserialize(original).ToList();
 
             if (all.Any(item => item.SnapshotId == snapshot.SnapshotId))
@@ -135,6 +149,75 @@ public sealed class LocalSnapshotStore
 
         return snapshots.Select(snapshot => snapshot!).ToArray();
     }
+
+    internal static async Task<byte[]> ReadBoundedBytesAsync(
+        Stream source,
+        long maximumBytes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (maximumBytes < 0 || maximumBytes > Array.MaxLength)
+            throw new ArgumentOutOfRangeException(nameof(maximumBytes));
+        if (!source.CanRead)
+            throw new ArgumentException("The source stream must be readable.", nameof(source));
+
+        if (source.CanSeek)
+        {
+            long availableBytes = Math.Max(0, source.Length - source.Position);
+            if (availableBytes > maximumBytes)
+                throw SnapshotSizeLimitExceeded();
+
+            byte[] bytes = new byte[checked((int)availableBytes)];
+            int bytesRead = 0;
+            while (bytesRead < bytes.Length)
+            {
+                int read = await source.ReadAsync(bytes.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+
+                bytesRead += read;
+            }
+
+            if (bytesRead < bytes.Length)
+                throw new IOException("The local snapshot file changed while it was being read.");
+
+            byte[] overflowProbe = new byte[1];
+            if (await source.ReadAsync(overflowProbe.AsMemory(), cancellationToken).ConfigureAwait(false) > 0)
+                throw SnapshotSizeLimitExceeded();
+
+            return bytes;
+        }
+
+        using var buffer = new MemoryStream();
+        byte[] chunk = new byte[64 * 1024];
+        while (true)
+        {
+            long remainingBytes = maximumBytes - buffer.Length;
+            int readLimit = (int)Math.Min(chunk.Length, remainingBytes + 1);
+            int read = await source.ReadAsync(chunk.AsMemory(0, readLimit), cancellationToken).ConfigureAwait(false);
+            if (read == 0)
+                break;
+
+            if (read > remainingBytes)
+                throw SnapshotSizeLimitExceeded();
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
+    }
+
+    private FileStream OpenSnapshotFile() => new(
+        _path,
+        FileMode.Open,
+        FileAccess.Read,
+        FileShare.Read,
+        bufferSize: 64 * 1024,
+        FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+    private static InvalidDataException SnapshotSizeLimitExceeded() =>
+        new("The local snapshot file exceeds the supported size limit.");
 
     private void EnsureSafeSnapshotPath()
     {
