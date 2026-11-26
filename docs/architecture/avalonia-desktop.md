@@ -40,6 +40,6 @@ The main CI publishes self-contained app outputs and starts/closes the native ap
 
 - **Windows:** Avalonia's Win32 backend; x64 and ARM64 publish and startup are CI-validated. MSI/WiX packaging and clean-machine installation/upgrade checks are still planned.
 - **Linux:** Avalonia X11 backend. CI builds and installs DEB and RPM packages on Ubuntu 24.04 x64/ARM64, then launches and removes them. The RPM is installed on Ubuntu with dependency resolution disabled; Fedora-family dependency resolution/runtime and other distributions remain unverified. Wayland and AppImage are not tested.
-- **macOS:** Avalonia's native Objective-C++ backend. Intel publish/startup is CI-validated. Apple Silicon packaging/runtime, code signing, hardened runtime, notarization and DMG installation remain unverified.
+- **macOS:** Avalonia's native Objective-C++ backend. CI creates an unsigned Intel `.app` and DMG, mounts the image read-only, launches the bundled apphost, and detaches it. Apple Silicon packaging/runtime, code signing, hardened runtime, notarization and clean-user DMG installation remain unverified.
 
 Self-contained .NET output removes the requirement for a separately installed .NET runtime, but it does not bundle every operating-system native library. Linux packages declare platform dependencies, but clean Fedora-family dependency resolution and installs on other distributions are still required before wider distribution.
