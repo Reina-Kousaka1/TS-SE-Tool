@@ -51,13 +51,13 @@ public sealed class SiiSyntaxDocumentTests
     [Fact]
     public void Parser_PreservesSourceOrderWhenNestedBlocksStartOnTheSameLine()
     {
-        const string input = "root { child : a { value: 1 } }";
+        const string input = "root { child : a { } child : b { } }";
 
         SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
 
         Assert.Equal(input, document.ToText());
-        Assert.Equal(new[] { "root", "child" }, document.Blocks.Select(block => block.Type));
-        Assert.Equal(new string?[] { null, "a" }, document.Blocks.Select(block => block.Id));
+        Assert.Equal(new[] { "root", "child", "child" }, document.Blocks.Select(block => block.Type));
+        Assert.Equal(new string?[] { null, "a", "b" }, document.Blocks.Select(block => block.Id));
     }
 
     [Fact]

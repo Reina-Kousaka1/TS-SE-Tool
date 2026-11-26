@@ -41,6 +41,7 @@ public sealed class SiiSyntaxDocument
             bool sawStructuralBrace = false;
             bool inQuotedString = false;
             bool escaped = false;
+            int headerSegmentStart = 0;
 
             for (int charIndex = 0; charIndex < line.Length; charIndex++)
             {
@@ -72,7 +73,7 @@ public sealed class SiiSyntaxDocument
                 if (current == '{')
                 {
                     sawStructuralBrace = true;
-                    string header = line[..charIndex].Trim();
+                    string header = line[headerSegmentStart..charIndex].Trim();
                     if (header.Length == 0)
                         header = pendingHeader ?? string.Empty;
                     if (header.Length == 0)
@@ -81,6 +82,7 @@ public sealed class SiiSyntaxDocument
                     (string type, string? id) = ParseHeader(header, lineIndex + 1);
                     builders.Push(new BlockBuilder(type, id, lineIndex, charIndex));
                     pendingHeader = null;
+                    headerSegmentStart = charIndex + 1;
                 }
                 else if (current == '}')
                 {
@@ -95,6 +97,7 @@ public sealed class SiiSyntaxDocument
                         closed.StartLine + 1,
                         lineIndex + 1,
                         new ReadOnlyCollection<SiiField>(closed.Fields))));
+                    headerSegmentStart = charIndex + 1;
                 }
             }
 
