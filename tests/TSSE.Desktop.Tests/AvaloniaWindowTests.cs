@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using TSSE.Desktop;
@@ -105,9 +106,9 @@ public sealed class AvaloniaWindowTests
                 Click(window, navigationItem);
 
                 Assert.Equal(title, viewModel.CurrentPage.Title);
-                Assert.True(navigationItem.Classes.Contains("selected"));
-                Assert.Single(window.GetVisualDescendants().OfType<Button>()
-                    .Where(button => button.Classes.Contains("nav-item") && button.Classes.Contains("selected")));
+                Assert.Contains("selected", navigationItem.Classes);
+                Assert.Single(window.GetVisualDescendants().OfType<Button>(),
+                    button => button.Classes.Contains("nav-item") && button.Classes.Contains("selected"));
                 Assert.IsType<SectionViewModel>(window.FindControl<ContentControl>("PageHost")?.Content);
                 Assert.Equal(2, window.GetVisualDescendants().OfType<TextBlock>().Count(block => block.Text == title));
             }
@@ -133,9 +134,11 @@ public sealed class AvaloniaWindowTests
             Assert.Equal("Vehicle", search.Text);
             Assert.Equal("Vehicle", viewModel.SearchQuery);
             Assert.Equal("vehicle-studio", Assert.Single(viewModel.FilteredNavigationItems).PageKey);
-            Assert.Equal("Vehicle Studio", Assert.Single(window.GetVisualDescendants()
+            Button[] visibleNavigation = window.GetVisualDescendants()
                 .OfType<Button>()
-                .Where(button => button.Classes.Contains("nav-item")))
+                .Where(button => button.Classes.Contains("nav-item"))
+                .ToArray();
+            Assert.Equal("Vehicle Studio", Assert.Single(visibleNavigation)
                 .GetVisualDescendants().OfType<TextBlock>().Single(block => block.Text == "Vehicle Studio").Text);
         }
         finally
@@ -152,8 +155,8 @@ public sealed class AvaloniaWindowTests
         {
             window.Show();
             Click(window, FindNavigationButton(window, "Vehicle Studio"));
-            Button coaches = Assert.Single(window.GetVisualDescendants().OfType<Button>()
-                .Where(button => button.Content?.ToString() == "Coaches"));
+            Button coaches = Assert.Single(window.GetVisualDescendants().OfType<Button>(),
+                button => button.Content?.ToString() == "Coaches");
 
             Click(window, coaches);
 
@@ -175,8 +178,8 @@ public sealed class AvaloniaWindowTests
         {
             window.Show();
             Click(window, FindNavigationButton(window, "Economy Intelligence"));
-            Button thirtyDays = Assert.Single(window.GetVisualDescendants().OfType<Button>()
-                .Where(button => button.Content?.ToString() == "30 days"));
+            Button thirtyDays = Assert.Single(window.GetVisualDescendants().OfType<Button>(),
+                button => button.Content?.ToString() == "30 days");
 
             Click(window, thirtyDays);
 
@@ -221,9 +224,9 @@ public sealed class AvaloniaWindowTests
     }
 
     private static Button FindNavigationButton(MainWindow window, string title) =>
-        Assert.Single(window.GetVisualDescendants().OfType<Button>()
-            .Where(button => button.Classes.Contains("nav-item"))
-            .Where(button => button.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text == title)));
+        Assert.Single(window.GetVisualDescendants().OfType<Button>(),
+            button => button.Classes.Contains("nav-item")
+                && button.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text == title));
 
     private static void Click(Window window, Control control)
     {
@@ -242,7 +245,10 @@ public sealed class AvaloniaWindowTests
             return;
 
         Directory.CreateDirectory(directory);
-        window.CaptureRenderedFrame().Save(Path.Combine(directory, fileName));
+        using WriteableBitmap frame = window.CaptureRenderedFrame()
+            ?? throw new InvalidOperationException("Headless rendering did not produce a frame.");
+        using FileStream output = File.Create(Path.Combine(directory, fileName));
+        frame.Save(output, new PngBitmapEncoderOptions());
     }
 
     private sealed class TestThemeService : IThemeService
