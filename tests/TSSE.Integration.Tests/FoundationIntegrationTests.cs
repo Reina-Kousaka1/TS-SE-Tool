@@ -90,6 +90,40 @@ public sealed class FoundationIntegrationTests
         Assert.Equal(400m, report.NetWorthDelta);
     }
 
+    [Theory]
+    [InlineData(7)]
+    [InlineData(30)]
+    public void Analytics_UsesInclusiveWindowBoundariesAndExcludesAdjacentData(int days)
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset start = end.AddDays(-days);
+        var transactions = new[]
+        {
+            new RecordedTransaction(start, 120m, "synthetic-boundary-income"),
+            new RecordedTransaction(end, -20m, "synthetic-boundary-expense"),
+            new RecordedTransaction(start.AddTicks(-1), 1_000m, "outside-before-window"),
+            new RecordedTransaction(end.AddTicks(1), -1_000m, "outside-after-window")
+        };
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("start", "ETS2", "synthetic", "synthetic-v1", start, 100m, 1_000m, 1_500m, "profile-1"),
+            new LocalBalanceSnapshot("end", "ETS2", "synthetic", "synthetic-v1", end, 300m, 1_250m, 1_900m, "profile-1"),
+            new LocalBalanceSnapshot("before", "ETS2", "other", "synthetic-v1", start.AddTicks(-1), 5_000m, 9_000m, 10_000m, "profile-before"),
+            new LocalBalanceSnapshot("after", "ETS2", "other", "synthetic-v1", end.AddTicks(1), 6_000m, 10_000m, 11_000m, "profile-after")
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, days, transactions, snapshots);
+
+        Assert.Equal(start, report.Start);
+        Assert.Equal(end, report.End);
+        Assert.Equal(2, report.RecordedTransactionCount);
+        Assert.Equal(120m, report.RecordedIncome);
+        Assert.Equal(20m, report.RecordedExpenses);
+        Assert.Equal(100m, report.RecordedNet);
+        Assert.Equal(250m, report.BalanceDelta);
+        Assert.Equal(400m, report.NetWorthDelta);
+    }
+
     [Fact]
     public void Analytics_OmitsSnapshotDeltaWhenInputContainsMultipleProfilesWithSameLabel()
     {

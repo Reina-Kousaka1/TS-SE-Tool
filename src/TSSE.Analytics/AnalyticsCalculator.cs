@@ -6,9 +6,10 @@ public static class AnalyticsCalculator
 {
     /// <summary>Calculates recorded transaction totals and, when unambiguous, local snapshot deltas.</summary>
     /// <remarks>
-    /// Snapshot deltas are omitted unless every in-window snapshot has a non-empty game ID, stable profile ID,
-    /// and profile label, and all snapshots identify the same game/profile pair. The caller must pass
-    /// transactions for the selected profile because transaction records do not currently carry profile identity.
+    /// The requested time window includes both its start and end. Snapshot deltas are omitted unless every
+    /// in-window snapshot has a non-empty game ID, stable profile ID, and profile label, and all snapshots
+    /// identify the same game/profile pair. The caller must pass transactions for the selected profile because
+    /// transaction records do not currently carry profile identity.
     /// </remarks>
     public static AnalyticsWindow Calculate(
         DateTimeOffset end,
