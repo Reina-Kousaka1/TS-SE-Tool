@@ -120,6 +120,9 @@ public sealed class SiiSyntaxDocument
             throw new SiiSyntaxException($"Block '{open.Type}' was not closed", lines.Count);
         }
 
+        if (blocks.Count == 0)
+            throw new SiiSyntaxException("Document contains no SII blocks", 1);
+
         blocks.Sort((left, right) => left.StartLine.CompareTo(right.StartLine));
         return new SiiSyntaxDocument(new ReadOnlyCollection<SourceLine>(lines), blocks);
     }

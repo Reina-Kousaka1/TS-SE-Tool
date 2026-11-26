@@ -55,6 +55,17 @@ public sealed class SiiSyntaxDocumentTests
         Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse("}\n"));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("# synthetic comment only\n")]
+    [InlineData("SiiNunit\n")]
+    public void Parser_RejectsDocumentsWithoutBlocks(string input)
+    {
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse(input));
+
+        Assert.Equal(1, exception.LineNumber);
+    }
+
     [Fact]
     public void WithFieldValue_RejectsAmbiguousAndStructuralEdits()
     {
