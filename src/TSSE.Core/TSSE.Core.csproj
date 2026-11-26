@@ -4,4 +4,7 @@
     <AssemblyName>TSSE.Core</AssemblyName>
     <RootNamespace>TSSE.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TSSE.Core.Tests" />
+  </ItemGroup>
 </Project>

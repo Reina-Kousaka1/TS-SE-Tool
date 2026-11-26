@@ -231,8 +231,41 @@ public sealed class AtomicFileTransaction
             FileShare.Read,
             bufferSize: 64 * 1024,
             FileOptions.Asynchronous | FileOptions.SequentialScan);
-        byte[] hash = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
-        return Convert.ToHexString(hash);
+        return await HashStreamAsync(stream, MaximumPayloadBytes, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static async Task<string> HashStreamAsync(
+        Stream source,
+        long maximumBytes,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (maximumBytes < 0)
+            throw new ArgumentOutOfRangeException(nameof(maximumBytes));
+        if (!source.CanRead)
+            throw new ArgumentException("The source stream must be readable.", nameof(source));
+
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        byte[] buffer = new byte[64 * 1024];
+        long bytesHashed = 0;
+
+        while (true)
+        {
+            long remainingBytes = maximumBytes - bytesHashed;
+            int readLimit = (int)Math.Min(buffer.Length, remainingBytes >= buffer.Length ? buffer.Length : remainingBytes + 1);
+            int bytesRead = await source.ReadAsync(buffer.AsMemory(0, readLimit), cancellationToken).ConfigureAwait(false);
+            if (bytesRead == 0)
+                break;
+
+            if (bytesRead > remainingBytes)
+                throw new InvalidDataException("The file exceeds the supported size limit.");
+
+            hash.AppendData(buffer.AsSpan(0, bytesRead));
+            bytesHashed += bytesRead;
+        }
+
+        return Convert.ToHexString(hash.GetHashAndReset());
     }
 
     private static string HashBytes(ReadOnlySpan<byte> bytes) => Convert.ToHexString(SHA256.HashData(bytes));

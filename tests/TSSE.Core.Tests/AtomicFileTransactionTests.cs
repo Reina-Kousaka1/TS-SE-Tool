@@ -7,6 +7,37 @@ namespace TSSE.Core.Tests;
 public sealed class AtomicFileTransactionTests
 {
     [Fact]
+    public async Task HashStream_StopsAfterFirstByteBeyondConfiguredLimit()
+    {
+        using var source = new NonSeekableCountingStream("0123456789"u8.ToArray());
+
+        await Assert.ThrowsAsync<InvalidDataException>(
+            () => AtomicFileTransaction.HashStreamAsync(
+                source,
+                maximumBytes: 8,
+                TestContext.Current.CancellationToken));
+
+        Assert.Equal(9, source.BytesRead);
+        Assert.False(source.IsDisposed);
+    }
+
+    [Fact]
+    public async Task HashStream_AcceptsExactLimitAndReturnsSha256()
+    {
+        byte[] content = "12345678"u8.ToArray();
+        using var source = new NonSeekableCountingStream(content);
+
+        string hash = await AtomicFileTransaction.HashStreamAsync(
+            source,
+            maximumBytes: content.Length,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(Hash(content), hash);
+        Assert.Equal(content.Length, source.BytesRead);
+        Assert.False(source.IsDisposed);
+    }
+
+    [Fact]
     public async Task Commit_ReplacesTargetAndKeepsOriginalBackup()
     {
         using var directory = new TemporaryDirectory();
@@ -335,6 +366,62 @@ public sealed class AtomicFileTransactionTests
         !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
 
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
+
+    private sealed class NonSeekableCountingStream(byte[] content) : Stream
+    {
+        private readonly MemoryStream _source = new(content);
+
+        public long BytesRead { get; private set; }
+
+        public bool IsDisposed { get; private set; }
+
+        public override bool CanRead => !IsDisposed;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            int read = _source.Read(buffer, offset, count);
+            BytesRead += read;
+            return read;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            int read = await _source.ReadAsync(buffer, cancellationToken);
+            BytesRead += read;
+            return read;
+        }
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                IsDisposed = true;
+                _source.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
 
     private sealed class ThrowingReplacer : IAtomicFileReplacer
     {
