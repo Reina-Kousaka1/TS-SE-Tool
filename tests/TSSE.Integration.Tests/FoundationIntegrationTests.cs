@@ -25,6 +25,48 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
+    public void VerifiedRegistration_RejectsEntryWithoutReadSupport()
+    {
+        var registry = new GameAdapterRegistry();
+
+        Assert.Throws<ArgumentException>(() => registry.RegisterVerified(
+            new GameAdapterRegistration("ETS2", "synthetic-v1", CanRead: false, CanWrite: false, "synthetic-test-evidence")));
+
+        Assert.Equal(0, registry.RegistrationCount);
+        Assert.Equal(CompatibilityState.UnsupportedUnknown, registry.Assess("ETS2", "synthetic-v1").State);
+    }
+
+    [Fact]
+    public void VerifiedReadOnlyRegistration_DoesNotEnableWritesOrCarryOverToAnotherVersion()
+    {
+        var registry = new GameAdapterRegistry();
+        registry.RegisterVerified(new GameAdapterRegistration(
+            "ETS2", "synthetic-v1", CanRead: true, CanWrite: false, "synthetic-test-evidence"));
+
+        CompatibilityAssessment verified = registry.Assess("ets2", "SYNTHETIC-V1");
+        CompatibilityAssessment unknownVersion = registry.Assess("ETS2", "synthetic-v2");
+
+        Assert.Equal(CompatibilityState.ReadOnlyVerified, verified.State);
+        Assert.True(verified.CanRead);
+        Assert.False(verified.CanWrite);
+        Assert.Equal(CompatibilityState.UnsupportedUnknown, unknownVersion.State);
+        Assert.False(unknownVersion.CanRead);
+        Assert.False(unknownVersion.CanWrite);
+        Assert.Equal(1, registry.RegistrationCount);
+    }
+
+    [Fact]
+    public void VerifiedRegistration_RejectsWriteWithoutReadSupport()
+    {
+        var registry = new GameAdapterRegistry();
+
+        Assert.Throws<ArgumentException>(() => registry.RegisterVerified(
+            new GameAdapterRegistration("ETS2", "synthetic-v1", CanRead: false, CanWrite: true, "synthetic-test-evidence")));
+
+        Assert.Equal(0, registry.RegistrationCount);
+    }
+
+    [Fact]
     public void Analytics_SeparatesRecordedTransactionsFromSnapshotDeltas()
     {
         DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);

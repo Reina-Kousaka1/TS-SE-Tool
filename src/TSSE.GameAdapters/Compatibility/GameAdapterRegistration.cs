@@ -14,6 +14,8 @@ public sealed record GameAdapterRegistration(
         ArgumentException.ThrowIfNullOrWhiteSpace(EvidenceReference);
         if (CanWrite && !CanRead)
             throw new ArgumentException("Write support requires verified read support.");
+        if (!CanRead)
+            throw new ArgumentException("A verified adapter must provide read support.", nameof(CanRead));
         return this;
     }
 }
