@@ -98,6 +98,7 @@ rpm_top="$temp_root/rpmbuild"
 mkdir -p "$rpm_top/BUILD" "$rpm_top/BUILDROOT" "$rpm_top/RPMS" "$rpm_top/SOURCES" "$rpm_top/SPECS" "$rpm_top/SRPMS"
 tar -czf "$rpm_top/SOURCES/payload.tar.gz" -C "$temp_root" payload
 cat > "$rpm_top/SPECS/ts-se-tool.spec" <<SPEC
+%global _enable_debug_packages 0
 Name: ts-se-tool
 Version: 0.0.0
 Release: 0.phase2
