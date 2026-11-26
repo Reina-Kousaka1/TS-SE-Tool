@@ -1,4 +1,4 @@
-name: Next-generation Avalonia CI (five automatic targets)
+name: Next-generation Avalonia CI (five desktop targets plus Fedora RPM)
 
 on:
   push:
@@ -82,3 +82,36 @@ jobs:
           else
             python3 packaging/shared/desktop-smoke.py
           fi
+
+  fedora-rpm:
+    name: Fedora 45 RPM on ${{ matrix.runner }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x64
+            rid: linux-x64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            rid: linux-arm64
+    container:
+      image: fedora:45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Fedora build and smoke-test tools
+        run: dnf install -y bash ca-certificates coreutils curl dpkg findutils git gzip libicu openssl-libs python3 rpm-build tar unzip xorg-x11-server-Xvfb
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: "10.0.x"
+          architecture: ${{ matrix.arch }}
+      - name: Build and run the full test suite on Fedora
+        run: dotnet test --solution TSSE.NextGen.sln --configuration Release
+      - name: Publish the Linux app and build Fedora RPM
+        run: |
+          dotnet publish desktop/TSSE.Desktop/TSSE.Desktop.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained true --output "${{ runner.temp }}/tsse-fedora-publish-${{ matrix.rid }}"
+          bash packaging/linux/build-packages.sh "${{ runner.temp }}/tsse-fedora-publish-${{ matrix.rid }}" "${{ runner.temp }}/tsse-fedora-packages-${{ matrix.rid }}" "${{ matrix.rid }}"
+      - name: Resolve RPM dependencies, launch the installed app, and remove the package
+        run: bash packaging/linux/verify-rpm-fedora.sh "${{ runner.temp }}/tsse-fedora-packages-${{ matrix.rid }}" "${{ matrix.rid }}"
