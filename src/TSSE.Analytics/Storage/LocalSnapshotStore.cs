@@ -261,5 +261,7 @@ public sealed class LocalSnapshotStore
             ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileId);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.SaveVersion);
+        if (snapshot.InGameTime is { } inGameTime && inGameTime < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(snapshot), "Normalized in-game time must not be negative.");
     }
 }

@@ -9,4 +9,5 @@ public sealed record LocalBalanceSnapshot(
     decimal? Cash,
     decimal? BankBalance,
     decimal? NetWorth,
-    string? ProfileId = null);
+    string? ProfileId = null,
+    TimeSpan? InGameTime = null);

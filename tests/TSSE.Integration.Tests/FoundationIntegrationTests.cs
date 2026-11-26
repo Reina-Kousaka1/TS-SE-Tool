@@ -220,6 +220,219 @@ public sealed class FoundationIntegrationTests
         Assert.Null(report.NetWorthDelta);
     }
 
+    [Theory]
+    [InlineData(7)]
+    [InlineData(30)]
+    public void InGameAnalytics_UsesGameTimeAndBuildsPerDaySnapshotChanges(int days)
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] snapshots = Enumerable.Range(0, days + 1)
+            .Select(day => CreateInGameSnapshot(
+                $"day-{day}", "profile-1", TimeSpan.FromDays(day), capturedAt.AddHours(day * 2),
+                cash: 100m + day * 10m,
+                bank: 1_000m + day * 100m,
+                netWorth: 1_200m + day * 110m))
+            .ToArray();
+
+        InGameAnalyticsReport report = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(days), days, snapshots);
+
+        Assert.Equal(InGameAnalyticsStatus.Available, report.Status);
+        Assert.Equal(TimeSpan.Zero, report.StartGameTime);
+        Assert.Equal(TimeSpan.FromDays(days), report.EndGameTime);
+        Assert.Equal(days * 10m, report.SnapshotCashChange);
+        Assert.Equal(days * 100m, report.SnapshotBankBalanceChange);
+        Assert.Equal(days * 110m, report.SnapshotNetWorthChange);
+        Assert.Equal(days, report.DailySummaries.Count);
+        Assert.All(report.DailySummaries, day =>
+        {
+            Assert.Equal(2, day.SnapshotCount);
+            Assert.Equal(10m, day.SnapshotCashChange);
+            Assert.Equal(100m, day.SnapshotBankBalanceChange);
+            Assert.Equal(110m, day.SnapshotNetWorthChange);
+        });
+    }
+
+    [Fact]
+    public void InGameAnalytics_IsolatesExactProfileAndGame()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] snapshots =
+        [
+            CreateInGameSnapshot("a", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("b", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(1), 130m, 1_040m, 1_250m),
+            CreateInGameSnapshot("c", "profile-1", TimeSpan.FromDays(8), capturedAt.AddHours(2), 160m, 1_060m, 1_270m),
+            CreateInGameSnapshot("other-profile-a", "profile-2", TimeSpan.FromDays(1), capturedAt.AddHours(2), 9_000m, 90_000m, 100_000m),
+            CreateInGameSnapshot("other-profile-b", "profile-2", TimeSpan.FromDays(2), capturedAt.AddHours(3), 1_000m, 10_000m, 11_000m),
+            CreateInGameSnapshot("other-game-a", "profile-1", TimeSpan.FromDays(1), capturedAt.AddHours(4), 8_000m, 80_000m, 90_000m, gameId: "ATS"),
+            CreateInGameSnapshot("other-game-b", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(5), 2_000m, 20_000m, 22_000m, gameId: "ATS")
+        ];
+
+        InGameAnalyticsReport report = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(8), 7, snapshots);
+
+        Assert.Equal(InGameAnalyticsStatus.Available, report.Status);
+        Assert.Equal(3, report.SnapshotCount);
+        Assert.Equal(60m, report.SnapshotCashChange);
+        Assert.Equal(60m, report.SnapshotBankBalanceChange);
+        Assert.Equal(70m, report.SnapshotNetWorthChange);
+    }
+
+    [Fact]
+    public void InGameAnalytics_WithholdsChangesAcrossClockReset()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] snapshots =
+        [
+            CreateInGameSnapshot("before", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("later", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(1), 200m, 1_100m, 1_300m),
+            CreateInGameSnapshot("restored", "profile-1", TimeSpan.FromDays(1.5), capturedAt.AddHours(2), 50m, 900m, 1_000m)
+        ];
+
+        InGameAnalyticsReport report = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, snapshots);
+
+        Assert.Equal(InGameAnalyticsStatus.ClockResetDetected, report.Status);
+        Assert.Null(report.SnapshotCashChange);
+        Assert.Null(report.SnapshotBankBalanceChange);
+        Assert.Empty(report.DailySummaries);
+    }
+
+    [Fact]
+    public void InGameAnalytics_WithholdsChangesAcrossSaveVersionBoundary()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] snapshots =
+        [
+            CreateInGameSnapshot("before", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m, saveVersion: "v1"),
+            CreateInGameSnapshot("after", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(1), 200m, 1_100m, 1_300m, saveVersion: "v2")
+        ];
+
+        InGameAnalyticsReport report = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, snapshots);
+
+        Assert.Equal(InGameAnalyticsStatus.SaveVersionBoundary, report.Status);
+        Assert.Null(report.SnapshotBankBalanceChange);
+    }
+
+    [Fact]
+    public void InGameAnalytics_WithholdsDuplicateTimesAndIncompleteClockData()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] duplicateEndpoint =
+        [
+            CreateInGameSnapshot("first", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("last-a", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(1), 200m, 1_100m, 1_300m),
+            CreateInGameSnapshot("last-b", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(2), 250m, 1_150m, 1_350m)
+        ];
+        LocalBalanceSnapshot[] missingClock =
+        [
+            CreateInGameSnapshot("first", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("missing-time", "profile-1", null, capturedAt.AddHours(1), 150m, 1_050m, 1_250m),
+            CreateInGameSnapshot("last", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(2), 200m, 1_100m, 1_300m)
+        ];
+        LocalBalanceSnapshot[] duplicateInteriorTime =
+        [
+            CreateInGameSnapshot("first", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("middle-a", "profile-1", TimeSpan.FromDays(1.5), capturedAt.AddHours(1), 150m, 1_050m, 1_250m),
+            CreateInGameSnapshot("middle-b", "profile-1", TimeSpan.FromDays(1.5), capturedAt.AddHours(2), 175m, 1_075m, 1_275m),
+            CreateInGameSnapshot("last", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(3), 200m, 1_100m, 1_300m)
+        ];
+        LocalBalanceSnapshot[] duplicateId =
+        [
+            CreateInGameSnapshot("same-id", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("same-id", "profile-1", TimeSpan.FromDays(2), capturedAt.AddHours(1), 200m, 1_100m, 1_300m)
+        ];
+        LocalBalanceSnapshot[] nullEntry = [null!];
+
+        InGameAnalyticsReport ambiguous = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, duplicateEndpoint);
+        InGameAnalyticsReport incomplete = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, missingClock);
+        InGameAnalyticsReport duplicateIntermediate = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, duplicateInteriorTime);
+        InGameAnalyticsReport duplicateIdentifier = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, duplicateId);
+        InGameAnalyticsReport malformed = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7, nullEntry);
+
+        Assert.Equal(InGameAnalyticsStatus.AmbiguousGameTime, ambiguous.Status);
+        Assert.Null(ambiguous.SnapshotBankBalanceChange);
+        Assert.Equal(InGameAnalyticsStatus.MissingInGameTime, incomplete.Status);
+        Assert.Null(incomplete.SnapshotBankBalanceChange);
+        Assert.Equal(InGameAnalyticsStatus.AmbiguousGameTime, duplicateIntermediate.Status);
+        Assert.Null(duplicateIntermediate.SnapshotBankBalanceChange);
+        Assert.Equal(InGameAnalyticsStatus.InvalidSnapshotData, duplicateIdentifier.Status);
+        Assert.Null(duplicateIdentifier.SnapshotBankBalanceChange);
+        Assert.Equal(InGameAnalyticsStatus.InvalidSnapshotData, malformed.Status);
+        Assert.Null(malformed.SnapshotBankBalanceChange);
+    }
+
+    [Fact]
+    public void InGameAnalytics_ReportsInsufficientHistoryAndMissingGameTime()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        InGameAnalyticsReport insufficient = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7,
+            [CreateInGameSnapshot("one", "profile-1", TimeSpan.FromDays(2), capturedAt, 100m, 1_000m, 1_200m)]);
+        InGameAnalyticsReport noClock = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7,
+            [CreateInGameSnapshot("legacy", "profile-1", null, capturedAt, 100m, 1_000m, 1_200m)]);
+        InGameAnalyticsReport incompleteSingleCapture = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(3), 7,
+            [
+                CreateInGameSnapshot("clocked", "profile-1", TimeSpan.FromDays(2), capturedAt, 100m, 1_000m, 1_200m),
+                CreateInGameSnapshot("unclocked", "profile-1", null, capturedAt, 150m, 1_050m, 1_250m)
+            ]);
+
+        Assert.Equal(InGameAnalyticsStatus.InsufficientSnapshots, insufficient.Status);
+        Assert.Equal(InGameAnalyticsStatus.NoInGameTime, noClock.Status);
+        Assert.Equal(InGameAnalyticsStatus.MissingInGameTime, incompleteSingleCapture.Status);
+        Assert.Null(insufficient.SnapshotBankBalanceChange);
+        Assert.Null(noClock.SnapshotBankBalanceChange);
+        Assert.Null(incompleteSingleCapture.SnapshotBankBalanceChange);
+    }
+
+    [Fact]
+    public void InGameAnalytics_WithholdsPartialWindowDelta()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] partialHistory =
+        [
+            CreateInGameSnapshot("first", "profile-1", TimeSpan.FromDays(1), capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("last", "profile-1", TimeSpan.FromDays(6), capturedAt.AddHours(1), 200m, 1_100m, 1_300m)
+        ];
+
+        InGameAnalyticsReport report = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(7), 7, partialHistory);
+
+        Assert.Equal(InGameAnalyticsStatus.InsufficientCoverage, report.Status);
+        Assert.Equal(2, report.SnapshotCount);
+        Assert.Null(report.SnapshotCashChange);
+        Assert.Null(report.SnapshotBankBalanceChange);
+        Assert.Null(report.SnapshotNetWorthChange);
+        Assert.Empty(report.DailySummaries);
+    }
+
+    [Fact]
+    public void InGameAnalytics_WithholdsDailyDeltaWithoutBothDayBoundaries()
+    {
+        DateTimeOffset capturedAt = DateTimeOffset.Parse("2026-11-26T12:00:00Z");
+        LocalBalanceSnapshot[] sparseHistory =
+        [
+            CreateInGameSnapshot("start", "profile-1", TimeSpan.Zero, capturedAt, 100m, 1_000m, 1_200m),
+            CreateInGameSnapshot("midday", "profile-1", TimeSpan.FromHours(12), capturedAt.AddHours(1), 150m, 1_050m, 1_250m),
+            CreateInGameSnapshot("end", "profile-1", TimeSpan.FromDays(7), capturedAt.AddHours(2), 200m, 1_100m, 1_300m)
+        ];
+
+        InGameAnalyticsReport report = AnalyticsCalculator.CalculateInGameDays(
+            "ETS2", "profile-1", TimeSpan.FromDays(7), 7, sparseHistory);
+
+        Assert.Equal(InGameAnalyticsStatus.Available, report.Status);
+        Assert.Equal(100m, report.SnapshotCashChange);
+        Assert.All(report.DailySummaries, day => Assert.Null(day.SnapshotCashChange));
+    }
+
     [Fact]
     public async Task SnapshotStore_PersistsOnlyLocalSyntheticSnapshots()
     {
@@ -231,7 +444,7 @@ public sealed class FoundationIntegrationTests
             var store = new LocalSnapshotStore(path);
             var snapshot = new LocalBalanceSnapshot(
                 "snapshot-1", "ETS2", "synthetic", "unknown",
-                DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null, "profile-1");
+                DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null, "profile-1", TimeSpan.FromDays(2.5));
 
             FileCommitResult result = await store.AppendAsync(snapshot, TestContext.Current.CancellationToken);
             IReadOnlyList<LocalBalanceSnapshot> readBack = await store.ReadAsync(TestContext.Current.CancellationToken);
@@ -309,6 +522,20 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
+    public async Task SnapshotStore_RejectsNegativeInGameTime()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "tsse-negative-game-time-" + Guid.NewGuid().ToString("N"), "history.json");
+        var store = new LocalSnapshotStore(path);
+        var snapshot = new LocalBalanceSnapshot(
+            "snapshot-negative", "ETS2", "synthetic", "unknown",
+            DateTimeOffset.Parse("2026-11-25T12:00:00Z"), 10m, 20m, null, "profile-1", TimeSpan.FromSeconds(-1));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+            () => store.AppendAsync(snapshot, TestContext.Current.CancellationToken));
+        Assert.False(File.Exists(path));
+    }
+
+    [Fact]
     public async Task SnapshotStore_ReadsLegacySnapshotsWithoutStableProfileIdentity()
     {
         string directory = Path.Combine(Path.GetTempPath(), "tsse-legacy-snapshot-" + Guid.NewGuid().ToString("N"));
@@ -325,6 +552,7 @@ public sealed class FoundationIntegrationTests
 
             LocalBalanceSnapshot snapshot = Assert.Single(snapshots);
             Assert.Null(snapshot.ProfileId);
+            Assert.Null(snapshot.InGameTime);
         }
         finally
         {
@@ -498,6 +726,18 @@ public sealed class FoundationIntegrationTests
         200m,
         300m,
         "profile-new");
+
+    private static LocalBalanceSnapshot CreateInGameSnapshot(
+        string snapshotId,
+        string profileId,
+        TimeSpan? inGameTime,
+        DateTimeOffset capturedAt,
+        decimal? cash,
+        decimal? bank,
+        decimal? netWorth,
+        string saveVersion = "v1",
+        string gameId = "ETS2") =>
+        new(snapshotId, gameId, profileId, saveVersion, capturedAt, cash, bank, netWorth, profileId, inGameTime);
 
     private static bool SkipWindowsLinkTestsOutsideGitHubActions() =>
         OperatingSystem.IsWindows() &&
