@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
@@ -120,6 +121,9 @@ public sealed class AvaloniaWindowTests
 
                 Assert.Equal(title, viewModel.CurrentPage.Title);
                 Assert.Contains("selected", navigationItem.Classes);
+                TextBlock navigationTitle = Assert.Single(navigationItem.GetVisualDescendants().OfType<TextBlock>(),
+                    block => block.Text == title);
+                Assert.Equal(TextWrapping.Wrap, navigationTitle.TextWrapping);
                 Assert.Single(window.GetVisualDescendants().OfType<Button>(),
                     button => button.Classes.Contains("nav-item") && button.Classes.Contains("selected"));
                 Assert.IsType<SectionViewModel>(window.FindControl<ContentControl>("PageHost")?.Content);
