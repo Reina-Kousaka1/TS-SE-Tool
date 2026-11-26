@@ -64,7 +64,24 @@ try:
         with open(screenshot_path, "rb") as screenshot:
             if screenshot.read(8) != b"\x89PNG\r\n\x1a\n":
                 raise RuntimeError("Native window screenshot was not a valid PNG.")
-        print(f"Captured the native Avalonia window at {screenshot_path}.")
+        inspection = subprocess.run(
+            ["identify", "-format", "%w %h %k", screenshot_path],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if inspection.returncode != 0:
+            raise RuntimeError(f"Native window screenshot inspection failed: {inspection.stderr.strip()}")
+        try:
+            width, height, color_count = map(int, inspection.stdout.split())
+        except ValueError as error:
+            raise RuntimeError("Native window screenshot inspection returned invalid dimensions.") from error
+        if width < 820 or height < 640 or color_count < 16:
+            raise RuntimeError(
+                f"Native window screenshot is unexpectedly blank or small: {width}x{height}, {color_count} colors.")
+        print(
+            f"Captured native Avalonia window at {width}x{height} with {color_count} colors: {screenshot_path}.")
 
     exit_code = process.wait(timeout=25)
 except subprocess.TimeoutExpired:
