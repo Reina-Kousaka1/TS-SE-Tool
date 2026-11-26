@@ -124,6 +124,36 @@ public sealed class SiiSyntaxDocumentTests
     }
 
     [Fact]
+    public void ReaderParserStopsWhenTheConfiguredLineLimitIsExceeded()
+    {
+        string input = "root {\n" + new string('x', 100_000);
+        var reader = new CountingTextReader(input);
+        SiiSyntaxParseLimits limits = CreateLimits(
+            maximumCharacters: input.Length,
+            maximumLines: 1,
+            maximumLineLength: input.Length);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.ParseReader(reader, limits));
+
+        Assert.Contains("line limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(2, exception.LineNumber);
+        Assert.True(reader.CharactersRead < input.Length);
+        Assert.False(reader.IsDisposed);
+    }
+
+    [Fact]
+    public void ReaderParserAllowsATrailingTerminatorAtTheExactLineLimit()
+    {
+        const string input = "root {\n}\n";
+        SiiSyntaxParseLimits limits = CreateLimits(maximumLines: 2);
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.ParseReader(new StringReader(input), limits);
+
+        Assert.Equal(input, document.ToText());
+    }
+
+    [Fact]
     public void ReaderParserTracksLineNumbersAcrossCrLfTerminators()
     {
         var reader = new CountingTextReader("root {\r\n value: 123456789\r\n}");

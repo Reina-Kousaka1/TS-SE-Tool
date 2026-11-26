@@ -42,8 +42,10 @@ public sealed class SiiSyntaxDocument
         var buffer = new char[Math.Min(8 * 1024, limits.MaximumCharacters)];
         var text = new StringBuilder(Math.Min(16 * 1024, limits.MaximumCharacters));
         int lineNumber = 1;
+        int completedLines = 0;
         int lineLength = 0;
         bool previousWasCarriageReturn = false;
+        bool lastCharacterWasLineTerminator = false;
         while (true)
         {
             int remaining = limits.MaximumCharacters - text.Length;
@@ -59,20 +61,37 @@ public sealed class SiiSyntaxDocument
                 char current = buffer[index];
                 if (current == '\r')
                 {
+                    if (completedLines >= limits.MaximumLines)
+                        throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber);
+
+                    completedLines++;
                     lineNumber++;
                     lineLength = 0;
                     previousWasCarriageReturn = true;
+                    lastCharacterWasLineTerminator = true;
                 }
                 else if (current == '\n')
                 {
                     if (!previousWasCarriageReturn)
+                    {
+                        if (completedLines >= limits.MaximumLines)
+                            throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber);
+
+                        completedLines++;
                         lineNumber++;
+                    }
+
                     lineLength = 0;
                     previousWasCarriageReturn = false;
+                    lastCharacterWasLineTerminator = true;
                 }
                 else
                 {
+                    if (completedLines >= limits.MaximumLines)
+                        throw new SiiSyntaxException("Document exceeds the configured line limit", lineNumber);
+
                     previousWasCarriageReturn = false;
+                    lastCharacterWasLineTerminator = false;
                     lineLength++;
                     if (lineLength > limits.MaximumLineLength)
                         throw new SiiSyntaxException("Line exceeds the configured length limit", lineNumber);
@@ -81,6 +100,12 @@ public sealed class SiiSyntaxDocument
 
             text.Append(buffer, 0, read);
         }
+
+        int lineCount = text.Length == 0 || !lastCharacterWasLineTerminator
+            ? completedLines + 1
+            : completedLines;
+        if (lineCount > limits.MaximumLines)
+            throw new SiiSyntaxException("Document exceeds the configured line limit", limits.MaximumLines + 1);
 
         return Parse(text.ToString(), limits);
     }
