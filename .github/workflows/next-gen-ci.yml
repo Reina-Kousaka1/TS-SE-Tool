@@ -43,12 +43,12 @@ jobs:
           TSSE_UI_SNAPSHOT_DIR: ${{ runner.temp }}/tsse-ui-snapshots
         run: dotnet test --solution TSSE.NextGen.sln --configuration Release
       - name: Upload Avalonia visual-review snapshots
-        if: matrix.rid == 'linux-x64'
+        if: always() && matrix.rid == 'linux-x64'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: avalonia-ui-snapshots
           path: ${{ runner.temp }}/tsse-ui-snapshots/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 1
       - name: Publish the Avalonia desktop app for this target
         run: dotnet publish desktop/TSSE.Desktop/TSSE.Desktop.csproj --configuration Release --runtime ${{ matrix.rid }} --self-contained true --output "${{ runner.temp }}/tsse-desktop-${{ matrix.rid }}"

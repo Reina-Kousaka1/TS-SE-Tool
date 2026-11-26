@@ -194,15 +194,18 @@ public sealed class AvaloniaWindowTests
     }
 
     [AvaloniaFact]
-    public void Mouse_theme_switch_updates_the_view_model_and_theme_service()
+    public void Mouse_theme_switch_track_updates_the_view_model_and_theme_service()
     {
         (MainWindowViewModel viewModel, MainWindow window, TestThemeService themeService) = CreateMainWindow();
         try
         {
             window.Show();
             ToggleSwitch themeSwitch = Assert.IsType<ToggleSwitch>(window.FindControl<ToggleSwitch>("ThemeSwitch"));
+            Assert.True(themeSwitch.IsChecked);
+            Control switchTrack = Assert.Single(themeSwitch.GetVisualDescendants().OfType<Control>(),
+                control => control.Name == "SwitchAreaGrid");
 
-            Click(window, themeSwitch);
+            Click(window, switchTrack);
 
             Assert.False(themeSwitch.IsChecked);
             Assert.False(viewModel.IsDarkTheme);
