@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-8d9f8bb
-reason=validate latest theme-aware vehicle and analytics selection styles plus UI assertions on osx-arm64; macos-15 succeeded in 45738399865
+request=macos-15-arm64-validation-2026-11-26-e46de58
+reason=validate all-page Avalonia screenshots and wrapped navigation titles on osx-arm64; macos-15 succeeded in 45739845320
 self_review=docs/architecture/phase-2-foundation.md
