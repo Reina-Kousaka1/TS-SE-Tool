@@ -28,6 +28,34 @@ public sealed class SiiSyntaxDocumentTests
     }
 
     [Fact]
+    public void Fixture_FieldEditChangesOnlyTheSelectedValueAndPreservesOpaqueSyntax()
+    {
+        string path = Path.Combine(AppContext.BaseDirectory, "fixtures", "sample.sii");
+        string originalText = File.ReadAllText(path);
+        SiiSyntaxDocument original = SiiSyntaxDocument.Parse(originalText);
+
+        SiiSyntaxDocument changed = original.WithFieldValue(
+            "economy",
+            "_nameless.synthetic",
+            "bank",
+            "2000000001");
+
+        string expectedText = originalText.Replace(
+            "bank: 1234567890",
+            "bank: 2000000001",
+            StringComparison.Ordinal);
+        Assert.Equal(originalText, original.ToText());
+        Assert.Equal(expectedText, changed.ToText());
+        Assert.Contains(changed.Blocks, block => block.Type == "mod_extension" && block.Id == "_nameless.mod");
+        SiiBlock changedEconomy = Assert.Single(
+            changed.Blocks,
+            block => block.Type == "economy" && block.Id == "_nameless.synthetic");
+        Assert.Contains(changedEconomy.Fields, field => field.Name == "counter[0]" && field.Value == "3130117026");
+        Assert.Contains(changedEconomy.Fields, field => field.Name == "extension_ref" && field.Value == "_nameless.mod");
+        Assert.Contains(changedEconomy.Fields, field => field.Name == "mod_payload" && field.Value == "\"retain {quoted} data\"");
+    }
+
+    [Fact]
     public void WithFieldValue_ChangesOnlyThatValueAndKeepsLineEndings()
     {
         const string input = "SiiNunit\r\n{\r\n  economy : _nameless.test {\r\n    bank: 100  \r\n    extra: nil\r\n  }\r\n}\r\n";
