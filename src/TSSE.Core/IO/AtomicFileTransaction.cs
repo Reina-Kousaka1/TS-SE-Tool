@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 
 namespace TSSE.Core.IO;
@@ -102,7 +103,8 @@ public sealed class AtomicFileTransaction
 
         string fileName = Path.GetFileName(fullPath);
         string stagedPath = Path.Combine(directory, $".{fileName}.tsse-{Guid.NewGuid():N}.tmp");
-        string backupPath = Path.Combine(directory, $".{fileName}.tsse-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}.bak");
+        string backupTimestamp = DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture);
+        string backupPath = Path.Combine(directory, $".{fileName}.tsse-{backupTimestamp}-{Guid.NewGuid():N}.bak");
         bool preserveStagedFile = false;
 
         try
