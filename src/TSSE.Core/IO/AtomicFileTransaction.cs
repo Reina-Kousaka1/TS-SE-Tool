@@ -76,7 +76,7 @@ public sealed class AtomicFileTransaction
 
         try
         {
-            if (targetExists && IsReparsePoint(fullPath))
+            if (IsReparsePointIfPresent(fullPath))
                 return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_is_link");
         }
         catch (Exception ex) when (IsFileOperationFailure(ex))
@@ -243,6 +243,38 @@ public sealed class AtomicFileTransaction
 
     private static bool IsReparsePoint(string path) =>
         (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+
+    private static bool IsReparsePointIfPresent(string path)
+    {
+        try
+        {
+            return IsReparsePoint(path);
+        }
+        catch (FileNotFoundException)
+        {
+            return IsDanglingSymbolicLink(path);
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return IsDanglingSymbolicLink(path);
+        }
+    }
+
+    private static bool IsDanglingSymbolicLink(string path)
+    {
+        try
+        {
+            return new FileInfo(path).LinkTarget is not null;
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return false;
+        }
+    }
 
     private static bool IsFileOperationFailure(Exception ex) =>
         ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or

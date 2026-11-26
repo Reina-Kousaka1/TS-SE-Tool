@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-transaction-linked-directory
-reason=validate atomic transaction refusal for a symlinked target directory on osx-arm64
+request=macos-15-arm64-validation-2026-11-26-transaction-target-symlinks
+reason=validate atomic transaction refusal for existing and dangling symlink targets on osx-arm64
 self_review=docs/architecture/phase-2-foundation.md

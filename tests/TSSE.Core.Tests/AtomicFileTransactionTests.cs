@@ -243,6 +243,66 @@ public sealed class AtomicFileTransactionTests
         Assert.Empty(Directory.GetFiles(actualDirectory));
     }
 
+    [Fact]
+    public async Task SymbolicLinkAsTargetFile_RejectsCommitWithoutWritingThroughLink()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string actualPath = Path.Combine(directory.Path, "actual.sii");
+        string linkPath = Path.Combine(directory.Path, "linked.sii");
+        byte[] original = "synthetic original"u8.ToArray();
+        await File.WriteAllBytesAsync(actualPath, original, TestContext.Current.CancellationToken);
+        File.CreateSymbolicLink(linkPath, actualPath);
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            linkPath,
+            "candidate"u8.ToArray(),
+            Hash(original),
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal("target_is_link", result.ErrorCode);
+        Assert.Equal(original, await File.ReadAllBytesAsync(actualPath, TestContext.Current.CancellationToken));
+        AssertNoTransactionArtifacts(directory.Path);
+    }
+
+    [Fact]
+    public async Task DanglingSymbolicLinkAsTarget_RejectsCommitWithoutCreatingTargetOrArtifacts()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string linkPath = Path.Combine(directory.Path, "linked.sii");
+        string missingTargetPath = Path.Combine(directory.Path, "missing-target.sii");
+        File.CreateSymbolicLink(linkPath, missingTargetPath);
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            linkPath,
+            "candidate"u8.ToArray(),
+            expectedOriginalSha256: null,
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal("target_is_link", result.ErrorCode);
+        Assert.False(File.Exists(missingTargetPath));
+        Assert.Equal(missingTargetPath, new FileInfo(linkPath).LinkTarget);
+        AssertNoTransactionArtifacts(directory.Path);
+    }
+
+    private static void AssertNoTransactionArtifacts(string directoryPath)
+    {
+        string[] artifacts = Directory.GetFiles(directoryPath)
+            .Where(path => path.EndsWith(".tmp", StringComparison.Ordinal) ||
+                           path.EndsWith(".bak", StringComparison.Ordinal))
+            .ToArray();
+        Assert.Empty(artifacts);
+    }
+
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
 
     private sealed class ThrowingReplacer : IAtomicFileReplacer
