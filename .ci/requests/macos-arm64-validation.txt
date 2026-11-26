@@ -1,0 +1,3 @@
+request=macos-15-arm64-validation-2026-11-26
+reason=macos-26 attempts had runner_id 0 and no steps; GitHub lists macos-15 as a standard Apple Silicon ARM64 runner for public repositories
+self_review=docs/architecture/phase-2-foundation.md
