@@ -57,29 +57,29 @@ public sealed class AtomicFileTransaction
         }
 
         string? directory = Path.GetDirectoryName(fullPath);
-        if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+        if (string.IsNullOrEmpty(directory))
             return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_directory_missing");
 
         try
         {
-            if (FileSystemPathSafety.IsReparsePoint(directory))
+            if (FileSystemPathSafety.IsReparsePointIfPresent(directory))
                 return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_directory_is_link");
+
+            if (FileSystemPathSafety.IsReparsePointIfPresent(fullPath))
+                return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_is_link");
+
+            if (FileSystemPathSafety.ContainsReparsePointInPath(fullPath))
+                return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_path_contains_link");
         }
         catch (Exception ex) when (IsFileOperationFailure(ex))
         {
             return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_attributes_unavailable");
         }
 
+        if (!Directory.Exists(directory))
+            return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_directory_missing");
+
         bool targetExists = File.Exists(fullPath);
-        try
-        {
-            if (FileSystemPathSafety.IsReparsePointIfPresent(fullPath))
-                return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_is_link");
-        }
-        catch (Exception ex) when (IsFileOperationFailure(ex))
-        {
-            return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_attributes_unavailable");
-        }
 
         if (targetExists != (expectedOriginalSha256 is not null))
             return new FileCommitResult(FileCommitStatus.Conflict, ErrorCode: "target_existence_changed");

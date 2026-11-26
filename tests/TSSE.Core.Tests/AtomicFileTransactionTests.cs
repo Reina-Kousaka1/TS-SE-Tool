@@ -221,7 +221,7 @@ public sealed class AtomicFileTransactionTests
     [Fact]
     public async Task SymbolicLinkAsTargetDirectory_RejectsCommitWithoutWritingThroughLink()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -244,9 +244,36 @@ public sealed class AtomicFileTransactionTests
     }
 
     [Fact]
+    public async Task SymbolicLinkInAncestorOfTargetDirectory_RejectsCommitWithoutWritingThroughLink()
+    {
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string actualDirectory = Path.Combine(directory.Path, "actual");
+        string linkedAncestor = Path.Combine(directory.Path, "linked");
+        string actualNestedDirectory = Path.Combine(actualDirectory, "nested");
+        Directory.CreateDirectory(actualNestedDirectory);
+        Directory.CreateSymbolicLink(linkedAncestor, actualDirectory);
+        string targetPath = Path.Combine(linkedAncestor, "nested", "synthetic.sii");
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            targetPath,
+            "candidate"u8.ToArray(),
+            expectedOriginalSha256: null,
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal("target_path_contains_link", result.ErrorCode);
+        Assert.Empty(Directory.GetFiles(actualNestedDirectory));
+        AssertNoTransactionArtifacts(actualNestedDirectory);
+    }
+
+    [Fact]
     public async Task SymbolicLinkAsTargetFile_RejectsCommitWithoutWritingThroughLink()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -272,7 +299,7 @@ public sealed class AtomicFileTransactionTests
     [Fact]
     public async Task DanglingSymbolicLinkAsTarget_RejectsCommitWithoutCreatingTargetOrArtifacts()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -302,6 +329,10 @@ public sealed class AtomicFileTransactionTests
             .ToArray();
         Assert.Empty(artifacts);
     }
+
+    private static bool SkipWindowsLinkTestsOutsideGitHubActions() =>
+        OperatingSystem.IsWindows() &&
+        !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
 
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
 
