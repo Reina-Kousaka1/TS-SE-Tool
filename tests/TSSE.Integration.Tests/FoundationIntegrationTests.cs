@@ -65,6 +65,38 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
+    public void Analytics_OmitsSnapshotDeltaWhenStableProfileIdIsReusedAcrossGames()
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("s1", "ETS2", "same-label", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m, "profile-1"),
+            new LocalBalanceSnapshot("s2", "ATS", "same-label", "unknown", end, 900m, 9_000m, 9_500m, "profile-1")
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
+
+        Assert.Null(report.BalanceDelta);
+        Assert.Null(report.NetWorthDelta);
+    }
+
+    [Fact]
+    public void Analytics_UsesStableProfileIdWhenItsDisplayLabelChanges()
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("s1", "ETS2", "old-label", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m, "profile-1"),
+            new LocalBalanceSnapshot("s2", "ETS2", "current-label", "unknown", end, 400m, 1_300m, 1_600m, "profile-1")
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
+
+        Assert.Equal(300m, report.BalanceDelta);
+        Assert.Equal(400m, report.NetWorthDelta);
+    }
+
+    [Fact]
     public void Analytics_OmitsSnapshotDeltaWhenStableProfileIdentityIsMissing()
     {
         DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);

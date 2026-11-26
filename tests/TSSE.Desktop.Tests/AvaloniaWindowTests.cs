@@ -1,6 +1,11 @@
 using System.Globalization;
+using System.IO;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using TSSE.Desktop;
 using TSSE.Desktop.Services;
@@ -32,6 +37,13 @@ public sealed class AvaloniaWindowTests
             Assert.Equal("Command Center", viewModel.CurrentPage.Title);
             Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
                 block.Text == viewModel.ThemePreferenceStatus);
+
+            CaptureVisualSnapshot(window, "command-center-dark.png");
+            NavigationItemViewModel vehicle = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "vehicle-studio");
+            viewModel.NavigateCommand.Execute(vehicle);
+            viewModel.CurrentPage.SelectVehicleCategoryCommand.Execute("Coaches");
+            viewModel.IsDarkTheme = false;
+            CaptureVisualSnapshot(window, "coaches-preview-light.png");
 
             Button[] navigationButtons = window.GetVisualDescendants()
                 .OfType<Button>()
@@ -74,10 +86,174 @@ public sealed class AvaloniaWindowTests
         }
     }
 
+    [AvaloniaFact]
+    public void Mouse_navigation_updates_each_page_and_its_selected_item()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            string[] pageTitles =
+            [
+                "Command Center", "Savegame Explorer", "Vehicle Studio", "Economy Intelligence",
+                "Savegame Time Machine", "Compatibility Lab", "Diagnostics Center", "Settings"
+            ];
+
+            foreach (string title in pageTitles)
+            {
+                Button navigationItem = FindNavigationButton(window, title);
+                Click(window, navigationItem);
+
+                Assert.Equal(title, viewModel.CurrentPage.Title);
+                Assert.True(navigationItem.Classes.Contains("selected"));
+                Assert.Single(window.GetVisualDescendants().OfType<Button>()
+                    .Where(button => button.Classes.Contains("nav-item") && button.Classes.Contains("selected")));
+                Assert.IsType<SectionViewModel>(window.FindControl<ContentControl>("PageHost")?.Content);
+                Assert.Equal(2, window.GetVisualDescendants().OfType<TextBlock>().Count(block => block.Text == title));
+            }
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Typing_in_search_filters_the_actual_navigation_controls()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            TextBox search = Assert.IsType<TextBox>(window.FindControl<TextBox>("SectionSearch"));
+            Assert.True(search.Focus());
+
+            window.KeyTextInput("Vehicle");
+
+            Assert.Equal("Vehicle", search.Text);
+            Assert.Equal("Vehicle", viewModel.SearchQuery);
+            Assert.Equal("vehicle-studio", Assert.Single(viewModel.FilteredNavigationItems).PageKey);
+            Assert.Equal("Vehicle Studio", Assert.Single(window.GetVisualDescendants()
+                .OfType<Button>()
+                .Where(button => button.Classes.Contains("nav-item")))
+                .GetVisualDescendants().OfType<TextBlock>().Single(block => block.Text == "Vehicle Studio").Text);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Mouse_selection_of_coaches_updates_the_preview_without_creating_game_data()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            Click(window, FindNavigationButton(window, "Vehicle Studio"));
+            Button coaches = Assert.Single(window.GetVisualDescendants().OfType<Button>()
+                .Where(button => button.Content?.ToString() == "Coaches"));
+
+            Click(window, coaches);
+
+            Assert.Equal("Coaches", viewModel.CurrentPage.SelectedVehicleCategory);
+            Assert.Contains("preview", viewModel.CurrentPage.SelectedVehicleMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("No compatible savegame is loaded", viewModel.CurrentPage.SelectedVehicleMessage, StringComparison.Ordinal);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Mouse_selection_of_thirty_day_analytics_updates_only_preview_state()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            Click(window, FindNavigationButton(window, "Economy Intelligence"));
+            Button thirtyDays = Assert.Single(window.GetVisualDescendants().OfType<Button>()
+                .Where(button => button.Content?.ToString() == "30 days"));
+
+            Click(window, thirtyDays);
+
+            Assert.Equal(30, viewModel.CurrentPage.SelectedWindowDays);
+            Assert.Contains("30-day view", viewModel.CurrentPage.AnalyticsNotice, StringComparison.Ordinal);
+            Assert.Contains("No transaction history or account values", viewModel.CurrentPage.AnalyticsNotice, StringComparison.Ordinal);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void Mouse_theme_switch_updates_the_view_model_and_theme_service()
+    {
+        (MainWindowViewModel viewModel, MainWindow window, TestThemeService themeService) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            ToggleSwitch themeSwitch = Assert.IsType<ToggleSwitch>(window.FindControl<ToggleSwitch>("ThemeSwitch"));
+
+            Click(window, themeSwitch);
+
+            Assert.False(themeSwitch.IsChecked);
+            Assert.False(viewModel.IsDarkTheme);
+            Assert.False(themeService.IsDark);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static (MainWindowViewModel ViewModel, MainWindow Window, TestThemeService ThemeService) CreateMainWindow()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en-US"));
+        var catalog = new PageCatalog(new FoundationStatusService(new GameAdapterRegistry()), text);
+        var themeService = new TestThemeService();
+        var viewModel = new MainWindowViewModel(new NavigationService(catalog), themeService, text);
+        return (viewModel, new MainWindow(viewModel), themeService);
+    }
+
+    private static Button FindNavigationButton(MainWindow window, string title) =>
+        Assert.Single(window.GetVisualDescendants().OfType<Button>()
+            .Where(button => button.Classes.Contains("nav-item"))
+            .Where(button => button.GetVisualDescendants().OfType<TextBlock>().Any(block => block.Text == title)));
+
+    private static void Click(Window window, Control control)
+    {
+        Point? center = control.TranslatePoint(
+            new Point(control.Bounds.Width / 2, control.Bounds.Height / 2),
+            window);
+        Assert.True(center.HasValue, "The target control must share the window's visual tree.");
+        window.MouseDown(center.Value, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(center.Value, MouseButton.Left, RawInputModifiers.None);
+    }
+
+    private static void CaptureVisualSnapshot(Window window, string fileName)
+    {
+        string? directory = Environment.GetEnvironmentVariable("TSSE_UI_SNAPSHOT_DIR");
+        if (string.IsNullOrWhiteSpace(directory))
+            return;
+
+        Directory.CreateDirectory(directory);
+        window.CaptureRenderedFrame().Save(Path.Combine(directory, fileName));
+    }
+
     private sealed class TestThemeService : IThemeService
     {
         public bool IsDark { get; private set; } = true;
         public string PreferenceStatus => "Theme preference is stored on this device.";
-        public void SetDark(bool isDark) => IsDark = isDark;
+        public void SetDark(bool isDark)
+        {
+            IsDark = isDark;
+            if (Application.Current is { } application)
+                application.RequestedThemeVariant = isDark ? ThemeVariant.Dark : ThemeVariant.Light;
+        }
     }
 }
