@@ -270,7 +270,7 @@ public sealed class FoundationIntegrationTests
     [Fact]
     public async Task SnapshotStore_RejectsSymbolicLinkTargetBeforeReadingOrAppending()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         string directory = Path.Combine(Path.GetTempPath(), "tsse-linked-snapshot-" + Guid.NewGuid().ToString("N"));
@@ -304,7 +304,7 @@ public sealed class FoundationIntegrationTests
     [Fact]
     public async Task SnapshotStore_RejectsDanglingSymbolicLinkInsteadOfTreatingItAsMissing()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         string directory = Path.Combine(Path.GetTempPath(), "tsse-dangling-snapshot-" + Guid.NewGuid().ToString("N"));
@@ -337,7 +337,7 @@ public sealed class FoundationIntegrationTests
     [Fact]
     public async Task SnapshotStore_RejectsSymbolicLinkAncestorBeforeCreatingDirectories()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         string directory = Path.Combine(Path.GetTempPath(), "tsse-linked-snapshot-parent-" + Guid.NewGuid().ToString("N"));
@@ -403,4 +403,8 @@ public sealed class FoundationIntegrationTests
         200m,
         300m,
         "profile-new");
+
+    private static bool SkipWindowsLinkTestsOutsideGitHubActions() =>
+        OperatingSystem.IsWindows() &&
+        !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
 }

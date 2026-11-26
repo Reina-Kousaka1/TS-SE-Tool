@@ -97,7 +97,7 @@ public sealed class AtomicFileRecoveryInspectorTests
     [Fact]
     public void Inspect_RejectsSymbolicLinkAsTargetDirectory()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -117,7 +117,7 @@ public sealed class AtomicFileRecoveryInspectorTests
     [Fact]
     public void Inspect_RejectsSymbolicLinkInAnAncestorOfTargetDirectory()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -137,7 +137,7 @@ public sealed class AtomicFileRecoveryInspectorTests
     [Fact]
     public void Inspect_RejectsSymbolicLinkAsTargetFile()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -157,7 +157,7 @@ public sealed class AtomicFileRecoveryInspectorTests
     [Fact]
     public void Inspect_RejectsDanglingSymbolicLinkAsTarget()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -176,7 +176,7 @@ public sealed class AtomicFileRecoveryInspectorTests
     [Fact]
     public void Inspect_RejectsSymbolicLinkToDirectoryAsTargetLink()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -195,7 +195,7 @@ public sealed class AtomicFileRecoveryInspectorTests
     [Fact]
     public void Inspect_ReportsSymbolicLinkCandidateWithoutFollowingIt()
     {
-        if (OperatingSystem.IsWindows())
+        if (SkipWindowsLinkTestsOutsideGitHubActions())
             return;
 
         using var directory = new TemporaryDirectory();
@@ -253,4 +253,8 @@ public sealed class AtomicFileRecoveryInspectorTests
                 Directory.Delete(Path, recursive: true);
         }
     }
+
+    private static bool SkipWindowsLinkTestsOutsideGitHubActions() =>
+        OperatingSystem.IsWindows() &&
+        !string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase);
 }
