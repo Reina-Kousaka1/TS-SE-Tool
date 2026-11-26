@@ -49,19 +49,22 @@ public sealed class AtomicFileRecoveryInspector
         if (string.IsNullOrEmpty(directory) || string.IsNullOrEmpty(fileName))
             return Result(isComplete: false, [], "target_path_invalid");
 
-        if (!Directory.Exists(directory))
-            return Result(isComplete: false, [], "target_directory_missing");
-
         try
         {
-            if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
-                return Result(isComplete: false, [], "target_directory_is_link");
-
             if (FileSystemPathSafety.IsReparsePointIfPresent(fullTargetPath))
                 return Result(isComplete: false, [], "target_is_link");
 
             if (Directory.Exists(fullTargetPath))
                 return Result(isComplete: false, [], "target_is_directory");
+
+            if (FileSystemPathSafety.IsReparsePointIfPresent(directory))
+                return Result(isComplete: false, [], "target_directory_is_link");
+
+            if (FileSystemPathSafety.ContainsReparsePointInPath(fullTargetPath))
+                return Result(isComplete: false, [], "target_path_contains_link");
+
+            if (!Directory.Exists(directory))
+                return Result(isComplete: false, [], "target_directory_missing");
         }
         catch (Exception ex) when (IsFileOperationFailure(ex))
         {

@@ -115,6 +115,26 @@ public sealed class AtomicFileRecoveryInspectorTests
     }
 
     [Fact]
+    public void Inspect_RejectsSymbolicLinkInAnAncestorOfTargetDirectory()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string actualDirectory = Path.Combine(directory.Path, "actual");
+        string linkedAncestor = Path.Combine(directory.Path, "linked");
+        Directory.CreateDirectory(Path.Combine(actualDirectory, "nested"));
+        Directory.CreateSymbolicLink(linkedAncestor, actualDirectory);
+
+        AtomicRecoveryScanResult result = new AtomicFileRecoveryInspector().Inspect(
+            Path.Combine(linkedAncestor, "nested", "profile.sii"));
+
+        Assert.False(result.IsComplete);
+        Assert.Equal("target_path_contains_link", result.ErrorCode);
+        Assert.Empty(result.Artifacts);
+    }
+
+    [Fact]
     public void Inspect_RejectsSymbolicLinkAsTargetFile()
     {
         if (OperatingSystem.IsWindows())
