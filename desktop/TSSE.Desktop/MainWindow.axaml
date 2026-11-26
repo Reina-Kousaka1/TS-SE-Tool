@@ -56,7 +56,7 @@
                   <Grid ColumnDefinitions="30,*">
                     <TextBlock Grid.Column="0" Text="{Binding Glyph}" FontSize="16"
                                Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13"
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12"
                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                   </Grid>
                 </Button>

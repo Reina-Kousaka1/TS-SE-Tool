@@ -63,7 +63,12 @@ public sealed class SectionViewModel : ObservableObject
     public string SevenDaysLabel { get; }
     public string ThirtyDaysLabel { get; }
     public string SelectedVehicleCategory => _selectedVehicleCategory;
+    public bool IsTrucksSelected => _selectedVehicleCategory == "Trucks";
+    public bool IsTrailersSelected => _selectedVehicleCategory == "Trailers";
+    public bool IsCoachesSelected => _selectedVehicleCategory == "Coaches";
     public int SelectedWindowDays => _selectedWindowDays;
+    public bool IsSevenDaysSelected => _selectedWindowDays == 7;
+    public bool IsThirtyDaysSelected => _selectedWindowDays == 30;
     public string SelectedVehicleCategoryLabel => _text.Get($"vehicle.category.{_selectedVehicleCategory.ToLowerInvariant()}");
     public string SelectedWindowLabel => _text.Format("analytics.window.selected", _selectedWindowDays);
     public string SelectedVehicleMessage => _text.Format("vehicle.selectedPreview", SelectedVehicleCategoryLabel);
@@ -78,6 +83,9 @@ public sealed class SectionViewModel : ObservableObject
 
         if (SetProperty(ref _selectedVehicleCategory, category, nameof(SelectedVehicleCategory)))
         {
+            OnPropertyChanged(nameof(IsTrucksSelected));
+            OnPropertyChanged(nameof(IsTrailersSelected));
+            OnPropertyChanged(nameof(IsCoachesSelected));
             OnPropertyChanged(nameof(SelectedVehicleCategoryLabel));
             OnPropertyChanged(nameof(SelectedVehicleMessage));
         }
@@ -90,6 +98,8 @@ public sealed class SectionViewModel : ObservableObject
 
         if (SetProperty(ref _selectedWindowDays, days, nameof(SelectedWindowDays)))
         {
+            OnPropertyChanged(nameof(IsSevenDaysSelected));
+            OnPropertyChanged(nameof(IsThirtyDaysSelected));
             OnPropertyChanged(nameof(SelectedWindowLabel));
             OnPropertyChanged(nameof(AnalyticsNotice));
         }

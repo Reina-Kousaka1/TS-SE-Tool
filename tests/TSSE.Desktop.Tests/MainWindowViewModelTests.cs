@@ -73,8 +73,13 @@ public sealed class MainWindowViewModelTests
         economy.SelectAnalyticsWindowCommand.Execute("30");
 
         Assert.Equal("Coaches", vehicle.SelectedVehicleCategory);
+        Assert.False(vehicle.IsTrucksSelected);
+        Assert.False(vehicle.IsTrailersSelected);
+        Assert.True(vehicle.IsCoachesSelected);
         Assert.Contains("preview", vehicle.SelectedVehicleMessage, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(30, economy.SelectedWindowDays);
+        Assert.False(economy.IsSevenDaysSelected);
+        Assert.True(economy.IsThirtyDaysSelected);
         Assert.Contains("local snapshots only", economy.AnalyticsNotice, StringComparison.Ordinal);
         Assert.Contains("No transaction history or account values", economy.AnalyticsNotice, StringComparison.Ordinal);
     }

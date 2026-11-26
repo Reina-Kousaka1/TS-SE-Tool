@@ -161,6 +161,9 @@ public sealed class AvaloniaWindowTests
             Click(window, coaches);
 
             Assert.Equal("Coaches", viewModel.CurrentPage.SelectedVehicleCategory);
+            Assert.Contains("selected", coaches.Classes);
+            Assert.DoesNotContain("selected", Assert.Single(window.GetVisualDescendants().OfType<Button>(),
+                button => button.Content?.ToString() == "Trucks").Classes);
             Assert.Contains("preview", viewModel.CurrentPage.SelectedVehicleMessage, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("No compatible savegame is loaded", viewModel.CurrentPage.SelectedVehicleMessage, StringComparison.Ordinal);
         }
@@ -184,6 +187,7 @@ public sealed class AvaloniaWindowTests
             Click(window, thirtyDays);
 
             Assert.Equal(30, viewModel.CurrentPage.SelectedWindowDays);
+            Assert.Contains("selected", thirtyDays.Classes);
             Assert.Contains("30-day view", viewModel.CurrentPage.AnalyticsNotice, StringComparison.Ordinal);
             Assert.Contains("No transaction history or account values", viewModel.CurrentPage.AnalyticsNotice, StringComparison.Ordinal);
         }

@@ -31,9 +31,12 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding VehicleCategoryHeading}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="{Binding TrucksLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trucks" />
-            <Button Content="{Binding TrailersLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trailers" />
-            <Button Content="{Binding CoachesLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Coaches" />
+            <Button Classes="option-button" Classes.selected="{Binding IsTrucksSelected}"
+                    Content="{Binding TrucksLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trucks" />
+            <Button Classes="option-button" Classes.selected="{Binding IsTrailersSelected}"
+                    Content="{Binding TrailersLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Trailers" />
+            <Button Classes="option-button" Classes.selected="{Binding IsCoachesSelected}"
+                    Content="{Binding CoachesLabel}" Command="{Binding SelectVehicleCategoryCommand}" CommandParameter="Coaches" />
           </StackPanel>
           <TextBlock Text="{Binding SelectedVehicleMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
         </StackPanel>
@@ -44,8 +47,10 @@
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding AnalyticsWindowHeading}" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}" LetterSpacing="1.2" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="{Binding SevenDaysLabel}" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="7" />
-            <Button Content="{Binding ThirtyDaysLabel}" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="30" />
+            <Button Classes="option-button" Classes.selected="{Binding IsSevenDaysSelected}"
+                    Content="{Binding SevenDaysLabel}" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="7" />
+            <Button Classes="option-button" Classes.selected="{Binding IsThirtyDaysSelected}"
+                    Content="{Binding ThirtyDaysLabel}" Command="{Binding SelectAnalyticsWindowCommand}" CommandParameter="30" />
             <TextBlock Text="{Binding SelectedWindowLabel}" FontSize="12" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
           </StackPanel>
           <TextBlock Text="{Binding AnalyticsNotice}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
