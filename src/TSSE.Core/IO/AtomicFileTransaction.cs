@@ -60,6 +60,16 @@ public sealed class AtomicFileTransaction
         if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
             return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_directory_missing");
 
+        try
+        {
+            if (IsReparsePoint(directory))
+                return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_directory_is_link");
+        }
+        catch (Exception ex) when (IsFileOperationFailure(ex))
+        {
+            return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_attributes_unavailable");
+        }
+
         bool targetExists = File.Exists(fullPath);
         if (targetExists != (expectedOriginalSha256 is not null))
             return new FileCommitResult(FileCommitStatus.Conflict, ErrorCode: "target_existence_changed");

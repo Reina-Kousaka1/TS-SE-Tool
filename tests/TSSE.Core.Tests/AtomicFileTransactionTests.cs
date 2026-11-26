@@ -218,6 +218,31 @@ public sealed class AtomicFileTransactionTests
         Assert.Empty(Directory.GetFiles(directory.Path, "*", SearchOption.AllDirectories));
     }
 
+    [Fact]
+    public async Task SymbolicLinkAsTargetDirectory_RejectsCommitWithoutWritingThroughLink()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string actualDirectory = Path.Combine(directory.Path, "actual");
+        string linkedDirectory = Path.Combine(directory.Path, "linked");
+        Directory.CreateDirectory(actualDirectory);
+        Directory.CreateSymbolicLink(linkedDirectory, actualDirectory);
+        string targetPath = Path.Combine(linkedDirectory, "synthetic.sii");
+
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            targetPath,
+            "candidate"u8.ToArray(),
+            expectedOriginalSha256: null,
+            _ => true,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal("target_directory_is_link", result.ErrorCode);
+        Assert.Empty(Directory.GetFiles(actualDirectory));
+    }
+
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
 
     private sealed class ThrowingReplacer : IAtomicFileReplacer
