@@ -57,12 +57,11 @@ public sealed class AtomicFileRecoveryInspector
             if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
                 return Result(isComplete: false, [], "target_directory_is_link");
 
+            if (FileSystemPathSafety.IsReparsePointIfPresent(fullTargetPath))
+                return Result(isComplete: false, [], "target_is_link");
+
             if (Directory.Exists(fullTargetPath))
                 return Result(isComplete: false, [], "target_is_directory");
-
-            if (File.Exists(fullTargetPath) &&
-                (File.GetAttributes(fullTargetPath) & FileAttributes.ReparsePoint) != 0)
-                return Result(isComplete: false, [], "target_is_link");
         }
         catch (Exception ex) when (IsFileOperationFailure(ex))
         {

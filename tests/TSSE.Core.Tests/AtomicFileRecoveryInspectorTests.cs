@@ -115,6 +115,64 @@ public sealed class AtomicFileRecoveryInspectorTests
     }
 
     [Fact]
+    public void Inspect_RejectsSymbolicLinkAsTargetFile()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string actualPath = Path.Combine(directory.Path, "actual.sii");
+        string linkPath = Path.Combine(directory.Path, "profile.sii");
+        File.WriteAllText(actualPath, "synthetic target");
+        File.CreateSymbolicLink(linkPath, actualPath);
+
+        AtomicRecoveryScanResult result = new AtomicFileRecoveryInspector().Inspect(linkPath);
+
+        Assert.False(result.IsComplete);
+        Assert.Equal("target_is_link", result.ErrorCode);
+        Assert.Empty(result.Artifacts);
+        Assert.Equal("synthetic target", File.ReadAllText(actualPath));
+    }
+
+    [Fact]
+    public void Inspect_RejectsDanglingSymbolicLinkAsTarget()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string linkPath = Path.Combine(directory.Path, "profile.sii");
+        string missingTargetPath = Path.Combine(directory.Path, "missing.sii");
+        File.CreateSymbolicLink(linkPath, missingTargetPath);
+
+        AtomicRecoveryScanResult result = new AtomicFileRecoveryInspector().Inspect(linkPath);
+
+        Assert.False(result.IsComplete);
+        Assert.Equal("target_is_link", result.ErrorCode);
+        Assert.Empty(result.Artifacts);
+        Assert.Equal(missingTargetPath, new FileInfo(linkPath).LinkTarget);
+    }
+
+    [Fact]
+    public void Inspect_RejectsSymbolicLinkToDirectoryAsTargetLink()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string actualDirectory = Path.Combine(directory.Path, "actual");
+        string linkPath = Path.Combine(directory.Path, "profile.sii");
+        Directory.CreateDirectory(actualDirectory);
+        Directory.CreateSymbolicLink(linkPath, actualDirectory);
+
+        AtomicRecoveryScanResult result = new AtomicFileRecoveryInspector().Inspect(linkPath);
+
+        Assert.False(result.IsComplete);
+        Assert.Equal("target_is_link", result.ErrorCode);
+        Assert.Empty(result.Artifacts);
+    }
+
+    [Fact]
     public void Inspect_ReportsSymbolicLinkCandidateWithoutFollowingIt()
     {
         if (OperatingSystem.IsWindows())

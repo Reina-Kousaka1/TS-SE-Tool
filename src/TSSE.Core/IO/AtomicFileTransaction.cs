@@ -62,7 +62,7 @@ public sealed class AtomicFileTransaction
 
         try
         {
-            if (IsReparsePoint(directory))
+            if (FileSystemPathSafety.IsReparsePoint(directory))
                 return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_directory_is_link");
         }
         catch (Exception ex) when (IsFileOperationFailure(ex))
@@ -73,7 +73,7 @@ public sealed class AtomicFileTransaction
         bool targetExists = File.Exists(fullPath);
         try
         {
-            if (IsReparsePointIfPresent(fullPath))
+            if (FileSystemPathSafety.IsReparsePointIfPresent(fullPath))
                 return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_is_link");
         }
         catch (Exception ex) when (IsFileOperationFailure(ex))
@@ -240,41 +240,6 @@ public sealed class AtomicFileTransaction
     private static bool HashesEqual(string? left, string? right) =>
         left is not null && right is not null &&
         string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsReparsePoint(string path) =>
-        (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
-
-    private static bool IsReparsePointIfPresent(string path)
-    {
-        try
-        {
-            return IsReparsePoint(path);
-        }
-        catch (FileNotFoundException)
-        {
-            return IsDanglingSymbolicLink(path);
-        }
-        catch (DirectoryNotFoundException)
-        {
-            return IsDanglingSymbolicLink(path);
-        }
-    }
-
-    private static bool IsDanglingSymbolicLink(string path)
-    {
-        try
-        {
-            return new FileInfo(path).LinkTarget is not null;
-        }
-        catch (FileNotFoundException)
-        {
-            return false;
-        }
-        catch (DirectoryNotFoundException)
-        {
-            return false;
-        }
-    }
 
     private static bool IsFileOperationFailure(Exception ex) =>
         ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or
