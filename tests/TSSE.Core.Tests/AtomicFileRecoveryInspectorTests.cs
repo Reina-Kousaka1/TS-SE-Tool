@@ -95,6 +95,52 @@ public sealed class AtomicFileRecoveryInspectorTests
     }
 
     [Fact]
+    public void Inspect_RejectsSymbolicLinkAsTargetDirectory()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        string realDirectory = Path.Combine(directory.Path, "real");
+        string linkedDirectory = Path.Combine(directory.Path, "linked");
+        Directory.CreateDirectory(realDirectory);
+        Directory.CreateSymbolicLink(linkedDirectory, realDirectory);
+
+        AtomicRecoveryScanResult result = new AtomicFileRecoveryInspector().Inspect(
+            Path.Combine(linkedDirectory, "profile.sii"));
+
+        Assert.False(result.IsComplete);
+        Assert.Equal("target_directory_is_link", result.ErrorCode);
+        Assert.Empty(result.Artifacts);
+    }
+
+    [Fact]
+    public void Inspect_ReportsSymbolicLinkCandidateWithoutFollowingIt()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        using var directory = new TemporaryDirectory();
+        const string targetName = "profile.sii";
+        string sourcePath = Path.Combine(directory.Path, "outside-candidate-data");
+        string targetPath = Path.Combine(directory.Path, targetName);
+        string linkPath = Path.Combine(directory.Path, $".{targetName}.tsse-{Guid.NewGuid():N}.tmp");
+        byte[] sourceContents = "must remain untouched"u8.ToArray();
+        File.WriteAllBytes(sourcePath, sourceContents);
+        File.CreateSymbolicLink(linkPath, sourcePath);
+
+        AtomicRecoveryScanResult result = new AtomicFileRecoveryInspector().Inspect(targetPath);
+
+        Assert.True(result.IsComplete);
+        AtomicRecoveryArtifact artifact = Assert.Single(result.Artifacts);
+        Assert.Equal(linkPath, artifact.Path);
+        Assert.Equal(AtomicRecoveryArtifactKind.StagedPayloadCandidate, artifact.Kind);
+        Assert.Equal("artifact_is_link", artifact.ErrorCode);
+        Assert.Null(artifact.LengthBytes);
+        Assert.Equal(sourceContents, File.ReadAllBytes(sourcePath));
+    }
+
+    [Fact]
     public void Inspect_StopsAtArtifactLimitAndMarksInventoryIncomplete()
     {
         using var directory = new TemporaryDirectory();
