@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-verified-adapter-registration
-reason=validate exact-version read-only adapter registration and write-capability guards on Apple Silicon
+request=macos-15-arm64-validation-2026-11-26-analytics-window-boundaries
+reason=run the current 7-day and 30-day analytics boundary tests on Apple Silicon ARM64
 self_review=docs/architecture/phase-2-foundation.md
