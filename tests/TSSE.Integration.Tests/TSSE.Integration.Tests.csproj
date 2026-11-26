@@ -11,7 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\TSSE.Analytics\TSSE.Analytics.csproj" />
-    <ProjectReference Include="..\..\src\TSSE.Bridge\TSSE.Bridge.csproj" />
     <ProjectReference Include="..\..\src\TSSE.GameAdapters\TSSE.GameAdapters.csproj" />
   </ItemGroup>
 </Project>

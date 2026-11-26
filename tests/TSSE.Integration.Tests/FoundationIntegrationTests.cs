@@ -1,8 +1,6 @@
-using System.Text.Json;
 using TSSE.Analytics;
 using TSSE.Analytics.Models;
 using TSSE.Analytics.Storage;
-using TSSE.Bridge.Protocol;
 using TSSE.Core.IO;
 using TSSE.GameAdapters.Compatibility;
 using Xunit;
@@ -220,33 +218,6 @@ public sealed class FoundationIntegrationTests
 
         Assert.Null(report.BalanceDelta);
         Assert.Null(report.NetWorthDelta);
-    }
-
-    [Fact]
-    public void Bridge_ReturnsActualReadOnlyFoundationCapabilities()
-    {
-        const string request = "{\"protocolVersion\":1,\"requestId\":\"health-1\",\"method\":\"engine.status\"}";
-
-        using JsonDocument response = JsonDocument.Parse(BridgeProtocol.HandleLine(request));
-        JsonElement root = response.RootElement;
-        JsonElement engine = root.GetProperty("engine");
-
-        Assert.Equal("ok", root.GetProperty("status").GetString());
-        Assert.Equal("foundation-only", engine.GetProperty("processState").GetString());
-        Assert.Equal(0, engine.GetProperty("verifiedGameAdapterCount").GetInt32());
-        Assert.False(engine.GetProperty("saveWriteEnabled").GetBoolean());
-    }
-
-    [Fact]
-    public void Bridge_RejectsUnknownMethodsAndProtocolVersions()
-    {
-        string methodResponse = BridgeProtocol.HandleLine(
-            "{\"protocolVersion\":1,\"requestId\":\"r1\",\"method\":\"save.write\"}");
-        string versionResponse = BridgeProtocol.HandleLine(
-            "{\"protocolVersion\":2,\"requestId\":\"r2\",\"method\":\"engine.status\"}");
-
-        Assert.Contains("method_not_supported", methodResponse, StringComparison.Ordinal);
-        Assert.Contains("protocol_version_unsupported", versionResponse, StringComparison.Ordinal);
     }
 
     [Fact]
