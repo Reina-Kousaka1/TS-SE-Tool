@@ -28,6 +28,10 @@ public sealed class LocalSnapshotStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            EnsureSafeSnapshotPath();
+            if (Directory.Exists(_path))
+                throw new InvalidDataException("The local snapshot path points to a directory.");
+
             if (!File.Exists(_path))
                 return Array.Empty<LocalBalanceSnapshot>();
 
@@ -55,7 +59,14 @@ public sealed class LocalSnapshotStore
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+            EnsureSafeSnapshotPath();
+            if (Directory.Exists(_path))
+                throw new InvalidDataException("The local snapshot path points to a directory.");
+
+            string directory = Path.GetDirectoryName(_path)!;
+            Directory.CreateDirectory(directory);
+            EnsureSafeSnapshotPath();
+
             if (File.Exists(_path) && new FileInfo(_path).Length > AtomicFileTransaction.MaximumPayloadBytes)
                 return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "snapshot_file_too_large");
 
@@ -88,12 +99,62 @@ public sealed class LocalSnapshotStore
 
     private static IReadOnlyList<LocalBalanceSnapshot> Deserialize(byte[] bytes)
     {
-        using JsonDocument document = JsonDocument.Parse(bytes);
-        if (document.RootElement.ValueKind != JsonValueKind.Array)
-            throw new InvalidDataException("The local snapshot file must contain a JSON array.");
+        List<LocalBalanceSnapshot?> snapshots;
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(bytes);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+                throw new InvalidDataException("The local snapshot file must contain a JSON array.");
 
-        return JsonSerializer.Deserialize<List<LocalBalanceSnapshot>>(bytes, JsonOptions)
-            ?? throw new InvalidDataException("The local snapshot file is invalid.");
+            snapshots = JsonSerializer.Deserialize<List<LocalBalanceSnapshot?>>(bytes, JsonOptions)
+                ?? throw new InvalidDataException("The local snapshot file is invalid.");
+        }
+        catch (JsonException error)
+        {
+            throw new InvalidDataException("The local snapshot file contains malformed JSON.", error);
+        }
+
+        var snapshotIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (LocalBalanceSnapshot? snapshot in snapshots)
+        {
+            if (snapshot is null)
+                throw new InvalidDataException("The local snapshot file contains an empty entry.");
+
+            try
+            {
+                ValidateSnapshot(snapshot, requireStableProfileIdentity: false);
+            }
+            catch (ArgumentException error)
+            {
+                throw new InvalidDataException("A local snapshot entry is missing required identity data.", error);
+            }
+
+            if (!snapshotIds.Add(snapshot.SnapshotId))
+                throw new InvalidDataException("The local snapshot file contains a duplicate snapshot ID.");
+        }
+
+        return snapshots.Select(snapshot => snapshot!).ToArray();
+    }
+
+    private void EnsureSafeSnapshotPath()
+    {
+        if (FileSystemPathSafety.ContainsReparsePointInPath(_path))
+            throw new IOException("The local snapshot path cannot contain symbolic links or reparse points.");
+
+        string? directory = Path.GetDirectoryName(_path);
+        while (!string.IsNullOrEmpty(directory))
+        {
+            if (File.Exists(directory))
+                throw new InvalidDataException("A parent component of the local snapshot path is a file.");
+            if (Directory.Exists(directory))
+                return;
+
+            string? parent = Path.GetDirectoryName(directory);
+            if (string.IsNullOrEmpty(parent) || string.Equals(parent, directory, StringComparison.Ordinal))
+                return;
+
+            directory = parent;
+        }
     }
 
     private static bool IsValidJsonArray(ReadOnlyMemory<byte> bytes)
@@ -109,11 +170,12 @@ public sealed class LocalSnapshotStore
         }
     }
 
-    private static void ValidateSnapshot(LocalBalanceSnapshot snapshot)
+    private static void ValidateSnapshot(LocalBalanceSnapshot snapshot, bool requireStableProfileIdentity = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.SnapshotId);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.GameId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileId);
+        if (requireStableProfileIdentity)
+            ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileId);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.ProfileLabel);
         ArgumentException.ThrowIfNullOrWhiteSpace(snapshot.SaveVersion);
     }

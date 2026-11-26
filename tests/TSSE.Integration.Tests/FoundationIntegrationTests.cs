@@ -237,4 +237,170 @@ public sealed class FoundationIntegrationTests
                 Directory.Delete(directory, recursive: true);
         }
     }
+
+    [Theory]
+    [InlineData("{")]
+    [InlineData("[null]")]
+    [InlineData("[{\"snapshotId\":\"duplicate\",\"gameId\":\"ETS2\",\"profileLabel\":\"profile\",\"saveVersion\":\"v1\",\"capturedAt\":\"2026-11-25T12:00:00Z\"},{\"snapshotId\":\"duplicate\",\"gameId\":\"ETS2\",\"profileLabel\":\"profile\",\"saveVersion\":\"v1\",\"capturedAt\":\"2026-11-26T12:00:00Z\"}]")]
+    [InlineData("[{\"snapshotId\":\"missing-game\",\"profileLabel\":\"profile\",\"saveVersion\":\"v1\",\"capturedAt\":\"2026-11-25T12:00:00Z\"}]")]
+    public async Task SnapshotStore_RejectsInvalidEntriesWithoutOverwritingHistory(string contents)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "tsse-invalid-snapshot-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string path = Path.Combine(directory, "history.json");
+            await File.WriteAllTextAsync(path, contents, TestContext.Current.CancellationToken);
+            var store = new LocalSnapshotStore(path);
+
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => store.ReadAsync(TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => store.AppendAsync(CreateSyntheticSnapshot(), TestContext.Current.CancellationToken));
+
+            Assert.Equal(contents, await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SnapshotStore_RejectsSymbolicLinkTargetBeforeReadingOrAppending()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        string directory = Path.Combine(Path.GetTempPath(), "tsse-linked-snapshot-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string? linkPath = null;
+        try
+        {
+            string actualPath = Path.Combine(directory, "actual.json");
+            linkPath = Path.Combine(directory, "history.json");
+            await File.WriteAllTextAsync(actualPath, "[]", TestContext.Current.CancellationToken);
+            File.CreateSymbolicLink(linkPath, actualPath);
+            var store = new LocalSnapshotStore(linkPath);
+
+            await Assert.ThrowsAsync<IOException>(
+                () => store.ReadAsync(TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<IOException>(
+                () => store.AppendAsync(CreateSyntheticSnapshot(), TestContext.Current.CancellationToken));
+
+            Assert.Equal("[]", await File.ReadAllTextAsync(actualPath, TestContext.Current.CancellationToken));
+            Assert.Equal(actualPath, new FileInfo(linkPath).LinkTarget);
+        }
+        finally
+        {
+            if (linkPath is not null)
+                File.Delete(linkPath);
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SnapshotStore_RejectsDanglingSymbolicLinkInsteadOfTreatingItAsMissing()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        string directory = Path.Combine(Path.GetTempPath(), "tsse-dangling-snapshot-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string? linkPath = null;
+        try
+        {
+            linkPath = Path.Combine(directory, "history.json");
+            string missingTargetPath = Path.Combine(directory, "missing.json");
+            File.CreateSymbolicLink(linkPath, missingTargetPath);
+            var store = new LocalSnapshotStore(linkPath);
+
+            await Assert.ThrowsAsync<IOException>(
+                () => store.ReadAsync(TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<IOException>(
+                () => store.AppendAsync(CreateSyntheticSnapshot(), TestContext.Current.CancellationToken));
+
+            Assert.Equal(missingTargetPath, new FileInfo(linkPath).LinkTarget);
+            Assert.False(File.Exists(missingTargetPath));
+        }
+        finally
+        {
+            if (linkPath is not null)
+                File.Delete(linkPath);
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SnapshotStore_RejectsSymbolicLinkAncestorBeforeCreatingDirectories()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        string directory = Path.Combine(Path.GetTempPath(), "tsse-linked-snapshot-parent-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string? linkedDirectory = null;
+        try
+        {
+            string actualDirectory = Path.Combine(directory, "actual");
+            linkedDirectory = Path.Combine(directory, "linked");
+            string wouldBeCreatedDirectory = Path.Combine(actualDirectory, "new");
+            Directory.CreateDirectory(actualDirectory);
+            Directory.CreateSymbolicLink(linkedDirectory, actualDirectory);
+            var store = new LocalSnapshotStore(Path.Combine(linkedDirectory, "new", "history.json"));
+
+            await Assert.ThrowsAsync<IOException>(
+                () => store.ReadAsync(TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<IOException>(
+                () => store.AppendAsync(CreateSyntheticSnapshot(), TestContext.Current.CancellationToken));
+
+            Assert.False(Directory.Exists(wouldBeCreatedDirectory));
+        }
+        finally
+        {
+            if (linkedDirectory is not null && Directory.Exists(linkedDirectory))
+                Directory.Delete(linkedDirectory);
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SnapshotStore_RejectsFileInParentPathInsteadOfReportingEmptyHistory()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "tsse-file-snapshot-parent-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string blockingFile = Path.Combine(directory, "blocking-file");
+            await File.WriteAllTextAsync(blockingFile, "preserve", TestContext.Current.CancellationToken);
+            var store = new LocalSnapshotStore(Path.Combine(blockingFile, "new", "history.json"));
+
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => store.ReadAsync(TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync<InvalidDataException>(
+                () => store.AppendAsync(CreateSyntheticSnapshot(), TestContext.Current.CancellationToken));
+
+            Assert.Equal("preserve", await File.ReadAllTextAsync(blockingFile, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static LocalBalanceSnapshot CreateSyntheticSnapshot() => new(
+        "snapshot-new",
+        "ETS2",
+        "synthetic-profile",
+        "unknown",
+        DateTimeOffset.Parse("2026-11-26T12:00:00Z"),
+        100m,
+        200m,
+        300m,
+        "profile-new");
 }

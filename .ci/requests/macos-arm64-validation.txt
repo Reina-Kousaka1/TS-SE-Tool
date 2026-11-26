@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-recovery-inspector-target-symlink-ordering
-reason=verify recovery inspector rejects existing dangling and directory target symlinks before inventory or directory classification on osx-arm64
+request=macos-15-arm64-validation-2026-11-26-analytics-snapshot-path-safety
+reason=validate local snapshot store rejects linked targets ancestors dangling links and corrupted records on osx-arm64
 self_review=docs/architecture/phase-2-foundation.md
