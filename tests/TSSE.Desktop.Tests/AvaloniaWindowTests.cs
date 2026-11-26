@@ -137,6 +137,37 @@ public sealed class AvaloniaWindowTests
     }
 
     [AvaloniaFact]
+    public void Keyboard_space_activates_navigation_and_coach_preview_buttons()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            Button vehicleStudio = FindNavigationButton(window, "Vehicle Studio");
+            Assert.True(vehicleStudio.Focus());
+
+            window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+
+            Assert.Equal("Vehicle Studio", viewModel.CurrentPage.Title);
+            Assert.Contains("selected", vehicleStudio.Classes);
+            Button coaches = Assert.Single(window.GetVisualDescendants().OfType<Button>(),
+                button => button.Content?.ToString() == "Coaches");
+            Assert.True(coaches.Focus());
+
+            window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+
+            Assert.Equal("Coaches", viewModel.CurrentPage.SelectedVehicleCategory);
+            Assert.Contains("selected", coaches.Classes);
+            Assert.Contains("preview", viewModel.CurrentPage.SelectedVehicleMessage, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("No compatible savegame is loaded", viewModel.CurrentPage.SelectedVehicleMessage, StringComparison.Ordinal);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void Typing_in_search_filters_the_actual_navigation_controls()
     {
         var (viewModel, window, _) = CreateMainWindow();
