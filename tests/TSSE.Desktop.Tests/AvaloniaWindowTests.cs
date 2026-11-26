@@ -39,7 +39,20 @@ public sealed class AvaloniaWindowTests
             Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
                 block.Text == viewModel.ThemePreferenceStatus);
 
-            CaptureVisualSnapshot(window, "command-center-dark.png");
+            string[] screenshotPageKeys =
+            [
+                "command-center", "savegame-explorer", "vehicle-studio", "economy-intelligence",
+                "time-machine", "compatibility-lab", "diagnostics-center", "settings"
+            ];
+            foreach (string pageKey in screenshotPageKeys)
+            {
+                NavigationItemViewModel page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == pageKey);
+                viewModel.NavigateCommand.Execute(page);
+                Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                    block.Text == viewModel.CurrentPage.Title);
+                CaptureVisualSnapshot(window, $"{pageKey}-dark.png");
+            }
+
             NavigationItemViewModel vehicle = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "vehicle-studio");
             viewModel.NavigateCommand.Execute(vehicle);
             viewModel.CurrentPage.SelectVehicleCategoryCommand.Execute("Coaches");
