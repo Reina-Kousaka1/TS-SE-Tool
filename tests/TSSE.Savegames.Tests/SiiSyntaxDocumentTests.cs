@@ -215,7 +215,7 @@ public sealed class SiiSyntaxDocumentTests
         SiiSyntaxDocument document = SiiSyntaxDocument.ParseReader(new StringReader(input), limits);
 
         Assert.Equal(input, document.ToText());
-        Assert.Equal(1, document.Blocks.Count);
+        Assert.Single(document.Blocks);
         Assert.Empty(document.OpaqueLines);
     }
 
