@@ -28,6 +28,7 @@ public sealed class SiiBlock
     public string? Id { get; }
     public int StartLine { get; }
     public int EndLine { get; }
+    /// <summary>One-based column of the opening brace on <see cref="StartLine"/>.</summary>
     public int StartColumn { get; }
     public int NestingDepth { get; }
     public int? ParentStartLine { get; }

@@ -131,7 +131,8 @@ public sealed class AtomicFileRecoveryPreviewerTests
             _ => null,
             TestContext.Current.CancellationToken);
 
-        Assert.True(result.IsComplete);
+        Assert.False(result.IsComplete);
+        Assert.Equal("payload_analysis_incomplete", result.ErrorCode);
         RecoveryPayloadPreview candidate = Assert.Single(result.Candidates);
         Assert.Equal(RecoveryPayloadState.Unavailable, candidate.State);
         Assert.Equal("artifact_is_link", candidate.ErrorCode);

@@ -90,12 +90,14 @@ public sealed class SiiSyntaxDocumentTests
         Assert.Equal(input, document.ToText());
         Assert.Equal(new[] { "root", "child", "child" }, document.Blocks.Select(block => block.Type));
         Assert.Equal(new string?[] { null, "a", "b" }, document.Blocks.Select(block => block.Id));
+        SiiBlock root = Assert.Single(document.Blocks, block => block.Type == "root");
+        Assert.Equal(6, root.StartColumn);
         SiiBlock[] children = document.Blocks.Skip(1).ToArray();
         Assert.All(children, block =>
         {
             Assert.Equal(1, block.NestingDepth);
             Assert.Equal(1, block.ParentStartLine);
-            Assert.Equal(1, block.ParentStartColumn);
+            Assert.Equal(root.StartColumn, block.ParentStartColumn);
         });
     }
 
@@ -111,7 +113,7 @@ public sealed class SiiSyntaxDocumentTests
         SiiBlock nested = Assert.Single(document.Blocks, block => block.Type == "nested");
         Assert.Equal(0, root.NestingDepth);
         Assert.Null(root.ParentStartLine);
-        Assert.Equal(1, root.StartColumn);
+        Assert.Equal(6, root.StartColumn);
         Assert.Equal(1, child.NestingDepth);
         Assert.Equal(child.StartLine, nested.ParentStartLine);
         Assert.Equal(child.StartColumn, nested.ParentStartColumn);
