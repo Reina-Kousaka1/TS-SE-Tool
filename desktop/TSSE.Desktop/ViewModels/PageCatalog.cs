@@ -32,7 +32,10 @@ public sealed class PageCatalog
                 "savegame-explorer", T("page.save.title"), T("page.save.eyebrow"),
                 T("page.save.subtitle"), T("page.save.status"), T("page.save.emptyTitle"),
                 T("page.save.emptyMessage"),
-                [new StatusCardViewModel(T("save.discovery.label"), T("save.discovery.value"), T("save.discovery.detail"))], _text),
+                [
+                    new StatusCardViewModel(T("save.discovery.label"), T("save.discovery.value"), T("save.discovery.detail")),
+                    new StatusCardViewModel(T("save.parser.label"), T("save.parser.value"), T("save.parser.detail"))
+                ], _text),
             new SectionViewModel(
                 "vehicle-studio", T("page.vehicle.title"), T("page.vehicle.eyebrow"),
                 T("page.vehicle.subtitle"), T("page.vehicle.status"), T("page.vehicle.emptyTitle"),
@@ -50,18 +53,26 @@ public sealed class PageCatalog
                 "time-machine", T("page.time.title"), T("page.time.eyebrow"),
                 T("page.time.subtitle"), T("page.time.status"), T("page.time.emptyTitle"),
                 T("page.time.emptyMessage"),
-                [new StatusCardViewModel(T("time.restore.label"), T("time.restore.value"), T("time.restore.detail"))], _text),
+                [
+                    new StatusCardViewModel(T("time.preview.label"), T("time.preview.value"), T("time.preview.detail")),
+                    new StatusCardViewModel(T("time.restore.label"), T("time.restore.value"), T("time.restore.detail"))
+                ], _text),
             new SectionViewModel(
                 "compatibility-lab", T("page.compatibility.title"), T("page.compatibility.eyebrow"),
                 T("page.compatibility.subtitle"), T("page.compatibility.status"), T("page.compatibility.emptyTitle"),
                 T("page.compatibility.emptyMessage"),
-                [new StatusCardViewModel(T("compatibility.versions.label"), adapters, T("compatibility.versions.detail"))], _text),
+                [
+                    new StatusCardViewModel(T("compatibility.versions.label"), adapters, T("compatibility.versions.detail")),
+                    new StatusCardViewModel(T("compatibility.games.label"), T("compatibility.games.value"), T("compatibility.games.detail")),
+                    new StatusCardViewModel(T("compatibility.coaches.label"), T("compatibility.coaches.value"), T("compatibility.coaches.detail"))
+                ], _text),
             new SectionViewModel(
                 "diagnostics-center", T("page.diagnostics.title"), T("page.diagnostics.eyebrow"),
                 T("page.diagnostics.subtitle"), T("page.diagnostics.status"), T("page.diagnostics.emptyTitle"),
                 T("page.diagnostics.emptyMessage"),
                 [
                     new StatusCardViewModel(T("diagnostics.engine.label"), LocalizeEngineState(status.EngineState), T("diagnostics.engine.detail")),
+                    new StatusCardViewModel(T("diagnostics.parser.label"), T("diagnostics.parser.value"), T("diagnostics.parser.detail")),
                     new StatusCardViewModel(T("diagnostics.profileMonitoring.label"),
                         T("diagnostics.profileMonitoring.value"), T("diagnostics.profileMonitoring.detail"))
                 ], _text),

@@ -21,6 +21,23 @@ public sealed class MainWindowViewModelTests
     }
 
     [Fact]
+    public void Catalog_communicates_parser_compatibility_and_recovery_limits()
+    {
+        MainWindowViewModel viewModel = CreateViewModel();
+        SectionViewModel save = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "savegame-explorer").Page;
+        SectionViewModel compatibility = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "compatibility-lab").Page;
+        SectionViewModel recovery = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "time-machine").Page;
+        SectionViewModel diagnostics = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "diagnostics-center").Page;
+
+        Assert.Contains(save.StatusCards, card => card.Value == "Synthetic tests only");
+        Assert.Contains(compatibility.StatusCards, card => card.Value == "Not verified");
+        Assert.Contains(compatibility.StatusCards, card => card.Value == "Not tested");
+        Assert.Contains(recovery.StatusCards, card => card.Value == "Core library only");
+        Assert.Contains(recovery.StatusCards, card => card.Value == "Unavailable");
+        Assert.Contains(diagnostics.StatusCards, card => card.Value == "Syntax only");
+    }
+
+    [Fact]
     public void Search_filters_navigation_and_can_be_cleared()
     {
         MainWindowViewModel viewModel = CreateViewModel();
