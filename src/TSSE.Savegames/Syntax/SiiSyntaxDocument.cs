@@ -27,6 +27,64 @@ public sealed class SiiSyntaxDocument
     public static SiiSyntaxDocument Parse(string text)
         => Parse(text, SiiSyntaxParseLimits.Default);
 
+    /// <summary>
+    /// Reads at most the configured character limit plus one detection character before parsing.
+    /// The reader remains owned by the caller.
+    /// </summary>
+    public static SiiSyntaxDocument ParseReader(TextReader reader)
+        => ParseReader(reader, SiiSyntaxParseLimits.Default);
+
+    public static SiiSyntaxDocument ParseReader(TextReader reader, SiiSyntaxParseLimits limits)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        ArgumentNullException.ThrowIfNull(limits);
+
+        var buffer = new char[Math.Min(8 * 1024, limits.MaximumCharacters)];
+        var text = new StringBuilder(Math.Min(16 * 1024, limits.MaximumCharacters));
+        int lineNumber = 1;
+        int lineLength = 0;
+        bool previousWasCarriageReturn = false;
+        while (true)
+        {
+            int remaining = limits.MaximumCharacters - text.Length;
+            int readLimit = remaining < buffer.Length ? remaining + 1 : buffer.Length;
+            int read = reader.Read(buffer, 0, readLimit);
+            if (read == 0)
+                break;
+            if (read > remaining)
+                throw new SiiSyntaxException("Document exceeds the configured character limit", 1);
+
+            for (int index = 0; index < read; index++)
+            {
+                char current = buffer[index];
+                if (current == '\r')
+                {
+                    lineNumber++;
+                    lineLength = 0;
+                    previousWasCarriageReturn = true;
+                }
+                else if (current == '\n')
+                {
+                    if (!previousWasCarriageReturn)
+                        lineNumber++;
+                    lineLength = 0;
+                    previousWasCarriageReturn = false;
+                }
+                else
+                {
+                    previousWasCarriageReturn = false;
+                    lineLength++;
+                    if (lineLength > limits.MaximumLineLength)
+                        throw new SiiSyntaxException("Line exceeds the configured length limit", lineNumber);
+                }
+            }
+
+            text.Append(buffer, 0, read);
+        }
+
+        return Parse(text.ToString(), limits);
+    }
+
     public static SiiSyntaxDocument Parse(string text, SiiSyntaxParseLimits limits)
     {
         ArgumentNullException.ThrowIfNull(text);

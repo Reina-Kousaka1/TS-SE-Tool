@@ -94,6 +94,62 @@ public sealed class SiiSyntaxDocumentTests
     }
 
     [Fact]
+    public void ReaderParserStopsAfterOneCharacterBeyondTheConfiguredLimit()
+    {
+        var reader = new CountingTextReader("root {\n}\nextra input that must not be consumed");
+        SiiSyntaxParseLimits limits = CreateLimits(maximumCharacters: 8, maximumLineLength: 8);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.ParseReader(reader, limits));
+
+        Assert.Contains("character limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(limits.MaximumCharacters + 1, reader.CharactersRead);
+        Assert.False(reader.IsDisposed);
+    }
+
+    [Fact]
+    public void ReaderParserStopsWhenALineExceedsItsConfiguredLimit()
+    {
+        string input = "root {" + "x".PadLeft(10_000, 'x');
+        var reader = new CountingTextReader(input);
+        SiiSyntaxParseLimits limits = CreateLimits(maximumCharacters: 20_000, maximumLineLength: 12);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.ParseReader(reader, limits));
+
+        Assert.Contains("length limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(1, exception.LineNumber);
+        Assert.True(reader.CharactersRead < input.Length);
+        Assert.False(reader.IsDisposed);
+    }
+
+    [Fact]
+    public void ReaderParserTracksLineNumbersAcrossCrLfTerminators()
+    {
+        var reader = new CountingTextReader("root {\r\n value: 123456789\r\n}");
+        SiiSyntaxParseLimits limits = CreateLimits(maximumCharacters: 100, maximumLineLength: 10);
+
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(
+            () => SiiSyntaxDocument.ParseReader(reader, limits));
+
+        Assert.Contains("length limit", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(2, exception.LineNumber);
+    }
+
+    [Fact]
+    public void ReaderParserRoundtripsInputAndLeavesReaderOpen()
+    {
+        const string input = "root {\n value: nil\n}\n";
+        var reader = new CountingTextReader(input);
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.ParseReader(reader);
+
+        Assert.Equal(input, document.ToText());
+        Assert.Equal(input.Length, reader.CharactersRead);
+        Assert.False(reader.IsDisposed);
+    }
+
+    [Fact]
     public void Parser_RejectsTooManyLinesBeforeBuildingTheDocument()
     {
         SiiSyntaxParseLimits limits = CreateLimits(maximumLines: 1);
@@ -191,4 +247,27 @@ public sealed class SiiSyntaxDocumentTests
         int maximumNestingDepth = 128,
         int maximumLineLength = 512) =>
         new(maximumCharacters, maximumLines, maximumBlocks, maximumFields, maximumNestingDepth, maximumLineLength);
+
+    private sealed class CountingTextReader(string content) : TextReader
+    {
+        private readonly StringReader _reader = new(content);
+
+        public int CharactersRead { get; private set; }
+        public bool IsDisposed { get; private set; }
+
+        public override int Read(char[] buffer, int index, int count)
+        {
+            int read = _reader.Read(buffer, index, count);
+            CharactersRead += read;
+            return read;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            if (disposing)
+                _reader.Dispose();
+            base.Dispose(disposing);
+        }
+    }
 }
