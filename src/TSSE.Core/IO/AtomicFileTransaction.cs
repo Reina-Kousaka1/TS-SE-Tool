@@ -71,9 +71,6 @@ public sealed class AtomicFileTransaction
         }
 
         bool targetExists = File.Exists(fullPath);
-        if (targetExists != (expectedOriginalSha256 is not null))
-            return new FileCommitResult(FileCommitStatus.Conflict, ErrorCode: "target_existence_changed");
-
         try
         {
             if (IsReparsePointIfPresent(fullPath))
@@ -83,6 +80,9 @@ public sealed class AtomicFileTransaction
         {
             return new FileCommitResult(FileCommitStatus.FailedUnchanged, ErrorCode: "target_attributes_unavailable");
         }
+
+        if (targetExists != (expectedOriginalSha256 is not null))
+            return new FileCommitResult(FileCommitStatus.Conflict, ErrorCode: "target_existence_changed");
 
         string? originalHash = null;
         try
