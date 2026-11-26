@@ -143,6 +143,32 @@ public sealed class SiiSyntaxDocumentTests
         Assert.Equal(SiiSyntaxErrorCode.NoBlocks, exception.ErrorCode);
     }
 
+    [Theory]
+    [InlineData("{ }", SiiSyntaxErrorCode.MissingBlockHeader)]
+    [InlineData("root : { }", SiiSyntaxErrorCode.InvalidBlockHeader)]
+    [InlineData("root {\n value: \"unterminated\n}", SiiSyntaxErrorCode.UnterminatedQuotedValue)]
+    public void Parser_RejectsMalformedHeadersAndIncompleteQuotedValuesWithStructuredCodes(
+        string input,
+        SiiSyntaxErrorCode expectedCode)
+    {
+        SiiSyntaxException exception = Assert.Throws<SiiSyntaxException>(() => SiiSyntaxDocument.Parse(input));
+
+        Assert.Equal(expectedCode, exception.ErrorCode);
+        Assert.True(exception.LineNumber > 0);
+    }
+
+    [Fact]
+    public void Parser_PreservesNonAsciiTextExactlyWithoutClaimingByteEncodingSupport()
+    {
+        const string input = "root {\r\n label: \"Grüße 🚚\"\r\n}";
+
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(input);
+
+        Assert.Equal(input, document.ToText());
+        SiiField field = Assert.Single(Assert.Single(document.Blocks).Fields);
+        Assert.Equal("\"Grüße 🚚\"", field.Value);
+    }
+
     [Fact]
     public void Parser_PreservesAndSurfacesUnclassifiedLinesAndRejectsEditingThem()
     {

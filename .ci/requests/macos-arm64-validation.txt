@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-recovery-preview-and-brace-column-test-fixes
-reason=validate the corrected preview completeness expectation and documented opening-brace column semantics on Apple Silicon after the previous current-source run passed 124 of 127 tests
+request=macos-15-arm64-validation-2026-11-26-malformed-sii-and-unicode-regressions
+reason=validate new structured malformed-header, empty-identifier, unterminated-quote, and Unicode source-text regression tests on Apple Silicon
 self_review=docs/architecture/phase-2-foundation.md

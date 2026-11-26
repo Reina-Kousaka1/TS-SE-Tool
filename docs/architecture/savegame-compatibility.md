@@ -12,6 +12,7 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 | Modified / modded saves | Raw field values and unclassified source lines are retained by the syntax document. The parser does not load mods, resolve mod schemas, or validate mod-specific meaning. | Synthetic unknown fields and trailer syntax are covered. | **Synthetic preservation confirmed; real mod saves not tested.** |
 | Unknown SII attributes | Colon-delimited fields retain their original raw line and value. Unclassified lines are exposed as opaque source lines and block field editing. | Synthetic tests cover unknown field values and unclassified lines. | **Synthetic source preservation confirmed; semantic meaning unknown.** |
 | Unknown object types | Block type and identifier text are retained without interpreting the object schema. | Synthetic unknown block type and nested block tests. | **Synthetic syntax preservation confirmed; real object layouts not tested.** |
+| Block identifiers | Empty syntactic identifiers are rejected; non-empty identifiers remain raw text without game-specific grammar or reference validation. | Synthetic empty-identifier failure case; no genuine game identifiers. | **Basic syntax check confirmed; game identifier compatibility unsupported.** |
 | Nested structures | Generic brace nesting, depth limits, and parent start locations are represented. No game-specific nesting rules are inferred. | Synthetic nested and same-line blocks. | **Generic syntax behavior confirmed synthetically.** |
 | Vehicle / accessory references | Reference-looking values remain raw field values. The parser does not resolve IDs, detect dangling references, or infer vehicle/accessory schemas. Duplicate values are retained. | Synthetic duplicate-reference and raw-value tests. | **Raw preservation confirmed synthetically; reference validation unsupported.** |
 | Profiles | No profile discovery or profile hierarchy reader is active. | Repository source and UI gates; no profile fixtures. | **Not tested; disabled.** |
@@ -21,7 +22,7 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 
 ## Roundtrip guarantees
 
-`SiiSyntaxDocument.ToText()` returns the exact original .NET string, including line terminators, whitespace, comments, ordering, and a missing or present final newline. Synthetic regression tests assert string equality. This is a source-text roundtrip only; it does not establish that a game accepts the content or that a decoded save container can be reconstructed.
+`SiiSyntaxDocument.ToText()` returns the exact original .NET string, including non-ASCII characters, line terminators, whitespace, comments, ordering, and a missing or present final newline. Synthetic regression tests assert string equality. This is a source-text roundtrip only; it does not establish that a game accepts the content or that a decoded save container can be reconstructed.
 
 `WithFieldValue` changes one unique field value while preserving the original line prefix, trailing whitespace, and all other source lines. It reparses the candidate and checks block order, location, nesting, and parent relationships. It rejects edits when unclassified syntax exists, when the target is missing or ambiguous, or when the replacement changes the structure. Unknown colon-delimited fields remain in the document as raw values, but the parser cannot determine whether their semantics depend on an edited field.
 
@@ -31,7 +32,7 @@ No canonical serializer or format normalization is defined. Byte equality is not
 
 The parser applies configurable limits for total characters, lines, line length, blocks, fields, and nesting depth. `ParseReader` reads at most one character beyond the configured total-character budget and rejects an overlong line while scanning. Stable `SiiSyntaxErrorCode` values accompany parse exceptions, with line and column data when available. The default limits are defensive resource bounds; they have not been calibrated against genuine game saves.
 
-The parser rejects unbalanced braces, blocks without headers, unclosed quoted values, input over configured bounds, and documents without blocks. Syntax that cannot be classified is retained and surfaced through `OpaqueLines`; a field edit is refused when such lines exist. The parser is a syntax foundation, not a complete SII grammar or game validator.
+The parser rejects unbalanced braces, blocks without headers, empty block identifiers, unclosed quoted values, input over configured bounds, and documents without blocks. Syntax that cannot be classified is retained and surfaced through `OpaqueLines`; a field edit is refused when such lines exist. The parser is a syntax foundation, not a complete SII grammar or game validator. It accepts .NET text and preserves its Unicode characters; it does not decode arbitrary byte encodings or identify the source save's encoding.
 
 ## Recovery preview boundary
 
