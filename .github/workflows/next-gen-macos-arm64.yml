@@ -31,28 +31,4 @@ jobs:
         env:
           TSSE_APP_PATH: ${{ runner.temp }}/tsse-desktop-osx-arm64/TSSE.Desktop
         run: |
-          cat > "$RUNNER_TEMP/desktop-smoke.py" <<'PY'
-          import os
-          import subprocess
-          import sys
-
-          env = os.environ.copy()
-          env["TSSE_DESKTOP_CI_SMOKE_TEST"] = "1"
-          process = subprocess.Popen([env["TSSE_APP_PATH"]], env=env)
-          try:
-              exit_code = process.wait(timeout=25)
-          except subprocess.TimeoutExpired:
-              process.terminate()
-              try:
-                  process.wait(timeout=5)
-              except subprocess.TimeoutExpired:
-                  process.kill()
-                  process.wait()
-              sys.exit("The Avalonia desktop process did not close after its window startup smoke test.")
-
-          if exit_code != 0:
-              sys.exit(f"The Avalonia desktop process exited with code {exit_code}.")
-          print("The native Avalonia window opened and the desktop process closed cleanly.")
-          PY
-
-          python3 "$RUNNER_TEMP/desktop-smoke.py"
+          python3 packaging/shared/desktop-smoke.py
