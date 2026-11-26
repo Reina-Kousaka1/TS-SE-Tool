@@ -81,6 +81,40 @@ public sealed class FoundationIntegrationTests
     }
 
     [Fact]
+    public void Analytics_OmitsSnapshotDeltaWhenEarliestTimestampIsAmbiguous()
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("s1", "ETS2", "profile", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m, "profile-1"),
+            new LocalBalanceSnapshot("s2", "ETS2", "profile", "unknown", end.AddDays(-2), 200m, 1_500m, 1_700m, "profile-1"),
+            new LocalBalanceSnapshot("s3", "ETS2", "profile", "unknown", end, 400m, 1_900m, 2_100m, "profile-1")
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
+
+        Assert.Null(report.BalanceDelta);
+        Assert.Null(report.NetWorthDelta);
+    }
+
+    [Fact]
+    public void Analytics_OmitsSnapshotDeltaWhenLatestTimestampIsAmbiguous()
+    {
+        DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);
+        var snapshots = new[]
+        {
+            new LocalBalanceSnapshot("s1", "ETS2", "profile", "unknown", end.AddDays(-2), 100m, 1_000m, 1_200m, "profile-1"),
+            new LocalBalanceSnapshot("s2", "ETS2", "profile", "unknown", end, 300m, 1_800m, 2_000m, "profile-1"),
+            new LocalBalanceSnapshot("s3", "ETS2", "profile", "unknown", end, 400m, 1_900m, 2_100m, "profile-1")
+        };
+
+        AnalyticsWindow report = AnalyticsCalculator.Calculate(end, 7, [], snapshots);
+
+        Assert.Null(report.BalanceDelta);
+        Assert.Null(report.NetWorthDelta);
+    }
+
+    [Fact]
     public void Analytics_UsesStableProfileIdWhenItsDisplayLabelChanges()
     {
         DateTimeOffset end = new(2026, 11, 25, 12, 0, 0, TimeSpan.Zero);

@@ -50,10 +50,16 @@ public static class AnalyticsCalculator
         {
             LocalBalanceSnapshot first = windowSnapshots[0];
             LocalBalanceSnapshot last = windowSnapshots[^1];
-            if (first.BankBalance.HasValue && last.BankBalance.HasValue)
-                balanceDelta = last.BankBalance.Value - first.BankBalance.Value;
-            if (first.NetWorth.HasValue && last.NetWorth.HasValue)
-                netWorthDelta = last.NetWorth.Value - first.NetWorth.Value;
+            bool endpointsAreUnambiguous = windowSnapshots.Count(item => item.CapturedAt == first.CapturedAt) == 1
+                && windowSnapshots.Count(item => item.CapturedAt == last.CapturedAt) == 1;
+
+            if (endpointsAreUnambiguous)
+            {
+                if (first.BankBalance.HasValue && last.BankBalance.HasValue)
+                    balanceDelta = last.BankBalance.Value - first.BankBalance.Value;
+                if (first.NetWorth.HasValue && last.NetWorth.HasValue)
+                    netWorthDelta = last.NetWorth.Value - first.NetWorth.Value;
+            }
         }
 
         return new AnalyticsWindow(
