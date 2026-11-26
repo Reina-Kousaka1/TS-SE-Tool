@@ -21,6 +21,10 @@ public sealed class SiiSyntaxDocumentTests
         Assert.Contains(economy.Fields, field => field.Name == "signed_boundary" && field.Value == "-9223372036854775808");
         Assert.Contains(economy.Fields, field => field.Name == "unsigned_boundary" && field.Value == "18446744073709551615");
         Assert.Contains(economy.Fields, field => field.Name == "mod_payload" && field.Value == "\"retain {quoted} data\"");
+        Assert.Contains(economy.Fields, field => field.Name == "extension_ref" && field.Value == "_nameless.mod");
+
+        SiiBlock modExtension = Assert.Single(document.Blocks, block => block.Type == "mod_extension");
+        Assert.Contains(modExtension.Fields, field => field.Name == "opaque" && field.Value == "\"unknown block field\"");
     }
 
     [Fact]
