@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-transaction-hash-and-dmg-detach-fix-after-4e286d2
-reason=validate current-source .NET 10 tests, app bundle/DMG mount and detach, and native Avalonia startup after bounded hashing and verifier cleanup changes
+request=macos-15-arm64-validation-2026-11-26-sii-diagnostics-and-recovery-preview-a5bd2b2
+reason=validate the current pushed savegame parser diagnostics, read-only recovery preview, Avalonia status integration, and full .NET 10 test/build flow on Apple Silicon
 self_review=docs/architecture/phase-2-foundation.md
