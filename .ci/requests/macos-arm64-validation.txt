@@ -1,3 +1,3 @@
-request=macos-15-arm64-validation-2026-11-26-bounded-snapshot-reads-after-3831a12
-reason=validate current-source .NET 10 tests, macOS ARM64 self-contained packaging, and native Avalonia startup
+request=macos-15-arm64-validation-2026-11-26-bounded-transaction-hashing-after-22ab984
+reason=validate current-source .NET 10 tests, macOS ARM64 self-contained packaging, and native Avalonia startup after bounded file hashing
 self_review=docs/architecture/phase-2-foundation.md
