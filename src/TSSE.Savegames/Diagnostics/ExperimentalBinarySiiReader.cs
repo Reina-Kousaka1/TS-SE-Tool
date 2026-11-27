@@ -143,7 +143,7 @@ public static class ExperimentalBinarySiiReader
     private sealed record Field(string Name, uint Type);
     private sealed record Structure(string Name, IReadOnlyList<Field> Fields);
 
-    private static string NamelessText(ulong id)
+    internal static string NamelessText(ulong id)
     {
         string hex = id.ToString("x", CultureInfo.InvariantCulture);
         int first = hex.Length % 4;

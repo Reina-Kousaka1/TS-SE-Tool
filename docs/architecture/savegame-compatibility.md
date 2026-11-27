@@ -294,6 +294,19 @@ over 4,096 or truncated data fails before an array is returned. Empty and mixed
 arrays are covered by both the managed tests and the bundled x86 DLL probe;
 this does not validate reference targets, real saves or game compatibility.
 
+`ExperimentalBinaryReferenceIndex` provides an in-memory diagnostic over at
+most 4,096 already parsed blocks. It snapshots raw identifiers and reports an
+index only for one exact raw identity. Missing, null, unsupported, ambiguous,
+and legacy-text-only references have distinct outcomes without a target index.
+Matching identifiers do not establish field meaning, ownership, game version,
+asset existence, or permission to modify a save. This diagnostic does not
+discover, read, or write files and is not connected to a production save path.
+
+Architecture and security self-review (not independent): masked-bit and
+named/nameless display collisions cannot yield a target; synthetic tests cover
+those cases, mutable input identifiers, malformed identifiers, and the block
+limit. Actual-game compatibility and an independent review remain outstanding.
+
 Historical types `0x05` and `0x06` expose individual Float32 values and bounded
 arrays. The original IEEE-754 bits are retained independently of the floating
 point view, including negative zero and NaN payloads; `IsFinite` is diagnostic

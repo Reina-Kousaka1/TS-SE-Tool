@@ -98,6 +98,66 @@ public sealed class ExperimentalBinarySiiReaderTests
         }
     }
 
+    [Fact]
+    public void ReferenceIndexResolvesOnlyExactRawIdentity()
+    {
+        ulong[] named = [0x800000000000000bul, 12];
+        var blocks = ExperimentalBinarySiiReader.Read(Fixture(namedBlockParts: named));
+        var block = Assert.Single(blocks);
+        var index = new ExperimentalBinaryReferenceIndex(blocks);
+        var exact = index.Inspect(block.ReferenceFields["named_ref"]);
+        Assert.Equal(ExperimentalReferenceMatchKind.ExactRawIdentity, exact.Kind);
+        Assert.Equal(0, exact.TargetIndex);
+        Assert.Equal(ExperimentalReferenceMatchKind.NullMarker, index.Inspect(block.ReferenceFields["empty_ref"]).Kind);
+        Assert.Equal(ExperimentalReferenceMatchKind.Missing, index.Inspect(block.ReferenceFields["anon_ref"]).Kind);
+        var displayOnly = index.Inspect(new ExperimentalBinaryReference(0x39, 2, new ulong[] { 11, 12 }));
+        Assert.Equal(ExperimentalReferenceMatchKind.LegacyTextOnly, displayOnly.Kind);
+        Assert.Null(displayOnly.TargetIndex);
+        Assert.Equal(ExperimentalReferenceMatchKind.Unsupported, index.Inspect(new ExperimentalBinaryReference(0x39, 1, new ulong[] { 38 })).Kind);
+        Assert.Equal(ExperimentalReferenceMatchKind.Unsupported, index.Inspect(new ExperimentalBinaryReference(0x39, 0xff, Array.Empty<ulong>())).Kind);
+        var ambiguous = new ExperimentalBinaryReferenceIndex([block, block]).Inspect(block.ReferenceFields["named_ref"]);
+        Assert.Equal(ExperimentalReferenceMatchKind.Ambiguous, ambiguous.Kind);
+        Assert.Null(ambiguous.TargetIndex);
+    }
+
+    [Fact]
+    public void ReferenceIndexSnapshotsExternallyProvidedIdentifiers()
+    {
+        ulong[] parts = [11, 12];
+        var block = new ExperimentalBinaryBlock("example", null, new Dictionary<string, int>())
+        {
+            Identifier = new ExperimentalBinaryBlockIdentifier(2, parts)
+        };
+        var index = new ExperimentalBinaryReferenceIndex([block]);
+        parts[0] = 13;
+        Assert.Equal(ExperimentalReferenceMatchKind.ExactRawIdentity,
+            index.Inspect(new ExperimentalBinaryReference(0x39, 2, new ulong[] { 11, 12 })).Kind);
+        Assert.Equal(ExperimentalReferenceMatchKind.Missing,
+            index.Inspect(new ExperimentalBinaryReference(0x39, 2, new ulong[] { 13, 12 })).Kind);
+    }
+
+    [Fact]
+    public void ReferenceIndexTreatsNamelessAndTextCollisionsConservatively()
+    {
+        var block = Assert.Single(ExperimentalBinarySiiReader.Read(Fixture()));
+        var index = new ExperimentalBinaryReferenceIndex([block]);
+        var anonymous = new ExperimentalBinaryReference(0x39, 0xff, new ulong[] { 0x1234 });
+        Assert.Equal(0, index.Inspect(anonymous).TargetIndex);
+        Assert.Equal(ExperimentalReferenceMatchKind.ExactRawIdentity, index.Inspect(anonymous).Kind);
+        var named = new ExperimentalBinaryReference(0x39, 2, new ulong[] { Encode("_nameless"), Encode("1234") });
+        var collision = index.Inspect(named);
+        Assert.Equal(ExperimentalReferenceMatchKind.LegacyTextOnly, collision.Kind);
+        Assert.Null(collision.TargetIndex);
+        var namedBlock = new ExperimentalBinaryBlock("example", null, new Dictionary<string, int>())
+        {
+            Identifier = new ExperimentalBinaryBlockIdentifier(2, new ulong[] { Encode("_nameless"), Encode("1234") })
+        };
+        Assert.Equal(ExperimentalReferenceMatchKind.Ambiguous,
+            new ExperimentalBinaryReferenceIndex([block, namedBlock]).Inspect(anonymous).Kind);
+        Assert.Throws<ArgumentException>(() => new ExperimentalBinaryReferenceIndex(new ExperimentalBinaryBlock[4097]));
+        Assert.Throws<ArgumentException>(() => new ExperimentalBinaryReferenceIndex([new ExperimentalBinaryBlock("example", null, new Dictionary<string, int>())]));
+    }
+
     private static ulong Encode(string text)
     {
         const string alphabet = "0123456789abcdefghijklmnopqrstuvwxyz_";
