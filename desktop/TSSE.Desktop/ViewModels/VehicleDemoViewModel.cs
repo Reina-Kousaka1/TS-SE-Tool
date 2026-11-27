@@ -64,6 +64,24 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public bool CanRepairChain => _isTrailer;
     public IReadOnlyList<string> TrailerChoices { get; }
     public string TrailerSelectionLabel => _text.Get("vehicleDemo.trailerSelection");
+    public string PlayerTrailerHeading => _text.Get("playerTrailers.heading");
+    public string PlayerTrailerDescription => _text.Get("playerTrailers.description");
+    public string PlayerTrailerSummary
+    {
+        get
+        {
+            try
+            {
+                var document = SiiSyntaxDocument.Parse(Session.PreviewText);
+                var entries = LegacyPlayerTrailerInspector.Inspect(document, "demo.player");
+                return entries.Count == 0 ? _text.Get("playerTrailers.empty") :
+                    string.Join(Environment.NewLine, entries.Select(entry => _text.Format("playerTrailers.row",
+                        entry.Index, entry.RawReference, _text.Get("playerTrailers.state." + entry.State),
+                        entry.IsDuplicate ? _text.Get("playerTrailers.duplicate") : "")));
+            }
+            catch (InvalidOperationException) { return _text.Get("playerTrailers.unavailable"); }
+        }
+    }
     private string DraftTarget => _isTrailer ? _selectedTrailer : "demo.truck";
     public string SelectedTrailer
     {
@@ -149,6 +167,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(AccessorySummary));
+        OnPropertyChanged(nameof(PlayerTrailerSummary));
         Message = _text.Get("vehicleDemo.ready");
         LoadField();
     }

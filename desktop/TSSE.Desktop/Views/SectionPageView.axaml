@@ -120,6 +120,9 @@
           <StackPanel IsVisible="{Binding CanRepairChain}" Spacing="4">
             <TextBlock Text="{Binding TrailerSelectionLabel}" />
             <ComboBox ItemsSource="{Binding TrailerChoices}" SelectedItem="{Binding SelectedTrailer, Mode=TwoWay}" AutomationProperties.Name="{Binding TrailerSelectionLabel}" />
+            <TextBlock Text="{Binding PlayerTrailerHeading}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding PlayerTrailerDescription}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding PlayerTrailerSummary}" TextWrapping="Wrap" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="{Binding RepairLabel}" Command="{Binding ActionCommand}" CommandParameter="repair" />

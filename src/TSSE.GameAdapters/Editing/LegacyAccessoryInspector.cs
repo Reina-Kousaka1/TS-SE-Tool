@@ -1,4 +1,3 @@
-using System.Globalization;
 using TSSE.Savegames.Syntax;
 
 namespace TSSE.GameAdapters.Editing;
@@ -18,33 +17,14 @@ public static class LegacyAccessoryInspector
 
     public static IReadOnlyList<AccessoryReference> InspectDeclaredArray(SiiSyntaxDocument document, string blockType, string blockId)
     {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentException.ThrowIfNullOrWhiteSpace(blockType);
-        ArgumentException.ThrowIfNullOrWhiteSpace(blockId);
-        if (document.OpaqueLines.Count != 0)
-            throw new InvalidOperationException("Unclassified syntax prevents safe inspection.");
-        SiiBlock[] blocks = document.Blocks.Where(block => block.Type == blockType && block.Id == blockId).ToArray();
-        if (blocks.Length != 1)
-            throw new InvalidOperationException("The selected block is missing or ambiguous.");
-        SiiField[] counts = blocks[0].Fields.Where(item => item.Name == "accessories").ToArray();
-        if (counts.Length != 1 ||
-            !int.TryParse(counts[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out int count) ||
-            count is < 0 or > 1024)
-            throw new InvalidOperationException("The accessories count is missing, ambiguous, or unsupported.");
-        SiiField[] entries = blocks[0].Fields.Where(item => item.Name.StartsWith("accessories[", StringComparison.Ordinal)).ToArray();
-        if (entries.Length != count)
-            throw new InvalidOperationException("The accessories array is incomplete or ambiguous.");
+        IReadOnlyList<string> entries = LegacyReferenceArray.Read(document, blockType, blockId, "accessories");
         var byId = document.Blocks.Where(block => block.Id is not null)
             .GroupBy(block => block.Id!, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.Ordinal);
-        var result = new List<AccessoryReference>(count);
-        for (int i = 0; i < count; i++)
+        var result = new List<AccessoryReference>(entries.Count);
+        for (int i = 0; i < entries.Count; i++)
         {
-            string name = "accessories[" + i.ToString(CultureInfo.InvariantCulture) + "]";
-            SiiField[] matching = entries.Where(item => item.Name == name).ToArray();
-            if (matching.Length != 1 || string.IsNullOrWhiteSpace(matching[0].Value))
-                throw new InvalidOperationException("An accessory index is missing, ambiguous, or empty.");
-            string reference = matching[0].Value;
+            string reference = entries[i];
             if (reference is "nil" or "null")
             {
                 result.Add(new(i, reference, AccessoryReferenceState.Empty, null));

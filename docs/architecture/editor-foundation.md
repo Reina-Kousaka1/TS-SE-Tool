@@ -73,6 +73,12 @@ preserved when another section changes the underlying synthetic document.
 The demo's synthetic trailer block identifiers are listed from its in-memory
 document in source order. Missing or duplicate identifiers fail the listing;
 the list does not infer ownership or game semantics.
+The vehicle demo separately inspects the synthetic player's legacy-shaped
+`trailers` reference array. It reports missing, ambiguous, empty, differently
+typed, and duplicate references without changing the selection or document.
+Array counts and indices are validated using the same bounded reader as the
+existing accessory inspector. The report does not establish actual ownership
+or validate the real game format.
 Drafts are scoped to trailer identity and field; chain operations begin at the
 selected trailer. The selection does not discover or enumerate game profiles.
 UI workspace self-review (not independent): the catalog owns the shared demo
