@@ -48,6 +48,8 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0x3b); WriteString(writer, "named_ref");
             writer.Write((uint)0x3a); WriteString(writer, "empty_refs");
             writer.Write((uint)0x3c); WriteString(writer, "refs");
+            writer.Write((uint)0x05); WriteString(writer, "fuel");
+            writer.Write((uint)0x06); WriteString(writer, "wear");
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
             writer.Write((byte)0xff); writer.Write((ulong)0x1234); // nameless ID
@@ -68,6 +70,8 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((byte)0);
             writer.Write((byte)0xff); writer.Write(0x9876ul);
             for (int i = 0; i < 2; i++) { writer.Write((byte)2); writer.Write(0x800000000000000bul); writer.Write(12ul); }
+            writer.Write(0x3f000000u);
+            writer.Write((uint)3); writer.Write(0x3f000000u); writer.Write(0x3fa00000u); writer.Write(0x80000000u);
             writer.Write((uint)0); writer.Write((byte)0); // end marker
             return stream.ToArray();
         }
@@ -120,7 +124,10 @@ if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synth
     $decoded -notmatch '(?m)^\s*empty_ref:\s*null\s*$' -or $decoded -notmatch '(?m)^\s*anon_ref:\s*_nameless\.9876\s*$' -or
     $decoded -notmatch '(?m)^\s*named_ref:\s*a\.b\s*$' -or $decoded -notmatch '(?m)^\s*empty_refs:\s*0\s*$' -or $decoded -notmatch '(?m)^\s*refs:\s*4\s*$' -or
     $decoded -notmatch '(?m)^\s*refs\[0\]:\s*null\s*$' -or $decoded -notmatch '(?m)^\s*refs\[1\]:\s*_nameless\.9876\s*$' -or
-    $decoded -notmatch '(?m)^\s*refs\[2\]:\s*a\.b\s*$' -or $decoded -notmatch '(?m)^\s*refs\[3\]:\s*a\.b\s*$') {
+    $decoded -notmatch '(?m)^\s*refs\[2\]:\s*a\.b\s*$' -or $decoded -notmatch '(?m)^\s*refs\[3\]:\s*a\.b\s*$' -or
+    $decoded -notmatch '(?m)^\s*fuel:\s*&3f000000\s*$' -or $decoded -notmatch '(?m)^\s*wear:\s*3\s*$' -or
+    $decoded -notmatch '(?m)^\s*wear\[0\]:\s*&3f000000\s*$' -or $decoded -notmatch '(?m)^\s*wear\[1\]:\s*&3fa00000\s*$' -or
+    $decoded -notmatch '(?m)^\s*wear\[2\]:\s*-?0\s*$') {
     throw ('The fixed synthetic decoded text did not contain the expected structure and value: ' + $decoded)
 }
 Write-Output 'Synthetic x86 DecodeMemory: success with 0/1 reported bytes for undersized capacities; bounded decode contained expected values; no save file used.'

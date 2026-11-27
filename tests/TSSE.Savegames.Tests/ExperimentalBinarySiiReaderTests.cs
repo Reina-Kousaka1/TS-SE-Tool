@@ -47,7 +47,36 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("a.b", arrayText);
         Assert.Equal(refs[2].RawParts, refs[3].RawParts);
         Assert.Equal(0x3cu, refs[2].TypeCode);
+        Assert.Equal(0x3f000000u, block.Float32Fields["fuel"].RawBits);
+        Assert.Equal(0.5f, block.Float32Fields["fuel"].Value);
+        Assert.Equal(new uint[] { 0x3f000000, 0x3fa00000, 0x80000000 }, block.Float32ArrayFields["wear"].Select(value => value.RawBits));
         Assert.Equal(before, input);
+    }
+
+    [Fact]
+    public void FloatBitsPreserveNegativeZeroNanAndInfinityWithoutDeclaringThemValid()
+    {
+        var block = Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(floatBits: [0x80000000, 0x7fc01234, 0x7f800000, 0x7f800001])));
+        var values = block.Float32ArrayFields["wear"];
+        Assert.Equal(0x80000000u, values[0].RawBits);
+        Assert.Equal(0f, values[0].Value);
+        Assert.Equal(0x7fc01234u, values[1].RawBits);
+        Assert.True(float.IsNaN(values[1].Value));
+        Assert.False(values[1].IsFinite);
+        Assert.Equal(0x7f800000u, values[2].RawBits);
+        Assert.False(values[2].IsFinite);
+        Assert.Equal(0x7f800001u, values[3].RawBits);
+        Assert.False(values[3].IsFinite);
+        Assert.Equal(0x7f800001u, values[3].RawBits);
+    }
+
+    [Fact]
+    public void FloatArrayCountIsBoundedBeforeAllocation()
+    {
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(floatArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(floatArrayCount: uint.MaxValue)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(floatArrayCount: 4096)).Error);
+        Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(floatBits: []))).Float32ArrayFields["wear"]);
     }
 
     [Fact]
@@ -109,7 +138,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -132,6 +161,10 @@ public sealed class ExperimentalBinarySiiReaderTests
                 writer.Write((byte)0xff); writer.Write(0x9876ul);
                 for (int i = 0; i < 2; i++) { writer.Write((byte)2); writer.Write(referencePart); writer.Write(12ul); }
             }
+            writer.Write(0x3f000000u);
+            uint[] floats = floatBits ?? [0x3f000000, 0x3fa00000, 0x80000000];
+            writer.Write(floatArrayCount ?? (uint)floats.Length);
+            if (floatArrayCount is null) foreach (uint bits in floats) writer.Write(bits);
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -151,6 +184,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x3b); Name("named_ref");
         writer.Write((uint)0x3a); Name("empty_refs");
         writer.Write((uint)0x3c); Name("refs");
+        writer.Write((uint)0x05); Name("fuel");
+        writer.Write((uint)0x06); Name("wear");
         writer.Write((uint)0);
         Data();
         if (duplicateBlock) Data();

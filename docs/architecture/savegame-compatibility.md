@@ -237,7 +237,7 @@ uses the format facts in the linked unofficial specification without importing
 its code or example bytes.
 
 `ExperimentalBinarySiiReader` implements that narrow plan for in-memory bytes.
-It returns typed Int32, UInt32, Int64, UInt64 and strict UTF-8 string values only when the entire supported document, including
+It returns typed Int32, UInt32, Int64, UInt64, Float32 and strict UTF-8 string values only when the entire supported document, including
 its end marker, is valid. Duplicate structures, field names and nameless IDs,
 unknown structure references, unsupported types or identifiers, trailing data,
 and every truncated prefix fail without a partial result. Its synthetic fixture
@@ -278,6 +278,15 @@ retaining order, duplicates and each element's raw marker and parts. A count
 over 4,096 or truncated data fails before an array is returned. Empty and mixed
 arrays are covered by both the managed tests and the bundled x86 DLL probe;
 this does not validate reference targets, real saves or game compatibility.
+
+Historical types `0x05` and `0x06` expose individual Float32 values and bounded
+arrays. The original IEEE-754 bits are retained independently of the floating
+point view, including negative zero and NaN payloads; `IsFinite` is diagnostic
+only and does not assert that a value is valid for fuel, wear or any game field.
+The array limit is 4,096 entries, checked before allocation. Finite synthetic
+values and negative zero are compared with the bundled x86 decoder; NaN and
+infinity bit-preservation tests exercise only the managed reader. No semantic
+game validation, binary writing or real-save support follows from these tests.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
