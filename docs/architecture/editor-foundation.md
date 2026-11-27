@@ -45,6 +45,9 @@ and history, rather than conflating profile metadata with the game save. Only
 one explicit field can be edited through the existing syntax session; cached
 statistics are read-only. Actual profile renaming would need directory,
 cross-file and game-version validation and remains disabled.
+The separate metadata preview preserves an unfinished name draft across
+undo/redo. A draft whose baseline changed cannot be applied until reviewed;
+discarding a draft does not alter the history or eliminate redo.
 
 CI evidence for core commit 29add2b: run 45980964128 passed its .NET 10 test
 steps on all seven jobs. Six jobs completed successfully; the Linux x64 job

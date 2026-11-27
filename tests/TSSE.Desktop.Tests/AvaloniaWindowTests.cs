@@ -89,8 +89,17 @@ public sealed class AvaloniaWindowTests
             Press(apply);
             Assert.Contains("Example_2", metadata.CurrentName, StringComparison.Ordinal);
             Assert.Equal(originalSave, page.Page.ProfileDemo.PreviewText);
+            name.Text = "Draft_3";
             Press(undo);
-            Assert.Equal("Example_1", metadata.Input);
+            Assert.Equal("Draft_3", metadata.Input);
+            Assert.True(metadata.IsStale);
+            Press(apply);
+            Assert.Contains("Example_1", metadata.CurrentName, StringComparison.Ordinal);
+            window.UpdateLayout();
+            Button reviewed = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && ReferenceEquals(button.DataContext, metadata) && Equals(button.Content, metadata.ApplyReviewedLabel));
+            Press(reviewed);
+            Assert.Contains("Draft_3", metadata.CurrentName, StringComparison.Ordinal);
 
             void Press(Button button)
             {

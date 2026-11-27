@@ -53,6 +53,9 @@
           <TextBlock Text="{Binding CurrentName}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding NameLabel}" />
           <TextBox Text="{Binding Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding NameLabel}" />
+          <TextBlock Text="{Binding DraftNotice}" TextWrapping="Wrap" />
+          <Button IsVisible="{Binding IsStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-reviewed" />
+          <Button Content="{Binding DiscardDraftLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-draft" />
           <WrapPanel>
             <Button Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="apply" />
             <Button Content="{Binding UndoLabel}" Command="{Binding ActionCommand}" CommandParameter="undo" />

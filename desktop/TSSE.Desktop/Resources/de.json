@@ -120,6 +120,8 @@
   "profileMetadata.ready": "Nur synthetische Metadaten.",
   "profileMetadata.applied": "Synthetische Metadatenvorschau aktualisiert.",
   "profileMetadata.invalid": "Keine Änderung: Name nicht unterstützt, Historie nicht verfügbar oder Metadaten ungültig.",
+  "profileMetadata.discardDraft": "Profilnamen-Entwurf verwerfen",
+  "profileMetadata.draftDiscarded": "Profilnamen-Entwurf verworfen; die Beispielhistorie bleibt unverändert.",
   "editor.revertAll": "Alle synthetischen Änderungen zurücksetzen (rückgängig machbar)",
   "editor.changes": "Änderungen an synthetischen Daten",
   "editor.noChanges": "Keine Änderungen.",

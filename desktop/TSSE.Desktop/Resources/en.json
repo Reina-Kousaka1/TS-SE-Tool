@@ -120,6 +120,8 @@
   "profileMetadata.ready": "Synthetic metadata only.",
   "profileMetadata.applied": "Synthetic metadata preview updated.",
   "profileMetadata.invalid": "No change: unsupported name, unavailable history, or invalid metadata.",
+  "profileMetadata.discardDraft": "Discard profile name draft",
+  "profileMetadata.draftDiscarded": "Profile name draft discarded; the example history is unchanged.",
   "editor.revertAll": "Reset all synthetic changes (undoable)",
   "editor.changes": "Changes to synthetic data",
   "editor.noChanges": "No changes.",
