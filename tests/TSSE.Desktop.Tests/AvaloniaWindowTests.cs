@@ -22,6 +22,52 @@ namespace TSSE.Desktop.Tests;
 public sealed class AvaloniaWindowTests
 {
     [AvaloniaFact]
+    public void Profile_editor_controls_validate_and_apply_both_as_one_undoable_change()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "savegame-explorer");
+            viewModel.NavigateCommand.Execute(page);
+            window.UpdateLayout();
+            var profile = page.Page.ProfileDemo;
+            TextBox balance = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == profile.BalanceLabel);
+            TextBox experience = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == profile.ExperienceLabel);
+            Button apply = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, profile.ApplyBothLabel));
+            Button undo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, profile.UndoLabel));
+            Button redo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, profile.RedoLabel));
+            string original = profile.PreviewText;
+            balance.Text = "-42";
+            experience.Text = "4294967296";
+            Press(apply);
+            Assert.Equal(original, profile.PreviewText);
+            experience.Text = "42";
+            Press(apply);
+            Assert.Contains("money_account: -42", profile.PreviewText, StringComparison.Ordinal);
+            Assert.Contains("experience_points: 42", profile.PreviewText, StringComparison.Ordinal);
+            Assert.Contains("demo_unknown: \"preserved\"", profile.PreviewText, StringComparison.Ordinal);
+            Press(undo);
+            Assert.Equal(original, profile.PreviewText);
+            Press(redo);
+            Assert.Contains("experience_points: 42", profile.PreviewText, StringComparison.Ordinal);
+
+            void Press(Button button)
+            {
+                Assert.True(button.Focus());
+                window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+                window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void Job_editor_bindings_apply_validate_and_undo_synthetic_values()
     {
         var (viewModel, window, _) = CreateMainWindow();
