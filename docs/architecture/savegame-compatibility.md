@@ -80,6 +80,11 @@ Fixture tool self-review (not independent): one explicit path, read-only open,
 bounded reads via `SiiFixtureInspector`, no content/path in output, and no
 compatibility or write authorization inferred from syntax. Synthetic tests
 cover invalid arguments, unsupported prefixes, and unchanged file bytes.
+The Windows x64 CI job also publishes a self-contained development copy,
+executes it against the repository's synthetic fixture, and retains it as a
+one-day Actions artifact for later authorized local inspection without a
+local .NET 10 SDK. This is not a release or game compatibility proof. Other
+platforms are not packaged by this development-only step.
 
 The report includes a four-byte signature hint for `SiiN`, `ScsC`, `BSII` and
 `3nK` followed by byte `01`, as documented in the original SII Decrypt
