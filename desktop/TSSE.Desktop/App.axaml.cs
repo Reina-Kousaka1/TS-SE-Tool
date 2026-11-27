@@ -20,6 +20,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        SmokeTrace.Mark("framework-initialized");
         var registrations = new ServiceCollection();
         registrations.AddSingleton<IUiTextCatalog>(_ => new UiTextCatalog(CultureInfo.CurrentUICulture));
         registrations.AddSingleton<GameAdapterRegistry>();
@@ -37,9 +38,11 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            SmokeTrace.Mark("viewmodel-start");
             var mainWindow = new MainWindow(provider.GetRequiredService<MainWindowViewModel>());
+            SmokeTrace.Mark("window-constructed");
             desktop.MainWindow = mainWindow;
-            desktop.Exit += (_, _) => provider.Dispose();
+            desktop.Exit += (_, _) => { SmokeTrace.Mark("lifetime-exit"); provider.Dispose(); SmokeTrace.Mark("services-disposed"); };
 
             if (Environment.GetEnvironmentVariable("TSSE_DESKTOP_CI_SMOKE_TEST") == "1")
             {
@@ -50,10 +53,13 @@ public partial class App : Application
                 };
                 smokeTimer.Tick += (_, _) =>
                 {
+                    SmokeTrace.Mark("timer-tick");
                     smokeTimer.Stop();
                     desktop.MainWindow?.Close();
+                    SmokeTrace.Mark("close-returned");
                 };
-                mainWindow.Opened += (_, _) => smokeTimer.Start();
+                mainWindow.Opened += (_, _) => { SmokeTrace.Mark("window-opened"); smokeTimer.Start(); };
+                mainWindow.Closed += (_, _) => SmokeTrace.Mark("window-closed");
             }
         }
 

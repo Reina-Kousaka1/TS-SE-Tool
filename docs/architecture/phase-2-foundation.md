@@ -1,5 +1,23 @@
 # Phase 2 — Next Generation Rebuild
 
+## CI smoke-test timeout investigation
+
+The installed Linux ARM64 desktop smoke test timed out in runs 46008818803
+and 46012068209 after the .NET tests had passed; both targeted retries passed.
+The existing 25-second deadline, failure behavior and clean-shutdown requirement
+are unchanged. CI-only fixed milestones now distinguish process entry, framework
+initialization, view-model construction, window opening, timer tick, window
+closing, lifetime exit and return. They contain no paths or save data and are
+disabled unless the existing smoke-test environment flag is set. The next
+failure should identify the last reached milestone; a passing retry does not
+establish the root cause or resolve the intermittent failure.
+
+Architecture self-review (not independent): instrumentation observes the
+existing lifecycle without modifying timeouts, retries, process termination or
+savegame gates. Console writes occur only under the explicitly set CI flag.
+Remaining risk: the process might stall before managed entry or while emitting
+a milestone, and GitHub runner behavior remains outside local evidence.
+
 **Status: in progress.** Foundation and Avalonia UI are one combined Phase 2; there is no separate UI-migration Phase 3. The analytics source change in `b7afc5a` passed full matrix [45896687312](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45896687312): all seven jobs, with 114/114 tests on each of Windows x64/ARM64, Linux x64/ARM64, and macOS Intel, plus 105/105 tests on each Fedora x64/ARM64 job. Self-contained publishes, native desktop start/shutdown, Linux package checks, and Fedora RPM dependency/runtime checks passed. The current code was not run on macOS ARM64; the earlier explicit Apple Silicon run [45811585565](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45811585565) validated older source at `222b82a`. The local machine still has only .NET SDK 8.0.425, so local .NET 10 compilation is unavailable. Real ETS2/ATS/mod/Coaches compatibility, safe operator-reviewed recovery execution, Windows MSI packaging, signing/notarization, and physical desktop accessibility/input review remain open. Savegame discovery and writes remain disabled. Phase 2 is not complete.
 
 ### Local in-game analytics foundation (2026-11-26)
