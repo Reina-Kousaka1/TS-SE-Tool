@@ -215,8 +215,9 @@ public sealed class LegacyVehiclePreview
 
     private SiiBlock FindBlock(SiiSyntaxDocument document)
     {
-        SiiBlock[] matches = document.Blocks.Where(block => block.Type == _blockType && block.Id == _blockId).ToArray();
-        return matches.Length == 1 ? matches[0] : throw new InvalidOperationException("The requested block is missing or ambiguous.");
+        SiiBlock[] matches = document.Blocks.Where(block => block.Id == _blockId).ToArray();
+        return matches.Length == 1 && matches[0].Type == _blockType
+            ? matches[0] : throw new InvalidOperationException("The requested block is missing or ambiguous.");
     }
 
     private static bool TryParseRatio(string input, out float value)

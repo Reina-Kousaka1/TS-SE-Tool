@@ -86,6 +86,13 @@ public sealed class LegacyVehiclePreviewTests
         string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.4\n wheels_wear: 0\n slave_trailer: b\n}\n" +
             "trailer : b {\n trailer_body_wear: 0.5\n chassis_wear: 0.6\n cargo_damage: 0.7\n wheels_wear: 0\n slave_trailer: null\n}\n" +
             "vehicle : " + duplicateId + " {\n unknown_mod: \"preserved\"\n}\n";
+        if (duplicateId == "a")
+        {
+            var document = SiiSyntaxDocument.Parse(input);
+            Assert.Throws<InvalidOperationException>(() => new LegacyVehiclePreview(document, LegacyVehicleKind.Trailer, "a"));
+            Assert.Equal(input, document.ToText());
+            return;
+        }
         var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "a");
         Assert.Throws<InvalidOperationException>(() =>
         {

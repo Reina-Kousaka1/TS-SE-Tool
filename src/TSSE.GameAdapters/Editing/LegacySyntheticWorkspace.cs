@@ -36,12 +36,14 @@ public sealed class LegacySyntheticWorkspace
     {
         SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
         if (document.OpaqueLines.Count != 0)
-            throw new InvalidOperationException("Unclassified syntax prevents safe trailer selection.");
+            throw new InvalidOperationException("Unclassified syntax prevents safe vehicle selection.");
         var ids = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var counts = document.Blocks.Where(block => block.Id is not null)
+            .GroupBy(block => block.Id!, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
         foreach (SiiBlock block in document.Blocks.Where(item => item.Type == type))
         {
-            if (string.IsNullOrWhiteSpace(block.Id) || !seen.Add(block.Id))
+            if (string.IsNullOrWhiteSpace(block.Id) || counts[block.Id] != 1)
                 throw new InvalidOperationException("A vehicle identifier is missing or ambiguous.");
             ids.Add(block.Id);
         }
