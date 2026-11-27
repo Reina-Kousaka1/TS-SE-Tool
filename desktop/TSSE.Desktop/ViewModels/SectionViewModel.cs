@@ -41,6 +41,7 @@ public sealed class SectionViewModel : ObservableObject
         SelectVehicleCategoryCommand = new RelayCommand<string>(SelectVehicleCategory);
         SelectAnalyticsWindowCommand = new RelayCommand<string>(SelectAnalyticsWindow);
         ProfileDemo = new ProfileDemoViewModel(_text);
+        VehicleDemo = new VehicleDemoViewModel(_text);
     }
 
     public string PageKey { get; }
@@ -56,6 +57,8 @@ public sealed class SectionViewModel : ObservableObject
     public bool IsSettings => PageKey == "settings";
     public bool IsSavegameExplorer => PageKey == "savegame-explorer";
     public ProfileDemoViewModel ProfileDemo { get; }
+    public VehicleDemoViewModel VehicleDemo { get; }
+    public bool IsVehicleDemoVisible => IsVehicleStudio && !IsCoachesSelected;
     public string SettingsStorageHeading { get; }
     public string SettingsStorageMessage { get; }
     public string VehicleCategoryHeading { get; }
@@ -89,6 +92,8 @@ public sealed class SectionViewModel : ObservableObject
             OnPropertyChanged(nameof(IsTrucksSelected));
             OnPropertyChanged(nameof(IsTrailersSelected));
             OnPropertyChanged(nameof(IsCoachesSelected));
+            OnPropertyChanged(nameof(IsVehicleDemoVisible));
+            VehicleDemo.SelectCategory(category);
             OnPropertyChanged(nameof(SelectedVehicleCategoryLabel));
             OnPropertyChanged(nameof(SelectedVehicleMessage));
         }

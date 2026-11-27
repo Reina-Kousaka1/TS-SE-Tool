@@ -93,6 +93,7 @@ public sealed class MainWindowViewModelTests
         Assert.False(vehicle.IsTrucksSelected);
         Assert.False(vehicle.IsTrailersSelected);
         Assert.True(vehicle.IsCoachesSelected);
+        Assert.False(vehicle.IsVehicleDemoVisible);
         Assert.Contains("preview", vehicle.SelectedVehicleMessage, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(30, economy.SelectedWindowDays);
         Assert.False(economy.IsSevenDaysSelected);

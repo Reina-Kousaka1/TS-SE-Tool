@@ -81,13 +81,20 @@ Changed values are emitted as invariant round-trip decimals. Unchanged values
 retain their original text. Only an explicitly selected field is edited; wheel
 arrays, references and unknown fields are preserved, not interpreted.
 This does not claim full repair, game compatibility, or Coaches support.
-The preview is memory only and is not wired to file operations or the UI.
+The Vehicle Studio exposes a labelled demo using two independent embedded
+synthetic sessions with field selection and undo/redo. It has no file access.
+Selecting Coaches hides the demo; no Coach model is inferred from truck fields.
 
 Architecture self-review (not independent): field allowlists prevent applying
 trailer edits to trucks and vice versa. Unique block and field checks prevent
 ambiguous replacements; existing syntax session safeguards remain active.
 Valid decimal encoding and the ratio range for real game versions remain
 unverified until genuine fixture and in-game tests are performed.
+
+UI self-review (not independent): each category has a separate synthetic
+session and history, input is restricted to invariant ratios, and no path or
+save command is introduced. Users can change cargo damage in the trailer demo;
+this is not represented as automatic cargo repair.
 
 ## Architecture self-review (not independent)
 

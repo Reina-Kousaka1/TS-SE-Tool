@@ -21,6 +21,27 @@ namespace TSSE.Desktop.Tests;
 public sealed class AvaloniaWindowTests
 {
     [AvaloniaFact]
+    public void Vehicle_demo_is_visible_for_trucks_and_hidden_for_coaches()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            NavigationItemViewModel vehicle = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "vehicle-studio");
+            viewModel.NavigateCommand.Execute(vehicle);
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "Vehicle editor — synthetic demo" && block.IsEffectivelyVisible);
+            vehicle.Page.SelectVehicleCategoryCommand.Execute("Coaches");
+            Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "Vehicle editor — synthetic demo" && block.IsEffectivelyVisible);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void Main_window_loads_navigation_theme_and_preview_content()
     {
         var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en-US"));
