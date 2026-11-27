@@ -29,6 +29,7 @@ public sealed class AvaloniaWindowTests
             window.Show();
             var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "savegame-explorer");
             viewModel.NavigateCommand.Execute(page);
+            window.UpdateLayout();
             Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
                 block.Text == "Synthetic profile skills" && block.IsEffectivelyVisible);
             Assert.Contains(window.GetVisualDescendants().OfType<CheckBox>(), box =>
