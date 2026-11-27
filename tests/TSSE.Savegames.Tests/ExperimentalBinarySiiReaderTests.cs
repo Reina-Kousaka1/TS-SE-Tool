@@ -37,6 +37,16 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(0x800000000000000bul, named.RawParts[0]);
         Assert.True(named.TryGetLegacyText(out string? text));
         Assert.Equal("a.b", text);
+        Assert.Empty(block.ReferenceArrayFields["empty_refs"]);
+        var refs = block.ReferenceArrayFields["refs"];
+        Assert.Equal(4, refs.Count);
+        Assert.True(refs[0].IsNullMarker);
+        Assert.True(refs[1].IsNamelessMarker);
+        Assert.Equal(0x9876ul, Assert.Single(refs[1].RawParts));
+        Assert.True(refs[2].TryGetLegacyText(out string? arrayText));
+        Assert.Equal("a.b", arrayText);
+        Assert.Equal(refs[2].RawParts, refs[3].RawParts);
+        Assert.Equal(0x3cu, refs[2].TypeCode);
         Assert.Equal(before, input);
     }
 
@@ -88,10 +98,18 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(ExperimentalBinarySiiError.Ambiguous, Reject(Fixture(duplicateBlock: true)).Error);
     }
 
+    [Fact]
+    public void ExcessiveReferenceArrayCountIsRejectedBeforeAllocation()
+    {
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(referenceArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(referenceArrayCount: uint.MaxValue)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(referenceArrayCount: 4096)).Error);
+    }
+
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -106,6 +124,14 @@ public sealed class ExperimentalBinarySiiReaderTests
             writer.Write((byte)0);
             writer.Write((byte)0xff); writer.Write(0x9876ul);
             writer.Write((byte)2); writer.Write(referencePart); writer.Write(12ul);
+            writer.Write((uint)0);
+            writer.Write(referenceArrayCount ?? 4);
+            if (referenceArrayCount is null)
+            {
+                writer.Write((byte)0);
+                writer.Write((byte)0xff); writer.Write(0x9876ul);
+                for (int i = 0; i < 2; i++) { writer.Write((byte)2); writer.Write(referencePart); writer.Write(12ul); }
+            }
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -123,6 +149,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x39); Name("empty_ref");
         writer.Write((uint)0x3d); Name("anon_ref");
         writer.Write((uint)0x3b); Name("named_ref");
+        writer.Write((uint)0x3a); Name("empty_refs");
+        writer.Write((uint)0x3c); Name("refs");
         writer.Write((uint)0);
         Data();
         if (duplicateBlock) Data();

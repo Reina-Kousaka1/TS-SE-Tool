@@ -272,8 +272,12 @@ fixture and the x86 decoder probe. An optional legacy-text interpretation fails
 for unrepresentable components and never resolves ownership or target validity.
 It masks the historically ignored high bit only for display; the raw bit remains
 available, so identical display text must not be used as a unique identity.
-Binary data-block IDs themselves remain limited to nameless IDs. Reference
-arrays and real saves are not supported or verified.
+Binary data-block IDs themselves remain limited to nameless IDs. The reader
+also accepts synthetic reference arrays of historical types `0x3a` and `0x3c`,
+retaining order, duplicates and each element's raw marker and parts. A count
+over 4,096 or truncated data fails before an array is returned. Empty and mixed
+arrays are covered by both the managed tests and the bundled x86 DLL probe;
+this does not validate reference targets, real saves or game compatibility.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
