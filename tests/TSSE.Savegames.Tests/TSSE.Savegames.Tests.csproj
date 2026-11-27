@@ -14,5 +14,6 @@
     <ProjectReference Include="..\..\src\TSSE.GameAdapters\TSSE.GameAdapters.csproj" />
     <ProjectReference Include="..\..\tools\TSSE.FixtureInspector\TSSE.FixtureInspector.csproj" />
     <None Include="..\fixtures\synthetic\sample.sii" Link="fixtures\sample.sii" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\TS SE Tool\SII_Decrypt.dll" Link="fixtures\legacy-native-header.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

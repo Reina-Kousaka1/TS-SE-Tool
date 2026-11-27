@@ -114,6 +114,13 @@ accepts a bounded larger buffer, and inspects only the reported output bytes.
 This source is not proof that the repository's bundled DLL has the same ABI;
 the legacy C# `uint*` declaration must not be reused for a 64-bit native call
 without verifying that exact binary and its calling convention.
+Static inspection of the repository's `TS SE Tool/SII_Decrypt.dll` found PE32
+I386 (x86), file version 1.5.2.56, SHA-256
+`F6393C253BBBBC8DDB7B2F39A22A9223FB2C80D927657B077B0DBC92532BFEBA`.
+This binary does not match an x64 or ARM64 process. `NativeDecoderHeaderProbe`
+checks bounded PE headers without loading native code; an architecture match
+does not establish ABI, exports, OS compatibility, trust, or authorization.
+The original binary was not executed and no 64-bit replacement is assumed.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
