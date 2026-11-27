@@ -64,6 +64,23 @@ the contents or a file path. Unsupported encodings and containers are reported
 without attempting decompression or decryption. Real test copies require
 explicit authorization; profile scanning and production writes stay disabled.
 
+An opt-in developer tool in `tools/TSSE.FixtureInspector` can inspect exactly
+one explicitly approved regular test-copy file, without directory scanning or
+file writes. Run it only after authorization using
+`dotnet run --project tools/TSSE.FixtureInspector -- --approved-test-copy <file>`.
+The flag records the operator's assertion; it does not establish that the
+file is a test copy. Output contains diagnostic metadata including a SHA-256,
+not the file path or contents, and always marks game compatibility and save
+writing as false. Unsupported containers are not decoded. The tool rejects
+links using best-effort path checks; these are non-atomic and cannot prevent
+concurrent path substitution. Run only on isolated, stationary copies. It is
+not connected to Avalonia or profile discovery, and no recovery is performed.
+
+Fixture tool self-review (not independent): one explicit path, read-only open,
+bounded reads via `SiiFixtureInspector`, no content/path in output, and no
+compatibility or write authorization inferred from syntax. Synthetic tests
+cover invalid arguments, unsupported prefixes, and unchanged file bytes.
+
 The report includes a four-byte signature hint for `SiiN`, `ScsC`, `BSII` and
 `3nK` followed by byte `01`, as documented in the original SII Decrypt
 [format constants](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Source/SII_Decrypt_Decryptor.pas).
