@@ -18,6 +18,13 @@ savegame gates. Console writes occur only under the explicitly set CI flag.
 Remaining risk: the process might stall before managed entry or while emitting
 a milestone, and GitHub runner behavior remains outside local evidence.
 
+Run 46013353996 reproduced the ARM64 package timeout with only `main-start`
+logged: the process reached managed entry but not completed framework
+initialization. This does not distinguish builder creation, platform startup,
+or XAML loading; additional CI-only builder and XAML milestones narrow the next
+observation. No timeout or success criterion was altered. This remains an
+implementation-agent self-review, not an independent review.
+
 **Status: in progress.** Foundation and Avalonia UI are one combined Phase 2; there is no separate UI-migration Phase 3. The analytics source change in `b7afc5a` passed full matrix [45896687312](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45896687312): all seven jobs, with 114/114 tests on each of Windows x64/ARM64, Linux x64/ARM64, and macOS Intel, plus 105/105 tests on each Fedora x64/ARM64 job. Self-contained publishes, native desktop start/shutdown, Linux package checks, and Fedora RPM dependency/runtime checks passed. The current code was not run on macOS ARM64; the earlier explicit Apple Silicon run [45811585565](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45811585565) validated older source at `222b82a`. The local machine still has only .NET SDK 8.0.425, so local .NET 10 compilation is unavailable. Real ETS2/ATS/mod/Coaches compatibility, safe operator-reviewed recovery execution, Windows MSI packaging, signing/notarization, and physical desktop accessibility/input review remain open. Savegame discovery and writes remain disabled. Phase 2 is not complete.
 
 ### Local in-game analytics foundation (2026-11-26)

@@ -15,7 +15,9 @@ public partial class App : Application
 {
     public override void Initialize()
     {
+        SmokeTrace.Mark("xaml-load-start");
         AvaloniaXamlLoader.Load(this);
+        SmokeTrace.Mark("xaml-load-complete");
     }
 
     public override void OnFrameworkInitializationCompleted()

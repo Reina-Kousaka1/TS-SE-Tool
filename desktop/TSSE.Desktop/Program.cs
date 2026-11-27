@@ -9,7 +9,9 @@ internal static class Program
     public static void Main(string[] args)
     {
         SmokeTrace.Mark("main-start");
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        AppBuilder builder = BuildAvaloniaApp();
+        SmokeTrace.Mark("builder-ready");
+        builder.StartWithClassicDesktopLifetime(args);
         SmokeTrace.Mark("lifetime-returned");
     }
 
