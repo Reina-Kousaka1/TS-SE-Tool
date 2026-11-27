@@ -39,6 +39,16 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+An independent plain-text byte wrapper supports strict UTF-8 and BOM-marked
+UTF-16 LE/BE, retaining the original BOM and encoding. It checks syntax,
+encoding and byte limits before returning an edited value. It has no file I/O
+and is not a decoder for compressed or encrypted game saves.
+
+Encoding self-review (not independent): malformed bytes and unpaired
+surrogates are rejected rather than replaced; unchanged synthetic inputs are
+tested for byte equality. BOM-less UTF-16, UTF-32, arbitrary legacy encodings
+and actual game-save container compatibility remain unsupported or unverified.
+
 `SiiEditSession` stages explicit field replacements against an already parsed
 syntax document and groups each batch into one undo entry. A failed replacement,
 duplicate target, or unclassified syntax leaves the current text and redo history

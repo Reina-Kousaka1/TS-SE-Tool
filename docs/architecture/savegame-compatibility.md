@@ -18,7 +18,7 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 | Profiles | No profile discovery or profile hierarchy reader is active. | Repository source and UI gates; no profile fixtures. | **Not tested; disabled.** |
 | Trucks and trailers | No game-specific vehicle or trailer save models are implemented. | Repository model inventory; no real fixtures. | **Not tested; unsupported.** |
 | Coaches DLC | No Coaches field names, references, or data model have been inferred. Generic block and field syntax can retain unknown text. | No genuine Coaches fixture exists. | **Not tested; unsupported.** |
-| Encoding and save containers | Parser accepts .NET text. It does not decode game compression, detect original byte encoding, or reconstruct a binary save container. | Unit tests operate on synthetic strings/readers. | **Byte-level compatibility unsupported.** |
+| Encoding and save containers | The in-memory plain-text wrapper accepts strict UTF-8 (with or without BOM) and BOM-marked UTF-16 LE/BE. It does not decode game compression or reconstruct binary containers. | Synthetic byte-level roundtrips only. | **Actual game-save encoding and containers unverified.** |
 
 ## Roundtrip guarantees
 
@@ -26,13 +26,13 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 
 `WithFieldValue` changes one unique field value while preserving the original line prefix, trailing whitespace, and all other source lines. It reparses the candidate and checks block order, location, nesting, and parent relationships. It rejects edits when unclassified syntax exists, when the target is missing or ambiguous, or when the replacement changes the structure. Unknown colon-delimited fields remain in the document as raw values, but the parser cannot determine whether their semantics depend on an edited field.
 
-No canonical serializer or format normalization is defined. Byte equality is not promised because the current parser starts from text and has no byte/container decoder. The implementation makes no encoding, compression, number-format, reference, or game-version normalization.
+No canonical serializer or format normalization is defined. The plain-text wrapper preserves the accepted BOM, encoding and bytes for an unchanged synthetic input. This does not establish byte equality for arbitrary encodings or game containers. The implementation makes no compression, number-format, reference, or game-version normalization.
 
 ## Bounded input and diagnostics
 
 The parser applies configurable limits for total characters, lines, line length, blocks, fields, and nesting depth. `ParseReader` reads at most one character beyond the configured total-character budget and rejects an overlong line while scanning. Stable `SiiSyntaxErrorCode` values accompany parse exceptions, with line and column data when available. The default limits are defensive resource bounds; they have not been calibrated against genuine game saves.
 
-The parser rejects unbalanced braces, blocks without headers, empty block identifiers, unclosed quoted values, input over configured bounds, and documents without blocks. Syntax that cannot be classified is retained and surfaced through `OpaqueLines`; a field edit is refused when such lines exist. The parser is a syntax foundation, not a complete SII grammar or game validator. It accepts .NET text and preserves its Unicode characters; it does not decode arbitrary byte encodings or identify the source save's encoding.
+The parser rejects unbalanced braces, blocks without headers, empty block identifiers, unclosed quoted values, input over configured bounds, and documents without blocks. Syntax that cannot be classified is retained and surfaced through `OpaqueLines`; a field edit is refused when such lines exist. The parser is a syntax foundation, not a complete SII grammar or game validator. The plain-text wrapper assumes BOM-less input is UTF-8, rejects invalid sequences, UTF-32 and NUL characters, and does not determine game-save encoding.
 
 ## Recovery preview boundary
 
