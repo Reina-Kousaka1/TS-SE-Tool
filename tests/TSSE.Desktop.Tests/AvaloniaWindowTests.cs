@@ -103,6 +103,40 @@ public sealed class AvaloniaWindowTests
     }
 
     [AvaloniaFact]
+    public void Job_cargo_selection_applies_and_undoes_only_synthetic_reference()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "jobs");
+            viewModel.NavigateCommand.Execute(page);
+            window.UpdateLayout();
+            var demo = page.Page.JobDemo;
+            ComboBox choices = Assert.Single(window.GetVisualDescendants().OfType<ComboBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == demo.CargoSelectionLabel);
+            Button apply = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, demo.ApplyCargoLabel));
+            Button undo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, demo.UndoLabel));
+            string original = demo.PreviewText;
+            choices.SelectedItem = "cargo.alternate";
+            Press(apply);
+            Assert.Equal("cargo.alternate", demo.Cargo);
+            Press(undo);
+            Assert.Equal(original, demo.PreviewText);
+
+            void Press(Button button)
+            {
+                Assert.True(button.Focus());
+                window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+                window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void Job_editor_bindings_apply_validate_and_undo_synthetic_values()
     {
         var (viewModel, window, _) = CreateMainWindow();

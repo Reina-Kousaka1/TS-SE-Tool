@@ -7,6 +7,38 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyJobPreviewTests
 {
     [Fact]
+    public void CargoSelectionRequiresObservedReferencesAndSupportsUndo()
+    {
+        string input = Synthetic.Replace("\n}\n", "\n job_offer_data : offer {\n  cargo: cargo.other\n }\n}\n", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Equal(new[] { "cargo.synthetic", "cargo.other" }, editor.ObservedCargoReferences());
+        Assert.Throws<InvalidOperationException>(() => editor.SelectObservedCargo("cargo.unknown"));
+        Assert.Equal(input, editor.PreviewText);
+        editor.SelectObservedCargo("cargo.other");
+        Assert.Equal("cargo.other", editor.CargoReference);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal("cargo.other", editor.CargoReference);
+    }
+
+    [Theory]
+    [InlineData("cargo: nil")]
+    [InlineData("cargo: cargo.other\n  cargo: cargo.extra")]
+    [InlineData("cargo: cargo.")]
+    public void InvalidCargoCatalogDoesNotChangeHistory(string field)
+    {
+        string input = Synthetic.Replace("\n}\n", "\n job_offer_data : offer {\n  " + field + "\n }\n}\n", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        editor.SetUnitsCount(9);
+        Assert.True(editor.Undo());
+        Assert.Throws<InvalidOperationException>(() => editor.SelectObservedCargo("cargo.synthetic"));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.CanRedo);
+    }
+
+    [Fact]
     public void CargoModelIndexEditPreservesOtherFieldsAndUndo()
     {
         string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  cargo_model_index: 0002", StringComparison.Ordinal);

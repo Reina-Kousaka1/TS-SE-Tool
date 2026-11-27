@@ -8,6 +8,27 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void ObservedCargoSelectionUsesHistoryAndRequiresReviewWhenStale()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        Assert.Contains("cargo.alternate", demo.CargoChoices);
+        demo.SelectedCargo = "cargo.alternate";
+        demo.ActionCommand.Execute("cargo");
+        Assert.Equal("cargo.alternate", demo.Cargo);
+        demo.SelectedCargo = "cargo.third";
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal("cargo.synthetic", demo.Cargo);
+        Assert.True(demo.IsCargoStale);
+        demo.ActionCommand.Execute("cargo");
+        Assert.Equal("cargo.synthetic", demo.Cargo);
+        demo.ActionCommand.Execute("cargo-reviewed");
+        Assert.Equal("cargo.third", demo.Cargo);
+        Assert.False(demo.IsCargoStale);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal("cargo.synthetic", demo.Cargo);
+    }
+
+    [Fact]
     public void DiscardingJobDraftsIndividuallyPreservesOtherDraftsAndRedo()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

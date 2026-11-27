@@ -355,6 +355,20 @@ declared by the legacy `Player_Job` model. It checks the existing field and
 shares undo/redo and stale-draft safeguards. It does not resolve or validate
 cargo/model relationships or establish compatibility with a game version.
 
+The synthetic job preview also selects an existing `cargo` reference observed
+in explicitly parsed `player_job`, `job_info`, or `job_offer_data` blocks.
+The legacy source defines these fields and block types; the synthetic catalog
+restricts references to an ASCII `cargo.` subset and rejects malformed or
+duplicate fields. This is a syntax-only candidate list, not evidence that a
+cargo is available, belongs to the job, or fits a trailer. Only the one raw
+reference changes, with shared undo/redo and stale-selection review. No game
+file access or production cargo editing is enabled.
+
+Cargo self-review (not independent): candidates are reused from the current
+in-memory document and revalidated immediately before the edit; missing,
+ambiguous or unsupported fields fail without changing history. Unvalidated
+cross-field relationships and real save formats remain blockers.
+
 `LegacyJobPreview` follows an explicitly selected synthetic player block's
 `current_job` reference to a unique `player_job` block. The legacy Player,
 Player_Job and SiiNunit classes provide the names and Int32 units field.

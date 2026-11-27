@@ -21,6 +21,9 @@ public sealed class JobDemoViewModel : ObservableObject
     private string _baseDistance = "120";
     private string _lastModel = "0";
     private string _baseModel = "0";
+    private string _selectedCargo = "cargo.synthetic";
+    private string _lastCargo = "cargo.synthetic";
+    private string _baseCargo = "cargo.synthetic";
 
     public JobDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -36,6 +39,13 @@ public sealed class JobDemoViewModel : ObservableObject
     public string Description => _text.Get("jobDemo.description");
     public string CargoLabel => _text.Get("jobDemo.cargo");
     public string Cargo => _session.CargoReference;
+    public IReadOnlyList<string> CargoChoices => _session.ObservedCargoReferences();
+    public string CargoSelectionLabel => _text.Get("jobDemo.cargoSelection");
+    public string CargoSelectionDetail => _text.Get("jobDemo.cargoSelectionDetail");
+    public string ApplyCargoLabel => _text.Get("jobDemo.applyCargo");
+    public string SelectedCargo { get => _selectedCargo; set { if (_selectedCargo == _lastCargo) _baseCargo = _lastCargo; if (SetProperty(ref _selectedCargo, value ?? "")) NotifyDrafts(); } }
+    public bool IsCargoStale => SelectedCargo != _lastCargo && _baseCargo != _lastCargo;
+    public string CargoDraftNotice => IsCargoStale ? _text.Format("editor.staleDraft", _lastCargo) : "";
     public string RouteLabel => _text.Get("jobDemo.route");
     public string RouteDetail => _text.Get("jobDemo.routeDetail");
     public string Route => _text.Format("jobDemo.routeValue", _session.SourceCompany, _session.TargetCompany);
@@ -83,7 +93,8 @@ public sealed class JobDemoViewModel : ObservableObject
             return;
         }
         if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
-            (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale))
+            (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale) ||
+            (action == "cargo" && IsCargoStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -113,6 +124,7 @@ public sealed class JobDemoViewModel : ObservableObject
                 _session.SetCargoModelIndex(model);
                 success = true;
             }
+            else if (action is "cargo" or "cargo-reviewed") { _session.SelectObservedCargo(SelectedCargo); success = true; }
             else if (action == "swap-route") { _session.SwapRoute(); success = true; }
             else if (action == "undo") success = _session.Undo();
             else if (action == "redo") success = _session.Redo();
@@ -122,7 +134,7 @@ public sealed class JobDemoViewModel : ObservableObject
             Message = _text.Get("editor.historyLimit");
             return;
         }
-        catch (ArgumentOutOfRangeException) { }
+        catch (ArgumentException) { }
         catch (InvalidOperationException) { }
         Message = _text.Get(success ? "jobDemo.applied" : "jobDemo.invalid");
         if (success)
@@ -131,6 +143,7 @@ public sealed class JobDemoViewModel : ObservableObject
             if (action is "apply" or "apply-reviewed" or "apply-both" or "apply-both-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
             if (action is "distance" or "distance-reviewed" or "apply-both" or "apply-both-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
             if (action is "model" or "model-reviewed") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
+            if (action is "cargo" or "cargo-reviewed") { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
             NotifyDrafts();
         }
     }
@@ -140,12 +153,17 @@ public sealed class JobDemoViewModel : ObservableObject
         string units = _session.UnitsCount.ToString(CultureInfo.InvariantCulture);
         string distance = _session.PlannedDistanceKm.ToString(CultureInfo.InvariantCulture);
         string model = _session.CargoModelIndex.ToString(CultureInfo.InvariantCulture);
+        string cargo = _session.CargoReference;
         if (UnitsInput == _lastUnits || UnitsInput == units) { _baseUnits = units; SetProperty(ref _unitsInput, units, nameof(UnitsInput)); }
         if (DistanceInput == _lastDistance || DistanceInput == distance) { _baseDistance = distance; SetProperty(ref _distanceInput, distance, nameof(DistanceInput)); }
         if (ModelInput == _lastModel || ModelInput == model) { _baseModel = model; SetProperty(ref _modelInput, model, nameof(ModelInput)); }
+        if (SelectedCargo == _lastCargo || SelectedCargo == cargo) { _baseCargo = cargo; SetProperty(ref _selectedCargo, cargo, nameof(SelectedCargo)); }
         _lastUnits = units;
         _lastDistance = distance;
         _lastModel = model;
+        _lastCargo = cargo;
+        OnPropertyChanged(nameof(Cargo));
+        OnPropertyChanged(nameof(CargoChoices));
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(Route));
@@ -161,5 +179,7 @@ public sealed class JobDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(UnitsDraftNotice));
         OnPropertyChanged(nameof(DistanceDraftNotice));
         OnPropertyChanged(nameof(ModelDraftNotice));
+        OnPropertyChanged(nameof(IsCargoStale));
+        OnPropertyChanged(nameof(CargoDraftNotice));
     }
 }

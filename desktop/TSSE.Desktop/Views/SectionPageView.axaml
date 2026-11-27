@@ -240,6 +240,11 @@
           <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding CargoLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Cargo}" />
+          <TextBlock Text="{Binding CargoSelectionDetail}" TextWrapping="Wrap" />
+          <ComboBox ItemsSource="{Binding CargoChoices}" SelectedItem="{Binding SelectedCargo, Mode=TwoWay}" AutomationProperties.Name="{Binding CargoSelectionLabel}" />
+          <TextBlock Text="{Binding CargoDraftNotice}" TextWrapping="Wrap" />
+          <Button Content="{Binding ApplyCargoLabel}" Command="{Binding ActionCommand}" CommandParameter="cargo" />
+          <Button IsVisible="{Binding IsCargoStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="cargo-reviewed" />
           <TextBlock Text="{Binding ModelLabel}" />
           <TextBlock Text="{Binding ModelDetail}" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

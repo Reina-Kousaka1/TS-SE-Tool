@@ -49,6 +49,34 @@ public sealed class LegacyJobPreview
     public string SourceCompany => RouteValue(CurrentJob(), "source_company");
     public string TargetCompany => RouteValue(CurrentJob(), "target_company");
 
+    /// <summary>Lists distinct raw cargo references observed in synthetic legacy-shaped job blocks.</summary>
+    public IReadOnlyList<string> ObservedCargoReferences()
+    {
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
+        if (document.OpaqueLines.Count != 0) throw new InvalidOperationException("Unclassified syntax cannot be inspected.");
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<string>();
+        foreach (SiiBlock block in document.Blocks.Where(item => item.Type is "player_job" or "job_offer_data" or "job_info"))
+        {
+            string raw = Value(block, "cargo");
+            if (!raw.StartsWith("cargo.", StringComparison.Ordinal) || raw.Length <= 6 ||
+                !raw.All(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '.'))
+                throw new InvalidOperationException("A cargo reference is unsupported.");
+            if (seen.Add(raw)) result.Add(raw);
+        }
+        return result.AsReadOnly();
+    }
+
+    /// <summary>Changes only the synthetic reference, without validating cargo, trailer or job semantics.</summary>
+    public void SelectObservedCargo(string cargo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cargo);
+        string current = CargoReference;
+        if (!ObservedCargoReferences().Contains(cargo, StringComparer.Ordinal))
+            throw new InvalidOperationException("The cargo reference was not observed in the document.");
+        if (current != cargo) _session.Apply([new("player_job", _jobId, "cargo", cargo)]);
+    }
+
     /// <summary>Swaps two existing synthetic raw references without inventing route semantics.</summary>
     public void SwapRoute()
     {
