@@ -171,7 +171,7 @@ I386 (x86), file version 1.5.2.56, SHA-256
 This binary does not match an x64 or ARM64 process. `NativeDecoderHeaderProbe`
 checks bounded PE headers without loading native code; an architecture match
 does not establish ABI, exports, OS compatibility, trust, or authorization.
-The original binary was not executed and no 64-bit replacement is assumed.
+No 64-bit replacement is assumed.
 An additional bounded `NativeDecoderExportProbe` inspects the PE export table
 without loading the image. The bundled binary has named non-forwarded RVAs for
 `GetMemoryFormat`, `DecodeMemory` and `DecryptAndDecodeMemory`; malformed or
@@ -185,6 +185,19 @@ names are checked as terminated ASCII, ordinal indexes are range-checked, and
 forwarded entries are distinguished. Synthetic corruption tests and the checked-in
 legacy binary exercise inspection only; ABI review and isolated decoder tests
 remain necessary.
+
+The development-only `tools/TSSE.NativeDecoderProbe/Test-GetMemoryFormat-x86.ps1`
+uses a separate 32-bit Windows PowerShell process, verifies the known SHA-256,
+and calls only `GetMemoryFormat` with three fixed synthetic in-memory buffers.
+Locally on Windows the bundled DLL returned plaintext=1, unknown=10 and
+too-short=11. The Windows x64 CI runs the same isolated-process check. The
+script takes no file paths or save data and does not call a decode or write
+function. These three outcomes support only the tested x86 format-query
+signature; they do not validate a decoder, prove absence of native side
+effects, establish binary provenance or game compatibility, or authorize
+loading it in the application. Hash verification and dependency search
+restrictions are best effort, not a security sandbox. A reviewed isolation
+design and real approved test-copy evidence remain required.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
