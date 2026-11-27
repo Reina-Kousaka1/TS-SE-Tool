@@ -127,6 +127,11 @@ Synthetic tests cover privacy defaults, explicit name disclosure, unsupported
 and ambiguous input, and unchanged file bytes. Genuine compatibility remains
 unverified.
 
+The Windows x64 CI smoke test also invokes the published standalone inspector
+against two synthetic copies with one changed field, checking the default
+count-only output and disabled game-compatibility and write flags. This checks
+the packaged command path without establishing compatibility with game saves.
+
 The report includes a four-byte signature hint for `SiiN`, `ScsC`, `BSII` and
 `3nK` followed by byte `01`, as documented in the original SII Decrypt
 [format constants](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Source/SII_Decrypt_Decryptor.pas).
