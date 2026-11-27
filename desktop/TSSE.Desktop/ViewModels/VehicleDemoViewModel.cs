@@ -38,6 +38,10 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string ApplyLabel => _text.Get("vehicleDemo.apply");
     public string UndoLabel => _text.Get("vehicleDemo.undo");
     public string RedoLabel => _text.Get("vehicleDemo.redo");
+    public string RepairLabel => _text.Get("vehicleDemo.repair");
+    public string RepairDetail => _text.Get("vehicleDemo.repairDetail");
+    public string RefuelLabel => _text.Get("vehicleDemo.refuel");
+    public bool CanRefuel => !_isTrailer;
     public string PreviewLabel => _text.Get("vehicleDemo.preview");
     public string PreviewText => Session.PreviewText;
     public IReadOnlyList<VehicleDemoField> Fields => _isTrailer ? _trailerFields : _truckFields;
@@ -61,6 +65,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         if (_isTrailer == trailer) return;
         _isTrailer = trailer;
         OnPropertyChanged(nameof(Fields));
+        OnPropertyChanged(nameof(CanRefuel));
         _selectedField = Fields[0];
         OnPropertyChanged(nameof(SelectedField));
         OnPropertyChanged(nameof(PreviewText));
@@ -80,6 +85,16 @@ public sealed class VehicleDemoViewModel : ObservableObject
             }
             else if (action == "undo") success = Session.Undo();
             else if (action == "redo") success = Session.Redo();
+            else if (action == "repair")
+            {
+                Session.RepairKnownBodyFields();
+                success = true;
+            }
+            else if (action == "refuel" && CanRefuel)
+            {
+                Session.SetValue("fuel_relative", 1);
+                success = true;
+            }
         }
         catch (ArgumentOutOfRangeException) { }
         catch (InvalidOperationException) { }

@@ -60,6 +60,21 @@ public sealed class LegacyVehiclePreview
         _session.Apply([new(_blockType, _blockId, fieldName, value.ToString("R", CultureInfo.InvariantCulture))]);
     }
 
+    /// <summary>Resets only the named scalar wear fields, as one in-memory edit.</summary>
+    public void RepairKnownBodyFields()
+    {
+        string[] fields = _blockType == "vehicle"
+            ? ["engine_wear", "transmission_wear", "cabin_wear", "chassis_wear"]
+            : ["trailer_body_wear", "chassis_wear"];
+        var edits = new List<SiiFieldEdit>();
+        foreach (string field in fields)
+        {
+            if (GetValue(field) != 0)
+                edits.Add(new(_blockType, _blockId, field, "0"));
+        }
+        _session.Apply(edits);
+    }
+
     public bool Undo() => _session.Undo();
     public bool Redo() => _session.Redo();
 

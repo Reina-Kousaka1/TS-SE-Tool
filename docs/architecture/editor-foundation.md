@@ -92,6 +92,10 @@ This does not claim full repair, game compatibility, or Coaches support.
 The Vehicle Studio exposes a labelled demo using two independent embedded
 synthetic sessions with field selection and undo/redo. It has no file access.
 Selecting Coaches hides the demo; no Coach model is inferred from truck fields.
+The demo can reset listed truck mechanical/body wear or trailer body/chassis
+wear in one undoable batch, and can refill the demo truck's fuel separately.
+These operations do not repair wheels, cargo, accessories or linked trailers.
+Any missing or invalid required wear field rejects the complete batch.
 
 Architecture self-review (not independent): field allowlists prevent applying
 trailer edits to trucks and vice versa. Unique block and field checks prevent
@@ -103,6 +107,11 @@ UI self-review (not independent): each category has a separate synthetic
 session and history, input is restricted to invariant ratios, and no path or
 save command is introduced. Users can change cargo damage in the trailer demo;
 this is not represented as automatic cargo repair.
+
+Repair self-review (not independent): all required scalar values are validated
+before the batch is submitted, the existing syntax session publishes it
+atomically, and the UI identifies the exclusions. This is not equivalent to the
+legacy tool's complete repair, which also handles wheels and linked trailers.
 
 ## Experimental active job mapping
 

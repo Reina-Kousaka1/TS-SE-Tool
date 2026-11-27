@@ -1,4 +1,7 @@
 {
+  "vehicleDemo.repair": "Reset listed body wear",
+  "vehicleDemo.refuel": "Fill demo tank",
+  "vehicleDemo.repairDetail": "Resets the listed body and mechanical wear only. Wheels, cargo, accessories and linked trailers are not changed.",
   "profileDemo.levelHeading": "Legacy level calculation",
   "profileDemo.levelDescription": "Select the legacy ETS2 or ATS table. Current game compatibility is unverified. Setting a level uses the XP just below the next level.",
   "profileDemo.levelLabel": "Level (0–150)",

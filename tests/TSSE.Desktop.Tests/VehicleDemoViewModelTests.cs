@@ -8,6 +8,23 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void RepairAndRefuelAreIndependentUndoableSyntheticOperations()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.ActionCommand.Execute("repair");
+        Assert.Contains("engine_wear: 0\n", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("fuel_relative: 0.5", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("refuel");
+        Assert.Contains("fuel_relative: 1", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Contains("fuel_relative: 0.5", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.SelectCategory("Trailers");
+        Assert.False(demo.CanRefuel);
+    }
+    [Fact]
     public void VehicleSessionsRemainSeparateAndUndoRedoUpdatesPreview()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

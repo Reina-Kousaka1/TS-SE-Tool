@@ -85,6 +85,11 @@
         <StackPanel Spacing="10" DataContext="{Binding VehicleDemo}">
           <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding RepairDetail}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="{Binding RepairLabel}" Command="{Binding ActionCommand}" CommandParameter="repair" />
+            <Button IsVisible="{Binding CanRefuel}" Content="{Binding RefuelLabel}" Command="{Binding ActionCommand}" CommandParameter="refuel" />
+          </StackPanel>
           <TextBlock Text="{Binding FieldLabel}" />
           <ComboBox ItemsSource="{Binding Fields}" SelectedItem="{Binding SelectedField, Mode=TwoWay}" AutomationProperties.Name="{Binding FieldLabel}">
             <ComboBox.ItemTemplate>

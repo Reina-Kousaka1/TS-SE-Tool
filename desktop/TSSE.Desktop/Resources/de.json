@@ -1,4 +1,7 @@
 {
+  "vehicleDemo.repair": "Aufgeführten Verschleiß zurücksetzen",
+  "vehicleDemo.refuel": "Demotank füllen",
+  "vehicleDemo.repairDetail": "Setzt nur den aufgeführten Aufbau- und Technikverschleiß zurück. Räder, Fracht, Zubehör und verknüpfte Trailer bleiben unverändert.",
   "profileDemo.levelHeading": "Levelberechnung des ursprünglichen Tools",
   "profileDemo.levelDescription": "Alte ETS2- oder ATS-Tabelle auswählen. Die Kompatibilität mit aktuellen Spielen ist unbestätigt. Beim Setzen des Levels werden die XP knapp unter das nächste Level gesetzt.",
   "profileDemo.levelLabel": "Level (0–150)",

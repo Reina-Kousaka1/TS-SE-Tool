@@ -9,6 +9,44 @@ public sealed class LegacyVehiclePreviewTests
     private const string Synthetic = "SiiNunit\n{\n vehicle : truck {\n  fuel_relative: &3f000000\n  engine_wear: 0.25\n  mod_field: \"保持\"\n }\n trailer : trailer1 {\n  trailer_body_wear: 0.5\n  cargo_damage: 0.75\n  accessory: custom.ref\n }\n}\n";
 
     [Fact]
+    public void RepairGroupsScalarChangesAndLeavesWheelsAndFuelUntouched()
+    {
+        const string input = "vehicle : t {\n engine_wear: 0.1\n transmission_wear: 0.2\n cabin_wear: 0.3\n chassis_wear: 0.4\n wheels_wear[0]: 0.5\n fuel_relative: 0.25\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        preview.RepairKnownBodyFields();
+        Assert.Contains("engine_wear: 0\n", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("transmission_wear: 0\n", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("wheels_wear[0]: 0.5", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("fuel_relative: 0.25", preview.PreviewText, StringComparison.Ordinal);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+        Assert.True(preview.Redo());
+    }
+
+    [Fact]
+    public void RepairFailsAtomicallyWhenAnyRequiredFieldIsInvalid()
+    {
+        const string input = "vehicle : t {\n engine_wear: 0.1\n transmission_wear: 0.2\n cabin_wear: 2\n chassis_wear: 0.4\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.RepairKnownBodyFields());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
+
+    [Fact]
+    public void TrailerBodyRepairDoesNotChangeCargoOrLinkedTrailer()
+    {
+        const string input = "trailer : t {\n trailer_body_wear: 0.5\n chassis_wear: 0.2\n cargo_damage: 0.8\n slave_trailer: next\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "t");
+        preview.RepairKnownBodyFields();
+        Assert.Contains("trailer_body_wear: 0\n", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("chassis_wear: 0\n", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("cargo_damage: 0.8", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("slave_trailer: next", preview.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TruckFuelEditPreservesUnknownFieldsAndSupportsUndoRedo()
     {
         var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(Synthetic), LegacyVehicleKind.Truck, "truck");
