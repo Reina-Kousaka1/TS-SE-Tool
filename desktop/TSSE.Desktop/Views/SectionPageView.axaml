@@ -113,6 +113,7 @@
           <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ChangesLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding SharedHistoryLabel}" TextWrapping="Wrap" />
+          <Button Content="{Binding RevertAllLabel}" Command="{Binding ActionCommand}" CommandParameter="revert-all" />
           <TextBlock Text="{Binding ChangeSummary}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding PreviewLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding PreviewText}" FontFamily="monospace" TextWrapping="Wrap" />

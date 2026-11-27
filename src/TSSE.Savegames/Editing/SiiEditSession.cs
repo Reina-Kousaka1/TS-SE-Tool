@@ -89,6 +89,16 @@ public sealed class SiiEditSession
         }
     }
 
+    /// <summary>Restore the exact original preview as one undoable in-memory edit.</summary>
+    public bool RevertAll()
+    {
+        if (!IsDirty) return false;
+        _validateCandidate?.Invoke(_original);
+        if (!_history.TryApply(_original))
+            throw new InvalidOperationException("The original document exceeds the in-memory preview limit.");
+        return true;
+    }
+
     public bool Undo() => _history.Undo();
     public bool Redo() => _history.Redo();
 }

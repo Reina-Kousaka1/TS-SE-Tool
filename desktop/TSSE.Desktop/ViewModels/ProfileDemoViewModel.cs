@@ -44,6 +44,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string DiscardExperienceLabel => _text.Get("profileDemo.discardExperience");
     public string UndoLabel => _text.Get("profileDemo.undo");
     public string RedoLabel => _text.Get("profileDemo.redo");
+    public string RevertAllLabel => _text.Get("editor.revertAll");
     public string PreviewLabel => _text.Get("profileDemo.preview");
     public string PreviewText => _session.PreviewText;
     public string ChangesLabel => _text.Get("editor.changes");
@@ -119,6 +120,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
                     => Apply(current with { Experience = LegacyLevelCalculator.ExperienceForLevelEnd(_levelTable, level) }),
                 "undo" => _session.Undo(),
                 "redo" => _session.Redo(),
+                "revert-all" => _workspace.Workspace.RevertAll(),
                 _ => false
             };
         }

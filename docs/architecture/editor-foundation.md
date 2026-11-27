@@ -380,3 +380,14 @@ The character/state caps bound retained source text, not total process memory:
 parsed objects and transient reparsing require additional memory.
 Compatibility, persistence, model-to-SII mapping and independent recovery
 review remain open; no write feature gate has been changed.
+The profile demo offers a reset of all applied changes in the shared synthetic
+workspace. It restores the exact initial text as one undoable history entry;
+unapplied input drafts remain governed by the existing stale-draft checks. The
+reset does not read or write files. If the history is full it fails without
+changing the preview. A no-op reset leaves redo history intact.
+
+Architecture self-review (not independent): the reset reuses the immutable
+initial syntax snapshot and existing history limit and candidate validation.
+Regression tests cover cross-section notification, exact text restoration,
+undo/redo, no-op redo preservation, and history exhaustion. Real save support
+and permission to write remain separate unresolved requirements.

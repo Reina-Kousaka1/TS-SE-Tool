@@ -106,6 +106,7 @@
   "vehicleDemo.staleBlocked": "Der gespeicherte Demowert hat sich geändert. Den Entwurf prüfen und die ausdrückliche Übernehmen-Schaltfläche verwenden.",
   "vehicleDemo.applyStale": "Geprüften Entwurf übernehmen",
   "editor.sharedHistory": "Rückgängig und Wiederholen gelten für den gesamten synthetischen Arbeitsbereich über alle Editorbereiche hinweg.",
+  "editor.revertAll": "Alle synthetischen Änderungen zurücksetzen (rückgängig machbar)",
   "editor.changes": "Änderungen an synthetischen Daten",
   "editor.noChanges": "Keine Änderungen.",
   "jobDemo.distance": "Geplante Strecke in km (nichtnegative Ganzzahl)",

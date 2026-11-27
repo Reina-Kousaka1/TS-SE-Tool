@@ -7,6 +7,43 @@ namespace TSSE.Savegames.Tests;
 public sealed class SiiEditSessionTests
 {
     [Fact]
+    public void RevertAllIsExactUndoableAndNoOpPreservesRedo()
+    {
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
+        Assert.False(session.RevertAll());
+        session.Apply([new("bank", "a", "money_account", "-8")]);
+        session.Apply([new("economy", "b", "experience_points", "30")]);
+        string changed = session.PreviewText;
+        Assert.True(session.RevertAll());
+        Assert.Equal(Original, session.PreviewText);
+        Assert.Empty(session.Changes);
+        Assert.False(session.IsDirty);
+        Assert.True(session.Undo());
+        Assert.Equal(changed, session.PreviewText);
+        Assert.True(session.Redo());
+        Assert.Equal(Original, session.PreviewText);
+        Assert.True(session.Undo());
+        Assert.True(session.Undo());
+        Assert.True(session.Undo());
+        Assert.False(session.RevertAll());
+        Assert.True(session.CanRedo);
+        Assert.True(session.Redo());
+    }
+
+    [Fact]
+    public void RevertAllAtHistoryLimitFailsWithoutChangingState()
+    {
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
+        for (int i = 1; i < SiiEditSession.MaximumHistoryStates; i++)
+            session.Apply([new("bank", "a", "money_account", i.ToString(System.Globalization.CultureInfo.InvariantCulture))]);
+        string before = session.PreviewText;
+        Assert.Throws<TSSE.Core.Editing.EditHistoryLimitException>(() => session.RevertAll());
+        Assert.Equal(before, session.PreviewText);
+        Assert.True(session.IsDirty);
+        Assert.True(session.Undo());
+    }
+
+    [Fact]
     public void CrossTypeDuplicateTargetRejectsWholeBatchAndPreservesRedo()
     {
         const string original = "root {\n safe : a {\n  value: 1\n }\n vehicle : b {\n  value: 2\n }\n mod : b {\n  unknown: preserved\n }\n}\n";

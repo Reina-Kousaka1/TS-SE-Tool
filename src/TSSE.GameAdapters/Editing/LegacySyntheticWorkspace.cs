@@ -60,6 +60,7 @@ public sealed class LegacySyntheticWorkspace
     public bool IsDirty => _session.IsDirty;
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;
+    public bool RevertAll() => _session.RevertAll();
     public bool Undo() => _session.Undo();
     public bool Redo() => _session.Redo();
 }

@@ -9,6 +9,33 @@ namespace TSSE.Desktop.Tests;
 public sealed class SharedDemoWorkspaceTests
 {
     [Fact]
+    public void ResetAllRestoresAllSectionsAndCanBeUndone()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var profile = new ProfileDemoViewModel(text, workspace);
+        var vehicle = new VehicleDemoViewModel(text, workspace);
+        var job = new JobDemoViewModel(text, workspace);
+        string original = profile.PreviewText;
+        profile.BalanceInput = "25";
+        profile.ActionCommand.Execute("balance");
+        vehicle.ValueInput = "1";
+        vehicle.ActionCommand.Execute("apply");
+        job.UnitsInput = "8";
+        job.ActionCommand.Execute("apply");
+        string changed = job.PreviewText;
+        profile.ActionCommand.Execute("revert-all");
+        Assert.Equal(original, job.PreviewText);
+        Assert.Empty(workspace.Workspace.Changes);
+        Assert.Equal("0.5", vehicle.ValueInput);
+        Assert.Equal("3", job.UnitsInput);
+        job.ActionCommand.Execute("undo");
+        Assert.Equal(changed, profile.PreviewText);
+        Assert.Equal("1", vehicle.ValueInput);
+        Assert.Equal("8", job.UnitsInput);
+    }
+
+    [Fact]
     public void FullSyntheticEditingSequenceSharesHistoryAcrossAllFourSections()
     {
         var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
