@@ -52,6 +52,8 @@
   "vehicleDemo.field": "Feld",
   "vehicleDemo.value": "Wert (0–1)",
   "vehicleDemo.apply": "Wert übernehmen",
+  "vehicleDemo.odometer": "Synthetischer Kilometerzähler als Ganzzahl (0–4294967295)",
+  "vehicleDemo.odometerDetail": "Nur das ganzzahlige Legacy-Feld wird geändert; der Nachkommaanteil bleibt erhalten. Einheit und Kompatibilität mit aktuellen Spielversionen sind ungeprüft.",
   "vehicleDemo.undo": "Rückgängig",
   "vehicleDemo.redo": "Wiederholen",
   "vehicleDemo.preview": "Synthetische SII-Vorschau (nur im Speicher)",

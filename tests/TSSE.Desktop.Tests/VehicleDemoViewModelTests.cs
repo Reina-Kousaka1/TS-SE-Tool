@@ -8,6 +8,44 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void OdometerDemoValidatesBoundsPreservesFractionAndSupportsHistory()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.OdometerInput = "4294967296";
+        demo.ActionCommand.Execute("odometer");
+        Assert.Equal(original, demo.PreviewText);
+        demo.OdometerInput = "4294967295";
+        demo.ActionCommand.Execute("odometer");
+        Assert.Contains("odometer: 4294967295", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("odometer_float_part: &3f000000", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("odometer: 4294967295", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OdometerDraftRequiresReviewAfterSharedUndo()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.OdometerInput = "200";
+        demo.ActionCommand.Execute("odometer");
+        demo.OdometerInput = "300";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsOdometerStale);
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("odometer");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("odometer-reviewed");
+        Assert.Contains("odometer: 300", demo.PreviewText, StringComparison.Ordinal);
+        Assert.False(demo.IsOdometerStale);
+        demo.SelectCategory("Trailers");
+        demo.OdometerInput = "400";
+        demo.ActionCommand.Execute("odometer");
+        Assert.DoesNotContain("odometer: 400", demo.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void AccessoryInspectionReportsSyntheticStatusesWithoutChangingTheWorkspace()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

@@ -102,6 +102,16 @@
           <TextBlock Text="{Binding AccessoryHeading}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding AccessoryDescription}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding AccessorySummary}" TextWrapping="Wrap" />
+          <StackPanel IsVisible="{Binding CanRefuel}" Spacing="8">
+            <TextBlock Text="{Binding OdometerLabel}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding OdometerDetail}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox Text="{Binding OdometerInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding OdometerLabel}" />
+              <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="odometer" />
+            </Grid>
+            <TextBlock Text="{Binding OdometerDraftNotice}" TextWrapping="Wrap" />
+            <Button IsVisible="{Binding IsOdometerStale}" Content="{Binding ApplyStaleLabel}" Command="{Binding ActionCommand}" CommandParameter="odometer-reviewed" />
+          </StackPanel>
           <TextBlock Text="{Binding FieldLabel}" />
           <ComboBox ItemsSource="{Binding Fields}" SelectedItem="{Binding SelectedField, Mode=TwoWay}" AutomationProperties.Name="{Binding FieldLabel}">
             <ComboBox.ItemTemplate>

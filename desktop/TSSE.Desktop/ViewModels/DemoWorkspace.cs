@@ -11,7 +11,7 @@ public sealed class DemoWorkspace
 
     private static string CreateFixture() => Fixture
         .Replace("  fuel_relative: 0.5\n",
-            "  accessories: 3\n  accessories[0]: demo.accessory\n  accessories[1]: demo.mod\n  accessories[2]: demo.missing\n  fuel_relative: 0.5\n", StringComparison.Ordinal)
+            "  accessories: 3\n  accessories[0]: demo.accessory\n  accessories[1]: demo.mod\n  accessories[2]: demo.missing\n  odometer: 12345\n  odometer_float_part: &3f000000\n  fuel_relative: 0.5\n", StringComparison.Ordinal)
         .Replace("  cargo_damage: 0.1\n",
             "  accessories: 1\n  accessories[0]: demo.accessory\n  cargo_damage: 0.1\n", StringComparison.Ordinal)
         .Replace("\n}\n",

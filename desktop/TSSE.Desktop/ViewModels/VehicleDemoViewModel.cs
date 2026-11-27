@@ -21,6 +21,9 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private string _message;
     private string _lastValue = "";
     private string _inputBase = "";
+    private string _odometerInput = "12345";
+    private string _lastOdometer = "12345";
+    private string _odometerBase = "12345";
     private readonly Dictionary<(bool Trailer, string Field), (string Text, string Base)> _drafts = new();
 
     public VehicleDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
@@ -44,6 +47,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string FieldLabel => _text.Get("vehicleDemo.field");
     public string ValueLabel => _text.Get("vehicleDemo.value");
     public string ApplyLabel => _text.Get("vehicleDemo.apply");
+    public string OdometerLabel => _text.Get("vehicleDemo.odometer");
+    public string OdometerDetail => _text.Get("vehicleDemo.odometerDetail");
+    public string OdometerInput { get => _odometerInput; set { if (_odometerInput == _lastOdometer) _odometerBase = _lastOdometer; if (SetProperty(ref _odometerInput, value ?? "")) NotifyOdometerDraft(); } }
+    public bool IsOdometerStale => OdometerInput != _lastOdometer && _odometerBase != _lastOdometer;
+    public string OdometerDraftNotice => IsOdometerStale ? _text.Format("vehicleDemo.staleDraft", _lastOdometer) : "";
     public string UndoLabel => _text.Get("vehicleDemo.undo");
     public string RedoLabel => _text.Get("vehicleDemo.redo");
     public string RepairLabel => _text.Get("vehicleDemo.repair");
@@ -135,9 +143,20 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 Message = _text.Get("vehicleDemo.staleBlocked");
                 return;
             }
+            if (action == "odometer" && IsOdometerStale)
+            {
+                Message = _text.Get("vehicleDemo.staleBlocked");
+                return;
+            }
             if ((action is "apply" or "apply-stale") && float.TryParse(ValueInput, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
             {
                 Session.SetValue(SelectedField.Name, value);
+                success = true;
+            }
+            else if ((action is "odometer" or "odometer-reviewed") && CanRefuel &&
+                uint.TryParse(OdometerInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint odometer))
+            {
+                _truck.SetOdometer(odometer);
                 success = true;
             }
             else if (action == "undo") success = Session.Undo();
@@ -179,6 +198,12 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 _drafts.Remove((_isTrailer, SelectedField.Name));
                 SetInput(_lastValue, _lastValue);
             }
+            if (action is "odometer" or "odometer-reviewed")
+            {
+                _odometerBase = _lastOdometer;
+                SetProperty(ref _odometerInput, _lastOdometer, nameof(OdometerInput));
+                NotifyOdometerDraft();
+            }
         }
     }
 
@@ -190,6 +215,15 @@ public sealed class VehicleDemoViewModel : ObservableObject
 
     private void RefreshFromWorkspace()
     {
+        string currentOdometer = _truck.Odometer.ToString(CultureInfo.InvariantCulture);
+        bool cleanOdometer = OdometerInput == _lastOdometer;
+        _lastOdometer = currentOdometer;
+        if (cleanOdometer || OdometerInput == currentOdometer)
+        {
+            _odometerBase = currentOdometer;
+            SetProperty(ref _odometerInput, currentOdometer, nameof(OdometerInput));
+        }
+        NotifyOdometerDraft();
         string current = Session.GetValue(SelectedField.Name).ToString("R", CultureInfo.InvariantCulture);
         bool clean = ValueInput == _lastValue;
         _lastValue = current;
@@ -227,6 +261,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsStaleDraft));
         OnPropertyChanged(nameof(DraftNotice));
+    }
+    private void NotifyOdometerDraft()
+    {
+        OnPropertyChanged(nameof(IsOdometerStale));
+        OnPropertyChanged(nameof(OdometerDraftNotice));
     }
     private IReadOnlyList<VehicleDemoField> CreateFields(string[] names) =>
         names.Select(name => new VehicleDemoField(name, _text.Get("vehicleDemo.field." + name))).ToArray();

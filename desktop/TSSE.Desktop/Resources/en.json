@@ -52,6 +52,8 @@
   "vehicleDemo.field": "Field",
   "vehicleDemo.value": "Value (0–1)",
   "vehicleDemo.apply": "Apply value",
+  "vehicleDemo.odometer": "Synthetic odometer integer (0–4294967295)",
+  "vehicleDemo.odometerDetail": "Only the legacy integer field changes; the fractional part remains unchanged. Units and current-game compatibility are unverified.",
   "vehicleDemo.undo": "Undo",
   "vehicleDemo.redo": "Redo",
   "vehicleDemo.preview": "Synthetic SII preview (memory only)",

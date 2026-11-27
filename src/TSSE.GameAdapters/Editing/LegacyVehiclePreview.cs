@@ -47,6 +47,27 @@ public sealed class LegacyVehiclePreview
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;
 
+    /// <summary>Legacy integer odometer only; no unit or fractional-part interpretation is implied.</summary>
+    public uint Odometer
+    {
+        get
+        {
+            if (_blockType != "vehicle")
+                throw new InvalidOperationException("The odometer preview requires a vehicle block.");
+            SiiField[] fields = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText)).Fields
+                .Where(field => field.Name == "odometer").ToArray();
+            if (fields.Length != 1 || !uint.TryParse(fields[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out uint value))
+                throw new InvalidOperationException("The odometer is missing, ambiguous, or unsupported.");
+            return value;
+        }
+    }
+
+    public void SetOdometer(uint value)
+    {
+        if (Odometer == value) return;
+        _session.Apply([new(_blockType, _blockId, "odometer", value.ToString(CultureInfo.InvariantCulture))]);
+    }
+
     public float GetValue(string fieldName)
     {
         CheckField(fieldName);

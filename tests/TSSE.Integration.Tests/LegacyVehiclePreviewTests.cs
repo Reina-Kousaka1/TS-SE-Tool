@@ -7,6 +7,45 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyVehiclePreviewTests
 {
     [Fact]
+    public void OdometerEditPreservesFractionAndUnknownDataAndCanBeUndone()
+    {
+        const string input = "vehicle : t {\n odometer: 0012\n odometer_float_part: &3f000000\n mod: \"未知\"\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        Assert.Equal(12u, preview.Odometer);
+        preview.SetOdometer(12);
+        Assert.Equal(input, preview.PreviewText);
+        preview.SetOdometer(uint.MaxValue);
+        string changed = input.Replace("odometer: 0012", "odometer: 4294967295", StringComparison.Ordinal);
+        Assert.Equal(changed, preview.PreviewText);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.True(preview.Redo());
+        Assert.Equal(changed, preview.PreviewText);
+    }
+
+    [Theory]
+    [InlineData("odometer: -1")]
+    [InlineData("odometer: 4294967296")]
+    [InlineData("odometer: 1\n odometer: 2")]
+    [InlineData("other: 1")]
+    public void InvalidOrAmbiguousOdometerCannotBeOverwritten(string field)
+    {
+        string input = "vehicle : t {\n " + field + "\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.SetOdometer(0));
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
+
+    [Fact]
+    public void TrailerCannotUseTruckOdometerMapping()
+    {
+        const string input = "trailer : t {\n odometer: 5\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.SetOdometer(6));
+        Assert.Equal(input, preview.PreviewText);
+    }
+    [Fact]
     public void TrailerChainRepairIsAtomicAndPreservesCargoAndUnknownFields()
     {
         const string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.7\n slave_trailer: b\n}\ntrailer : b {\n trailer_body_wear: 0.4\n chassis_wear: 0.5\n mod: \"保留\"\n slave_trailer: null\n}\n";

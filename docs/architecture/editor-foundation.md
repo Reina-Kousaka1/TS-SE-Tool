@@ -43,6 +43,17 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+The synthetic truck demo exposes the `odometer` UInt32 field declared by the
+legacy `Vehicle` model. Its separate `odometer_float_part` is retained exactly
+and is not recalculated. The editor rejects missing, duplicated, malformed and
+out-of-range integer values; undo/redo and stale-draft protection apply. The
+unit, the relationship to the fractional part, and current game compatibility
+are not verified. This is an in-memory preview, not a game-save operation.
+
+Odometer self-review (not independent): only the explicitly selected vehicle
+integer is changed, the syntax session preserves all other source lines, and a
+trailer is rejected. No version or unit inference and no write gate are added.
+
 `LegacySyntheticWorkspace` combines explicitly selected profile, truck,
 trailer and job blocks in one in-memory syntax session. Changes in different
 domains share a single ordered undo/redo history and change list. It does not
