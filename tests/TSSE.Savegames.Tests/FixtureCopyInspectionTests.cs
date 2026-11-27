@@ -25,14 +25,16 @@ public sealed class FixtureCopyInspectionTests
         Assert.True(result.Report.ByteLengthIsLowerBound);
     }
 
-    private sealed class ChangeOnRewindStream(byte[] bytes) : MemoryStream(bytes, writable: true)
+    private sealed class ChangeOnRewindStream : MemoryStream
     {
+        private readonly byte[] _bytes;
+        public ChangeOnRewindStream(byte[] bytes) : base(bytes, writable: true) => _bytes = bytes;
         public override long Position
         {
             get => base.Position;
             set
             {
-                if (value == 0 && base.Position > 0) bytes[15] = (byte)'2';
+                if (value == 0 && base.Position > 0) _bytes[15] = (byte)'2';
                 base.Position = value;
             }
         }
