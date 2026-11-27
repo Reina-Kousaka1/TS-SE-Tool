@@ -8,6 +8,25 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void HistoryLimitIsExplainedAndLastPreviewRemainsIntact()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        for (int i = 1; i <= 15; i++)
+        {
+            demo.UnitsInput = (i + 10).ToString(CultureInfo.InvariantCulture);
+            demo.ActionCommand.Execute("apply");
+        }
+        string before = demo.PreviewText;
+        demo.UnitsInput = "100";
+        demo.ActionCommand.Execute("apply");
+        Assert.Equal(before, demo.PreviewText);
+        Assert.Contains("history is full", demo.Message, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        demo.UnitsInput = "100";
+        demo.ActionCommand.Execute("apply");
+        Assert.Contains("units_count: 100", demo.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void ScratchJobValidatesAndUndoRedoPreservesUnknownData()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

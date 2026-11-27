@@ -6,6 +6,31 @@ namespace TSSE.Savegames.Tests;
 
 public sealed class SiiEditSessionTests
 {
+    [Fact]
+    public void HistoryLimitRejectsNewEditAndPreservesUndo()
+    {
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse("root {\n value: 0\n}\n"));
+        for (int i = 1; i < SiiEditSession.MaximumHistoryStates; i++)
+            session.Apply([new("root", null, "value", i.ToString(System.Globalization.CultureInfo.InvariantCulture))]);
+        string before = session.PreviewText;
+        Assert.Throws<TSSE.Core.Editing.EditHistoryLimitException>(() =>
+            session.Apply([new("root", null, "value", "100")]));
+        Assert.Equal(before, session.PreviewText);
+        Assert.True(session.Undo());
+        session.Apply([new("root", null, "value", "200")]);
+        Assert.False(session.CanRedo);
+    }
+
+    [Fact]
+    public void OversizedReplacementIsRejectedWithoutChangingText()
+    {
+        const string original = "root {\n value: 0\n}\n";
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(original));
+        Assert.Throws<InvalidOperationException>(() =>
+            session.Apply([new("root", null, "value", new string('x', SiiEditSession.MaximumPreviewCharacters + 1))]));
+        Assert.Equal(original, session.PreviewText);
+        Assert.False(session.CanUndo);
+    }
     private const string Original = "SiiNunit\r\n{\r\n bank : a {\r\n  money_account: 42\r\n  mod_extra: \"未知\"\r\n }\r\n economy : b {\r\n  experience_points: 5\r\n }\r\n}\r\n";
 
     [Fact]

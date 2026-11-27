@@ -140,7 +140,11 @@ warning states that changing units does not validate cargo or trailer relations.
 Decision: keep the editor core detached from file transactions and SII until
 game-specific validation is established. History relies on immutable values;
 using a mutable object would invalidate undo guarantees. ProfileValues is an
-immutable record. Unlimited history is acceptable for this isolated foundation,
-but a bounded strategy is needed before arbitrary large documents are connected.
+immutable record. SII preview documents are capped at 2 Mi characters and
+16 history states, including the original; generic histories default to 128
+states. At the limit, the next edit is explicitly rejected without dropping
+undo or redo; undo followed by a different edit can reclaim the redo branch.
+The character/state caps bound retained source text, not total process memory:
+parsed objects and transient reparsing require additional memory.
 Compatibility, persistence, model-to-SII mapping and independent recovery
 review remain open; no write feature gate has been changed.

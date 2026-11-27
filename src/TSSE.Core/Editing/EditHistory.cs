@@ -8,14 +8,17 @@ public sealed class EditHistory<T> where T : notnull
 {
     private readonly Func<T, bool> isValid;
     private readonly List<T> states;
+    private readonly int maximumStates;
     private int position;
 
-    public EditHistory(T initial, Func<T, bool> isValid)
+    public EditHistory(T initial, Func<T, bool> isValid, int maximumStates = 128)
     {
         ArgumentNullException.ThrowIfNull(initial);
         ArgumentNullException.ThrowIfNull(isValid);
+        if (maximumStates < 2) throw new ArgumentOutOfRangeException(nameof(maximumStates));
         if (!isValid(initial)) throw new ArgumentException("Invalid initial snapshot.", nameof(initial));
         this.isValid = isValid;
+        this.maximumStates = maximumStates;
         states = [initial];
     }
 
@@ -30,6 +33,8 @@ public sealed class EditHistory<T> where T : notnull
         ArgumentNullException.ThrowIfNull(next);
         if (!isValid(next)) return false;
         if (EqualityComparer<T>.Default.Equals(Current, next)) return true;
+        if (position + 1 >= maximumStates)
+            throw new EditHistoryLimitException();
         if (CanRedo)
         {
             states.RemoveRange(position + 1, states.Count - position - 1);
@@ -52,4 +57,10 @@ public sealed class EditHistory<T> where T : notnull
         position++;
         return true;
     }
+}
+
+/// <summary>The edit was rejected without altering the current history.</summary>
+public sealed class EditHistoryLimitException : InvalidOperationException
+{
+    public EditHistoryLimitException() : base("The edit history limit has been reached.") { }
 }

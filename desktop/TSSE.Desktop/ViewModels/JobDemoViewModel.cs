@@ -1,4 +1,5 @@
 using System.Globalization;
+using TSSE.Core.Editing;
 using TSSE.Desktop.Services;
 using TSSE.GameAdapters.Editing;
 using TSSE.Savegames.Syntax;
@@ -47,6 +48,11 @@ public sealed class JobDemoViewModel : ObservableObject
             }
             else if (action == "undo") success = _session.Undo();
             else if (action == "redo") success = _session.Redo();
+        }
+        catch (EditHistoryLimitException)
+        {
+            Message = _text.Get("editor.historyLimit");
+            return;
         }
         catch (ArgumentOutOfRangeException) { }
         catch (InvalidOperationException) { }

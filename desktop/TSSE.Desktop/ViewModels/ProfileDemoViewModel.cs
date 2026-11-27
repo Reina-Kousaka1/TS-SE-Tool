@@ -77,6 +77,11 @@ public sealed class ProfileDemoViewModel : ObservableObject
                 _ => false
             };
         }
+        catch (EditHistoryLimitException)
+        {
+            Message = _text.Get("editor.historyLimit");
+            return;
+        }
         catch (InvalidOperationException)
         {
             success = false;

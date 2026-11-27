@@ -45,4 +45,21 @@ public sealed class EditHistoryTests
         Assert.True(history.Redo());
         Assert.Equal(new Snapshot("B", 5), history.Current);
     }
+
+    [Fact]
+    public void LimitRejectsWithoutChangingHistoryAndUndoAllowsBranching()
+    {
+        var history = new EditHistory<int>(0, x => x >= 0, maximumStates: 3);
+        Assert.True(history.TryApply(1));
+        Assert.True(history.TryApply(2));
+        Assert.Throws<EditHistoryLimitException>(() => history.TryApply(3));
+        Assert.Equal(2, history.Current);
+        Assert.True(history.Undo());
+        Assert.True(history.TryApply(4));
+        Assert.False(history.CanRedo);
+        Assert.True(history.Undo());
+        Assert.True(history.Undo());
+        Assert.Equal(0, history.Current);
+        Assert.False(history.IsDirty);
+    }
 }

@@ -9,12 +9,16 @@ namespace TSSE.Savegames.Editing;
 /// </summary>
 public sealed class SiiEditSession
 {
+    public const int MaximumPreviewCharacters = 2 * 1024 * 1024;
+    public const int MaximumHistoryStates = 16;
     private readonly EditHistory<SiiSyntaxDocument> _history;
 
     public SiiEditSession(SiiSyntaxDocument initial)
     {
         ArgumentNullException.ThrowIfNull(initial);
-        _history = new EditHistory<SiiSyntaxDocument>(initial, static _ => true);
+        if (initial.ToText().Length > MaximumPreviewCharacters)
+            throw new ArgumentException("The document exceeds the in-memory preview limit.", nameof(initial));
+        _history = new EditHistory<SiiSyntaxDocument>(initial, static doc => doc.ToText().Length <= MaximumPreviewCharacters, MaximumHistoryStates);
     }
 
     public string PreviewText => _history.Current.ToText();
@@ -34,13 +38,20 @@ public sealed class SiiEditSession
         foreach (SiiFieldEdit edit in edits)
         {
             ArgumentNullException.ThrowIfNull(edit);
+            if (edit.RawValue is not null && edit.RawValue.Length > MaximumPreviewCharacters)
+                throw new InvalidOperationException("The replacement exceeds the in-memory preview limit.");
             if (!targets.Add((edit.BlockType, edit.BlockId, edit.FieldName)))
                 throw new ArgumentException("An edit batch cannot target the same field twice.", nameof(edits));
             candidate = candidate.WithFieldValue(edit.BlockType, edit.BlockId, edit.FieldName, edit.RawValue);
+            if (candidate.ToText().Length > MaximumPreviewCharacters)
+                throw new InvalidOperationException("The document exceeds the in-memory preview limit.");
         }
 
         if (!string.Equals(candidate.ToText(), _history.Current.ToText(), StringComparison.Ordinal))
-            _history.TryApply(candidate);
+        {
+            if (!_history.TryApply(candidate))
+                throw new InvalidOperationException("The document exceeds the in-memory preview limit.");
+        }
     }
 
     public bool Undo() => _history.Undo();

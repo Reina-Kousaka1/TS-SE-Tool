@@ -1,4 +1,5 @@
 {
+  "editor.historyLimit": "The demo history is full. Undo an edit before making a different change; no data was changed.",
   "vehicleDemo.repair": "Reset listed body wear",
   "vehicleDemo.refuel": "Fill demo tank",
   "vehicleDemo.repairDetail": "Resets the listed body and mechanical wear only. Wheels, cargo, accessories and linked trailers are not changed.",

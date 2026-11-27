@@ -1,4 +1,5 @@
 using System.Globalization;
+using TSSE.Core.Editing;
 using TSSE.Desktop.Services;
 using TSSE.GameAdapters.Editing;
 using TSSE.Savegames.Syntax;
@@ -95,6 +96,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 Session.SetValue("fuel_relative", 1);
                 success = true;
             }
+        }
+        catch (EditHistoryLimitException)
+        {
+            Message = _text.Get("editor.historyLimit");
+            return;
         }
         catch (ArgumentOutOfRangeException) { }
         catch (InvalidOperationException) { }
