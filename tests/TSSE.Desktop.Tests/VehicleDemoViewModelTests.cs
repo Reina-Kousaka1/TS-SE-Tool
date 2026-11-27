@@ -8,6 +8,25 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void TrailerAssignmentUsesSharedHistoryAndLeavesTruckAssignmentIntact()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var vehicle = new VehicleDemoViewModel(text, workspace);
+        var profile = new ProfileDemoViewModel(text, workspace);
+        vehicle.SelectCategory("Trailers");
+        string original = vehicle.PreviewText;
+        vehicle.SelectedTrailer = "demo.trailer2";
+        vehicle.ActionCommand.Execute("assign-trailer");
+        Assert.Contains("assigned_trailer: demo.trailer2", vehicle.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("assigned_truck: demo.truck", vehicle.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo.trailer2", vehicle.AssignedTrailerLabel, StringComparison.Ordinal);
+        profile.ActionCommand.Execute("undo");
+        Assert.Equal(original, vehicle.PreviewText);
+        profile.ActionCommand.Execute("redo");
+        Assert.Contains("demo.trailer2", vehicle.AssignedTrailerLabel, StringComparison.Ordinal);
+    }
+    [Fact]
     public void ExplicitTruckAssignmentIsUndoableAcrossSections()
     {
         var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
@@ -127,7 +146,7 @@ public sealed class VehicleDemoViewModelTests
         demo.SelectCategory("Trailers");
         Assert.Equal(new[] { "demo.trailer", "demo.trailer2" }, demo.TrailerChoices);
         Assert.Contains("demo.trailer — trailer block", demo.PlayerTrailerSummary, StringComparison.Ordinal);
-        Assert.Contains("demo.missing_trailer — missing target", demo.PlayerTrailerSummary, StringComparison.Ordinal);
+        Assert.Contains("demo.trailer2 — trailer block", demo.PlayerTrailerSummary, StringComparison.Ordinal);
         string original = demo.PreviewText;
         demo.SelectedTrailer = "demo.trailer2";
         Assert.Equal("0.25", demo.ValueInput);

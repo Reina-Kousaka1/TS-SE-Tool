@@ -83,6 +83,11 @@ validates the complete declared `trucks` array, uniqueness, target block type,
 and the current reference. Only an existing listed target may be selected;
 the reference change participates in shared undo/redo. It does not adjust or
 validate placement, active jobs, ownership semantics or real-game versions.
+The same bounded reference validation is used for the synthetic
+`assigned_trailer` field and the player's `trailers` array. The action changes
+only that reference and does not attach or detach a trailer, update placements,
+or validate jobs or real-game versions. Missing and ambiguous references fail
+closed; shared undo/redo includes the assignment.
 
 Assignment self-review (not independent): all syntactic reference checks run
 before the existing atomic edit. No profile discovery or game-save access is

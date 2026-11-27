@@ -12,6 +12,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private readonly DemoWorkspace _workspace;
     private readonly IUiTextCatalog _text;
     private readonly LegacyPlayerTruckAssignment _assignment;
+    private readonly LegacyPlayerTrailerAssignment _trailerAssignment;
     private LegacyVehiclePreview _truck;
     private LegacyVehiclePreview _trailer;
     private readonly IReadOnlyList<VehicleDemoField> _truckFields;
@@ -37,6 +38,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _truck = _workspace.Workspace.Truck;
         _trailer = _workspace.Workspace.Trailer;
         _assignment = _workspace.Workspace.SelectPlayerTruckAssignment("demo.player");
+        _trailerAssignment = _workspace.Workspace.SelectPlayerTrailerAssignment("demo.player");
         TruckChoices = _workspace.Workspace.TruckIds();
         TrailerChoices = _workspace.Workspace.TrailerIds();
         _workspace.Changed += (_, _) => RefreshFromWorkspace();
@@ -99,6 +101,9 @@ public sealed class VehicleDemoViewModel : ObservableObject
     }
     public IReadOnlyList<string> TrailerChoices { get; }
     public string TrailerSelectionLabel => _text.Get("vehicleDemo.trailerSelection");
+    public string AssignedTrailerLabel => _text.Format("vehicleDemo.assignedTrailer", _trailerAssignment.AssignedTrailer);
+    public string AssignTrailerLabel => _text.Get("vehicleDemo.assignTrailer");
+    public string AssignTrailerDetail => _text.Get("vehicleDemo.assignTrailerDetail");
     public string PlayerTrailerHeading => _text.Get("playerTrailers.heading");
     public string PlayerTrailerDescription => _text.Get("playerTrailers.description");
     public string PlayerTrailerSummary
@@ -255,6 +260,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 _assignment.Assign(SelectedTruck);
                 success = true;
             }
+            else if (action == "assign-trailer" && CanRepairChain)
+            {
+                _trailerAssignment.Assign(SelectedTrailer);
+                success = true;
+            }
             else if (action == "chain" && CanRepairChain)
             {
                 Session.RepairTrailerChainBody();
@@ -323,6 +333,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(AccessorySummary));
         OnPropertyChanged(nameof(AssignedTruckLabel));
+        OnPropertyChanged(nameof(AssignedTrailerLabel));
     }
 
     private void SaveDraft()
