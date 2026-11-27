@@ -14,7 +14,7 @@ public sealed class SiiEditSessionTests
         var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
         session.Apply([new("bank", "a", "money_account", "2")]);
         Assert.True(session.Undo());
-        Assert.Throws<ArgumentException>(() => session.Apply([
+        Assert.Throws<InvalidDataException>(() => session.Apply([
             new("bank", "a", "money_account", "3"),
             new("economy", "b", "experience_points", value)
         ]));

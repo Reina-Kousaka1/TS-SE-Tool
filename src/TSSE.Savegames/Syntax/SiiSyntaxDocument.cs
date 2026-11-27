@@ -289,15 +289,15 @@ public sealed class SiiSyntaxDocument
         {
             char character = rawValue[i];
             if (character == '\0')
-                throw new ArgumentException("A replacement value cannot contain NUL.", nameof(rawValue));
+                throw new InvalidDataException("A replacement value cannot contain NUL.");
             if (char.IsHighSurrogate(character))
             {
                 if (i + 1 >= rawValue.Length || !char.IsLowSurrogate(rawValue[i + 1]))
-                    throw new ArgumentException("A replacement value must contain valid UTF-16.", nameof(rawValue));
+                    throw new InvalidDataException("A replacement value must contain valid UTF-16.");
                 i++;
             }
             else if (char.IsLowSurrogate(character))
-                throw new ArgumentException("A replacement value must contain valid UTF-16.", nameof(rawValue));
+                throw new InvalidDataException("A replacement value must contain valid UTF-16.");
         }
 
         if (OpaqueLines.Count > 0)
