@@ -39,9 +39,9 @@ public sealed class AvaloniaWindowTests
             Button apply = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
                 button.IsEffectivelyVisible && Equals(button.Content, profile.ApplyBothLabel));
             Button undo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
-                button.IsEffectivelyVisible && Equals(button.Content, profile.UndoLabel));
+                button.IsEffectivelyVisible && ReferenceEquals(button.DataContext, profile) && Equals(button.Content, profile.UndoLabel));
             Button redo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
-                button.IsEffectivelyVisible && Equals(button.Content, profile.RedoLabel));
+                button.IsEffectivelyVisible && ReferenceEquals(button.DataContext, profile) && Equals(button.Content, profile.RedoLabel));
             string original = profile.PreviewText;
             balance.Text = "-42";
             experience.Text = "4294967296";
@@ -56,6 +56,41 @@ public sealed class AvaloniaWindowTests
             Assert.Equal(original, profile.PreviewText);
             Press(redo);
             Assert.Contains("experience_points: 42", profile.PreviewText, StringComparison.Ordinal);
+
+            void Press(Button button)
+            {
+                Assert.True(button.Focus());
+                window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+                window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void Profile_metadata_controls_edit_only_the_separate_synthetic_example()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "savegame-explorer");
+            viewModel.NavigateCommand.Execute(page);
+            window.UpdateLayout();
+            var metadata = page.Page.ProfileMetadataDemo;
+            string originalSave = page.Page.ProfileDemo.PreviewText;
+            TextBox name = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == metadata.NameLabel);
+            Button apply = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && ReferenceEquals(button.DataContext, metadata) && Equals(button.Content, metadata.ApplyLabel));
+            Button undo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && ReferenceEquals(button.DataContext, metadata) && Equals(button.Content, metadata.UndoLabel));
+            name.Text = "Example_2";
+            Press(apply);
+            Assert.Contains("Example_2", metadata.CurrentName, StringComparison.Ordinal);
+            Assert.Equal(originalSave, page.Page.ProfileDemo.PreviewText);
+            Press(undo);
+            Assert.Equal("Example_1", metadata.Input);
 
             void Press(Button button)
             {
