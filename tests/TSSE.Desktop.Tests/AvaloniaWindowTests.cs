@@ -31,6 +31,8 @@ public sealed class AvaloniaWindowTests
             viewModel.NavigateCommand.Execute(page);
             Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
                 block.Text == "Synthetic profile skills" && block.IsEffectivelyVisible);
+            Assert.Contains(window.GetVisualDescendants().OfType<CheckBox>(), box =>
+                Equals(box.Content, "Bit 1") && box.IsEffectivelyVisible);
         }
         finally { window.Close(); }
     }

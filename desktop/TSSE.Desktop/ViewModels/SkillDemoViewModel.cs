@@ -29,6 +29,8 @@ public sealed class SkillDemoViewModel : ObservableObject
         _last = _profile.GetSkill(_selected.Name).ToString(CultureInfo.InvariantCulture);
         _base = _input = _last;
         _message = _text.Get("skillDemo.ready");
+        AdrBits = Enumerable.Range(0, 6).Select(index => new AdrBitDemoViewModel(this, index,
+            _text.Format("skillDemo.adrBit", index + 1))).ToArray();
         ActionCommand = new RelayCommand<string>(Execute);
         _workspace.Changed += (_, _) => Refresh();
     }
@@ -39,6 +41,10 @@ public sealed class SkillDemoViewModel : ObservableObject
     public string ValueLabel => _text.Get(Selected.Name == "adr" ? "skillDemo.adrValue" : "skillDemo.levelValue");
     public string ApplyLabel => _text.Get("profileDemo.apply");
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
+    public string AdrBitsLabel => _text.Get("skillDemo.adrBits");
+    public bool IsAdrSelected => Selected.Name == "adr";
+    public bool CanEditAdrBits => IsAdrSelected && TryGetAdrMask(out _);
+    public IReadOnlyList<AdrBitDemoViewModel> AdrBits { get; }
     public IReadOnlyList<SkillDemoField> Fields { get; }
     public RelayCommand<string> ActionCommand { get; }
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
@@ -56,6 +62,7 @@ public sealed class SkillDemoViewModel : ObservableObject
             _selected = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ValueLabel));
+            OnPropertyChanged(nameof(IsAdrSelected));
             _last = _profile.GetSkill(value.Name).ToString(CultureInfo.InvariantCulture);
             if (_drafts.TryGetValue(value.Name, out var draft) && draft.Text != _last)
                 SetInput(draft.Text, draft.Base);
@@ -99,7 +106,32 @@ public sealed class SkillDemoViewModel : ObservableObject
         NotifyDraft();
     }
 
-    private void NotifyDraft() { OnPropertyChanged(nameof(IsStale)); OnPropertyChanged(nameof(DraftNotice)); }
+    private bool TryGetAdrMask(out byte mask) =>
+        byte.TryParse(Input, NumberStyles.None, CultureInfo.InvariantCulture, out mask) && mask <= 63;
+
+    internal bool GetAdrBit(int index) => TryGetAdrMask(out byte mask) && (mask & (1 << (5 - index))) != 0;
+
+    internal void SetAdrBit(int index, bool enabled)
+    {
+        if (!CanEditAdrBits || !TryGetAdrMask(out byte mask)) return;
+        int bit = 1 << (5 - index);
+        Input = (enabled ? mask | bit : mask & ~bit).ToString(CultureInfo.InvariantCulture);
+    }
+
+    private void NotifyDraft()
+    {
+        OnPropertyChanged(nameof(IsStale));
+        OnPropertyChanged(nameof(DraftNotice));
+        OnPropertyChanged(nameof(CanEditAdrBits));
+        foreach (AdrBitDemoViewModel bit in AdrBits) bit.Refresh();
+    }
 }
 
 public sealed record SkillDemoField(string Name, string Label);
+
+public sealed class AdrBitDemoViewModel(SkillDemoViewModel owner, int index, string label) : ObservableObject
+{
+    public string Label { get; } = label;
+    public bool IsChecked { get => owner.GetAdrBit(index); set => owner.SetAdrBit(index, value); }
+    internal void Refresh() => OnPropertyChanged(nameof(IsChecked));
+}

@@ -3,6 +3,8 @@
   "skillDemo.description": "Legacy-Felder; Werte und Bedeutung der ADR-Bits sind für aktuelle Spiele ungeprüft. Keine Spielstanddatei wird geändert.",
   "skillDemo.fieldLabel": "Fähigkeit",
   "skillDemo.adrValue": "ADR-Bitmaske (0–63)",
+  "skillDemo.adrBits": "Synthetische ADR-Bits in Legacy-Anzeigereihenfolge; Entwurf unten übernehmen.",
+  "skillDemo.adrBit": "Bit {0}",
   "skillDemo.levelValue": "Fähigkeitsstufe (0–6)",
   "skillDemo.ready": "Synthetische Fähigkeiten sind bereit.",
   "skillDemo.applied": "Synthetische Fähigkeit im Speicher geändert.",

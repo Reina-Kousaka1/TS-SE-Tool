@@ -3,6 +3,8 @@
   "skillDemo.description": "Legacy fields only; values and ADR bit meanings are not verified for current games. No game file is changed.",
   "skillDemo.fieldLabel": "Skill",
   "skillDemo.adrValue": "ADR bit mask (0–63)",
+  "skillDemo.adrBits": "Synthetic ADR bits, in the legacy display order; apply the draft below.",
+  "skillDemo.adrBit": "Bit {0}",
   "skillDemo.levelValue": "Skill level (0–6)",
   "skillDemo.ready": "Synthetic skill values are ready.",
   "skillDemo.applied": "Synthetic skill updated in memory.",

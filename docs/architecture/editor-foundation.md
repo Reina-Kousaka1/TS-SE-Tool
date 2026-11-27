@@ -152,6 +152,11 @@ duplicate or out-of-range original values, preserves unknown fields, and uses
 the shared undo history. Per-field drafts survive selection and require review
 after an underlying value changes. Skill-to-XP relationships, bit meanings,
 current versions and game compatibility remain unverified; no files are opened.
+The six synthetic ADR checkboxes manipulate only the draft mask; the first
+corresponds to the most significant of the six bits, as in the original
+control. Invalid masks disable the checkboxes. Applying still requires the
+explicit button and stale drafts require review; no bit-to-cargo-class mapping
+is inferred.
 
 Skill self-review (not independent): edits target exactly one existing legacy
 field, reject unsupported values instead of truncating bits, and inherit the

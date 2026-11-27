@@ -8,6 +8,49 @@ namespace TSSE.Desktop.Tests;
 public sealed class SkillDemoViewModelTests
 {
     [Fact]
+    public void AdrBitsEditDraftInLegacyOrderAndCommitOnlyOnApply()
+    {
+        var profile = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        var skills = profile.Skills;
+        string original = profile.PreviewText;
+        Assert.True(skills.CanEditAdrBits);
+        skills.AdrBits[0].IsChecked = true;
+        skills.AdrBits[5].IsChecked = true;
+        Assert.Equal("33", skills.Input);
+        Assert.Equal(original, profile.PreviewText);
+        skills.ActionCommand.Execute("apply");
+        Assert.Contains("adr: 33", profile.PreviewText, StringComparison.Ordinal);
+        profile.ActionCommand.Execute("undo");
+        Assert.False(skills.AdrBits[0].IsChecked);
+        Assert.False(skills.AdrBits[5].IsChecked);
+        profile.ActionCommand.Execute("redo");
+        Assert.True(skills.AdrBits[0].IsChecked);
+        Assert.True(skills.AdrBits[5].IsChecked);
+    }
+
+    [Fact]
+    public void InvalidOrStaleAdrDraftDoesNotCauseImplicitEdit()
+    {
+        var profile = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        var skills = profile.Skills;
+        skills.Input = "64";
+        Assert.False(skills.CanEditAdrBits);
+        skills.AdrBits[0].IsChecked = true;
+        Assert.Equal("64", skills.Input);
+        skills.Input = "1";
+        skills.ActionCommand.Execute("apply");
+        skills.Input = "2";
+        profile.ActionCommand.Execute("undo");
+        Assert.True(skills.IsStale);
+        skills.AdrBits[0].IsChecked = true;
+        Assert.Equal("34", skills.Input);
+        string before = profile.PreviewText;
+        skills.ActionCommand.Execute("apply");
+        Assert.Equal(before, profile.PreviewText);
+        skills.ActionCommand.Execute("reviewed");
+        Assert.Contains("adr: 34", profile.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void SkillEditingSharesUndoAndRejectsInvalidValues()
     {
         var workspace = new DemoWorkspace();

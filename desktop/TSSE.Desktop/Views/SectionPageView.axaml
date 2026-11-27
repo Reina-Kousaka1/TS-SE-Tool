@@ -53,6 +53,15 @@
               <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
             <TextBlock Text="{Binding ValueLabel}" />
+            <StackPanel IsVisible="{Binding IsAdrSelected}" IsEnabled="{Binding CanEditAdrBits}" Spacing="4">
+              <TextBlock Text="{Binding AdrBitsLabel}" TextWrapping="Wrap" />
+              <ItemsControl ItemsSource="{Binding AdrBits}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate><CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked, Mode=TwoWay}" Margin="0,0,12,0" /></DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
               <TextBox Text="{Binding Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding ValueLabel}" />
               <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="apply" />
