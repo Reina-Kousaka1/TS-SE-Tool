@@ -46,6 +46,9 @@ copy of the proposed bytes; a mutation observed when it returns rejects the
 transaction before staging. The independent write snapshot cannot be altered
 through that validator buffer. This does not establish that a validator is
 honest or game-compatible, and the transaction remains disconnected from saves.
+The initial target check rejects directories and reports attribute errors
+instead of treating them as absent files. Path-based checks remain non-atomic
+and do not eliminate races with external filesystem changes.
 
 `AtomicFileRecoveryPreviewer` reads the current target and recognized transaction artifacts, bounds content reads to the transaction payload limit, reports validation status and SHA-256, and can describe an exact-copy candidate targeting a separate output file. It performs no write, rename, delete, restore, or replace. Invalid or unavailable candidates have no proposed action. Validator exceptions become structured `payload_validation_failed` results; validator mutation is detected and prevents a valid recovery proposal.
 

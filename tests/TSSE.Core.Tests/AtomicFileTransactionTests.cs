@@ -8,6 +8,23 @@ namespace TSSE.Core.Tests;
 public sealed class AtomicFileTransactionTests
 {
     [Fact]
+    public async Task DirectoryTargetIsRejectedBeforeStaging()
+    {
+        using var directory = new TemporaryDirectory();
+        string target = Path.Combine(directory.Path, "synthetic.sii");
+        Directory.CreateDirectory(target);
+        string marker = Path.Combine(target, "marker.txt");
+        await File.WriteAllTextAsync(marker, "unchanged", TestContext.Current.CancellationToken);
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            target, "candidate"u8.ToArray(), null, _ => true, TestContext.Current.CancellationToken);
+        Assert.Equal(FileCommitStatus.FailedUnchanged, result.Status);
+        Assert.Equal("target_is_directory", result.ErrorCode);
+        Assert.Equal("unchanged", await File.ReadAllTextAsync(marker, TestContext.Current.CancellationToken));
+        Assert.Empty(Directory.GetFiles(directory.Path));
+        Assert.Single(Directory.GetDirectories(directory.Path));
+    }
+
+    [Fact]
     public async Task DelayedValidatorBufferMutationCannotChangeCommittedSnapshot()
     {
         using var directory = new TemporaryDirectory();
