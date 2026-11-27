@@ -46,6 +46,24 @@ that syntactic success means game validity. Full-text snapshots and reparsing
 can be expensive; bounded history and game-specific validation are required
 before real profile editing.
 
+## Experimental profile mapping
+
+`LegacyProfilePreview` resolves an explicitly selected economy block's bank
+reference and maps legacy `money_account` (Int64) and `experience_points`
+(UInt32) fields for in-memory synthetic fixtures. These names and types are
+supported by the legacy Bank and Economy implementations, not validated
+against current games. Missing or duplicate targets, invalid numbers and
+unclassified syntax fail closed. Only changed values are replaced, in one batch;
+unchanged number formatting and unknown fields remain intact. The UI and file
+operations do not use this mapping. Actual game-version validation, a verified
+adapter, and explicit write authorization remain mandatory.
+
+Architecture self-review (not independent): the reference is resolved once
+from the selected economy block, and this mapping has no operation to change
+that reference. The underlying syntax session makes the batch atomic; no save
+operation is provided. Explicit selection is not evidence that the economy
+block belongs to a real user profile, so this interface is synthetic-only.
+
 ## Architecture self-review (not independent)
 
 Decision: keep the editor core detached from file transactions and SII until
