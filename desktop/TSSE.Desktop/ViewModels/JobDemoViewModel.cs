@@ -43,6 +43,7 @@ public sealed class JobDemoViewModel : ObservableObject
     public string CargoSelectionLabel => _text.Get("jobDemo.cargoSelection");
     public string CargoSelectionDetail => _text.Get("jobDemo.cargoSelectionDetail");
     public string ApplyCargoLabel => _text.Get("jobDemo.applyCargo");
+    public string DiscardCargoLabel => _text.Get("jobDemo.discardCargo");
     public string ApplyCargoDetailsLabel => _text.Get("jobDemo.applyCargoDetails");
     public string ApplyCargoDetailsReviewedLabel => _text.Get("jobDemo.applyCargoDetailsReviewed");
     public bool IsCargoDetailsStale => IsCargoStale || IsUnitsStale || IsModelStale;
@@ -86,11 +87,12 @@ public sealed class JobDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
-        if (action is "discard-units" or "discard-distance" or "discard-model")
+        if (action is "discard-units" or "discard-distance" or "discard-model" or "discard-cargo")
         {
             if (action == "discard-units") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
             else if (action == "discard-distance") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
-            else { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
+            else if (action == "discard-model") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
+            else { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
             NotifyDrafts();
             Message = _text.Get("jobDemo.draftDiscarded");
             return;

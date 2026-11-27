@@ -375,6 +375,8 @@ Cargo self-review (not independent): candidates are reused from the current
 in-memory document and revalidated immediately before the edit; missing,
 ambiguous or unsupported fields fail without changing history. Unvalidated
 cross-field relationships and real save formats remain blockers.
+The demo also lets users discard a cargo selection draft and return to the
+current preview value without affecting other drafts or the undo/redo history.
 
 `LegacyJobPreview` follows an explicitly selected synthetic player block's
 `current_job` reference to a unique `player_job` block. The legacy Player,

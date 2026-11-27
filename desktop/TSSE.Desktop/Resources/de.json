@@ -6,6 +6,7 @@
   "fixture.binaryHeader.LegacyDocumentedVersion": "historisch dokumentiert; Dekodierung und Spielkompatibilität ungeprüft",
   "fixture.binaryHeader.UnrecognizedVersion": "nicht historisch dokumentiert; Dekodierung nicht unterstützt",
   "jobDemo.discardUnits": "Mengenentwurf verwerfen",
+  "jobDemo.discardCargo": "Frachtauswahlentwurf verwerfen",
   "jobDemo.discardDistance": "Distanzentwurf verwerfen",
   "jobDemo.discardModel": "Frachtmodellindex-Entwurf verwerfen",
   "jobDemo.draftDiscarded": "Entwurf verworfen; die Vorschau wurde nicht geändert.",

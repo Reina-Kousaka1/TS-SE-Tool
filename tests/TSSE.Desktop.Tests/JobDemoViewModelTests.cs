@@ -55,6 +55,27 @@ public sealed class JobDemoViewModelTests
     }
 
     [Fact]
+    public void DiscardCargoDraftKeepsOtherDraftsAndRedo()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.SelectedCargo = "cargo.alternate";
+        demo.ActionCommand.Execute("cargo");
+        demo.SelectedCargo = "cargo.third";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsCargoStale);
+        demo.UnitsInput = "invalid";
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("discard-cargo");
+        Assert.Equal("cargo.synthetic", demo.SelectedCargo);
+        Assert.False(demo.IsCargoStale);
+        Assert.Equal("invalid", demo.UnitsInput);
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.Equal("cargo.alternate", demo.Cargo);
+        Assert.Equal("cargo.alternate", demo.SelectedCargo);
+    }
+
+    [Fact]
     public void DiscardingJobDraftsIndividuallyPreservesOtherDraftsAndRedo()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

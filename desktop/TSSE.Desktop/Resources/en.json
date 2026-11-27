@@ -6,6 +6,7 @@
   "fixture.binaryHeader.LegacyDocumentedVersion": "documented historically; decoding and game compatibility unverified",
   "fixture.binaryHeader.UnrecognizedVersion": "not in the historical documented set; decoding unsupported",
   "jobDemo.discardUnits": "Discard units draft",
+  "jobDemo.discardCargo": "Discard cargo selection draft",
   "jobDemo.discardDistance": "Discard distance draft",
   "jobDemo.discardModel": "Discard cargo model index draft",
   "jobDemo.draftDiscarded": "Draft discarded; the preview was not changed.",
