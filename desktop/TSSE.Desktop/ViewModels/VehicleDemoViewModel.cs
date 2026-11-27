@@ -11,6 +11,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
 {
     private readonly DemoWorkspace _workspace;
     private readonly IUiTextCatalog _text;
+    private readonly LegacyPlayerTruckAssignment _assignment;
     private LegacyVehiclePreview _truck;
     private LegacyVehiclePreview _trailer;
     private readonly IReadOnlyList<VehicleDemoField> _truckFields;
@@ -35,6 +36,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _workspace = workspace ?? new DemoWorkspace();
         _truck = _workspace.Workspace.Truck;
         _trailer = _workspace.Workspace.Trailer;
+        _assignment = _workspace.Workspace.SelectPlayerTruckAssignment("demo.player");
         TruckChoices = _workspace.Workspace.TruckIds();
         TrailerChoices = _workspace.Workspace.TrailerIds();
         _workspace.Changed += (_, _) => RefreshFromWorkspace();
@@ -71,6 +73,9 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public bool CanRepairChain => _isTrailer;
     public IReadOnlyList<string> TruckChoices { get; }
     public string TruckSelectionLabel => _text.Get("vehicleDemo.truckSelection");
+    public string AssignedTruckLabel => _text.Format("vehicleDemo.assignedTruck", _assignment.AssignedTruck);
+    public string AssignTruckLabel => _text.Get("vehicleDemo.assignTruck");
+    public string AssignTruckDetail => _text.Get("vehicleDemo.assignTruckDetail");
     public string SelectedTruck
     {
         get => _selectedTruck;
@@ -245,6 +250,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 Session.RepairTruckAll();
                 success = true;
             }
+            else if (action == "assign-truck" && CanRefuel)
+            {
+                _assignment.Assign(SelectedTruck);
+                success = true;
+            }
             else if (action == "chain" && CanRepairChain)
             {
                 Session.RepairTrailerChainBody();
@@ -312,6 +322,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(AccessorySummary));
+        OnPropertyChanged(nameof(AssignedTruckLabel));
     }
 
     private void SaveDraft()

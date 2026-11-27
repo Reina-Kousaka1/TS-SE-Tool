@@ -51,6 +51,7 @@ public sealed class LegacySyntheticWorkspace
     public LegacyVehiclePreview SelectTrailer(string blockId) => new(_session, LegacyVehicleKind.Trailer, blockId);
     /// <summary>Selects an explicit synthetic truck in the same in-memory history.</summary>
     public LegacyVehiclePreview SelectTruck(string blockId) => new(_session, LegacyVehicleKind.Truck, blockId);
+    public LegacyPlayerTruckAssignment SelectPlayerTruckAssignment(string playerId) => new(_session, playerId);
     public string PreviewText => _session.PreviewText;
     public IReadOnlyList<SiiFieldChange> Changes => _session.Changes;
     public bool IsDirty => _session.IsDirty;

@@ -8,6 +8,25 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void ExplicitTruckAssignmentIsUndoableAcrossSections()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var vehicle = new VehicleDemoViewModel(text, workspace);
+        var profile = new ProfileDemoViewModel(text, workspace);
+        string original = vehicle.PreviewText;
+        Assert.Contains("demo.truck", vehicle.AssignedTruckLabel, StringComparison.Ordinal);
+        vehicle.SelectedTruck = "demo.truck2";
+        vehicle.ActionCommand.Execute("assign-truck");
+        Assert.Contains("assigned_truck: demo.truck2", vehicle.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo.truck2", vehicle.AssignedTruckLabel, StringComparison.Ordinal);
+        profile.ActionCommand.Execute("undo");
+        Assert.Equal(original, vehicle.PreviewText);
+        Assert.Contains("demo.truck", vehicle.AssignedTruckLabel, StringComparison.Ordinal);
+        profile.ActionCommand.Execute("redo");
+        Assert.Contains("demo.truck2", vehicle.AssignedTruckLabel, StringComparison.Ordinal);
+    }
+    [Fact]
     public void FullTruckRepairTargetsSelectedTruckAndCanBeUndone()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

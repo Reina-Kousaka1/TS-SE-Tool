@@ -120,6 +120,9 @@
           <StackPanel IsVisible="{Binding CanRefuel}" Spacing="4">
             <TextBlock Text="{Binding TruckSelectionLabel}" />
             <ComboBox ItemsSource="{Binding TruckChoices}" SelectedItem="{Binding SelectedTruck, Mode=TwoWay}" AutomationProperties.Name="{Binding TruckSelectionLabel}" />
+            <TextBlock Text="{Binding AssignedTruckLabel}" />
+            <TextBlock Text="{Binding AssignTruckDetail}" TextWrapping="Wrap" />
+            <Button Content="{Binding AssignTruckLabel}" Command="{Binding ActionCommand}" CommandParameter="assign-truck" />
           </StackPanel>
           <StackPanel IsVisible="{Binding CanRepairChain}" Spacing="4">
             <TextBlock Text="{Binding TrailerSelectionLabel}" />

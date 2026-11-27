@@ -77,6 +77,16 @@ Synthetic truck blocks are also selectable by identifier in document order.
 Fuel/wear drafts and integer odometer drafts are kept separately for each
 truck, retain their baseline across selection, and require review when stale.
 The shared history spans all selected trucks and trailers.
+The synthetic player demo can explicitly change `assigned_truck`, which the
+legacy Player model and truck tab both use. Before changing it, the demo
+validates the complete declared `trucks` array, uniqueness, target block type,
+and the current reference. Only an existing listed target may be selected;
+the reference change participates in shared undo/redo. It does not adjust or
+validate placement, active jobs, ownership semantics or real-game versions.
+
+Assignment self-review (not independent): all syntactic reference checks run
+before the existing atomic edit. No profile discovery or game-save access is
+added, and the separate production-write gate remains closed.
 For the selected synthetic truck, the full repair action validates engine,
 transmission, cabin, chassis and every declared wheel before a single undoable
 change. Fuel, wheel count and unknown fields remain intact. This mirrors the
