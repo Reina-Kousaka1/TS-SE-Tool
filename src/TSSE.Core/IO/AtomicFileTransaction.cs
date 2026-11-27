@@ -33,11 +33,16 @@ public sealed class AtomicFileTransaction
 
         byte[] payload = newContents.ToArray();
         ReadOnlyMemory<byte> stableContents = payload;
+        // A ReadOnlyMemory view can still expose its backing array to a validator.
+        // Never give the validator access to the snapshot that will be written.
+        byte[] validationPayload = payload.ToArray();
 
         try
         {
-            if (!validator(stableContents))
+            if (!validator(validationPayload))
                 return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "validation_rejected");
+            if (!validationPayload.AsSpan().SequenceEqual(payload))
+                return new FileCommitResult(FileCommitStatus.ValidationRejected, ErrorCode: "validation_mutated_payload");
         }
         catch
         {

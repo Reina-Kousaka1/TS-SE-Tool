@@ -41,6 +41,12 @@ The parser rejects unbalanced braces, blocks without headers, empty block identi
 
 ## Recovery preview boundary
 
+Transaction self-review (not independent): the validator receives an isolated
+copy of the proposed bytes; a mutation observed when it returns rejects the
+transaction before staging. The independent write snapshot cannot be altered
+through that validator buffer. This does not establish that a validator is
+honest or game-compatible, and the transaction remains disconnected from saves.
+
 `AtomicFileRecoveryPreviewer` reads the current target and recognized transaction artifacts, bounds content reads to the transaction payload limit, reports validation status and SHA-256, and can describe an exact-copy candidate targeting a separate output file. It performs no write, rename, delete, restore, or replace. Invalid or unavailable candidates have no proposed action. Validator exceptions become structured `payload_validation_failed` results; validator mutation is detected and prevents a valid recovery proposal.
 
 The preview uses a caller-supplied validator. No game-specific validator is currently registered, and the Avalonia application does not point the previewer at production profiles. Any future recovery execution requires a separate independent architecture review and explicit operator authorization. This code does not itself implement or activate such execution.

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
 using TSSE.Core.IO;
 using Xunit;
 
@@ -6,6 +7,36 @@ namespace TSSE.Core.Tests;
 
 public sealed class AtomicFileTransactionTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ValidatorMutationCannotWriteOrCreateArtifacts(bool targetExists)
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "original"u8.ToArray();
+        if (targetExists) await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+        bool mutated = false;
+        FileCommitResult result = await new AtomicFileTransaction().CommitAsync(
+            path, "candidate"u8.ToArray(), targetExists ? Hash(original) : null,
+            bytes =>
+            {
+                if (MemoryMarshal.TryGetArray(bytes, out ArraySegment<byte> buffer) && buffer.Array is not null)
+                {
+                    buffer.Array[buffer.Offset] = (byte)'X';
+                    mutated = true;
+                }
+                return true;
+            }, TestContext.Current.CancellationToken);
+        Assert.True(mutated);
+        Assert.Equal(FileCommitStatus.ValidationRejected, result.Status);
+        Assert.Equal("validation_mutated_payload", result.ErrorCode);
+        if (targetExists)
+            Assert.Equal(original, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+        else Assert.False(File.Exists(path));
+        Assert.Equal(targetExists ? 1 : 0, Directory.GetFiles(directory.Path).Length);
+    }
+
     [Fact]
     public async Task HashStream_StopsAfterFirstByteBeyondConfiguredLimit()
     {
