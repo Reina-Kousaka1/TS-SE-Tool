@@ -6,6 +6,17 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyJobPreviewTests
 {
+    [Theory]
+    [InlineData("p")]
+    [InlineData("j")]
+    public void PlayerAndJobIdentifiersMustBeUniqueAcrossBlockTypes(string duplicateId)
+    {
+        string input = Synthetic.Replace(" player : p {", " other_type : " + duplicateId + " {\n  unknown: preserved\n }\n player : p {", StringComparison.Ordinal);
+        var document = SiiSyntaxDocument.Parse(input);
+        Assert.Throws<InvalidOperationException>(() => new LegacyJobPreview(document, "p"));
+        Assert.Equal(input, document.ToText());
+    }
+
     [Fact]
     public void RouteSwapPreservesUnrelatedDataAndHasOneUndoStep()
     {

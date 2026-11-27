@@ -118,8 +118,9 @@ public sealed class LegacyJobPreview
 
     private static SiiBlock Block(SiiSyntaxDocument document, string type, string id)
     {
-        SiiBlock[] matches = document.Blocks.Where(block => block.Type == type && block.Id == id).ToArray();
-        return matches.Length == 1 ? matches[0] : throw new InvalidOperationException("The requested block is missing or ambiguous.");
+        SiiBlock[] matches = document.Blocks.Where(block => block.Id == id).ToArray();
+        return matches.Length == 1 && matches[0].Type == type
+            ? matches[0] : throw new InvalidOperationException("The requested block is missing or ambiguous.");
     }
 
     private static string Value(SiiBlock block, string name)
