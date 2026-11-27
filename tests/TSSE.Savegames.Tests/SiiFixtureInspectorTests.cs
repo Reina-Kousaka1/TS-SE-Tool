@@ -8,6 +8,58 @@ namespace TSSE.Savegames.Tests;
 
 public sealed class SiiFixtureInspectorTests
 {
+    [Fact]
+    public void ShortReadsProduceTheSameReportAndLeaveTheStreamOpen()
+    {
+        byte[] input = Encoding.UTF8.GetBytes("root {\n label: \"Grüße 🚚\"\n}\n");
+        using var stream = new ShortReadStream(input, 3);
+        SiiFixtureReport fromStream = SiiFixtureInspector.Inspect(stream);
+        SiiFixtureReport fromBytes = SiiFixtureInspector.Inspect(input);
+        Assert.Equal(fromBytes, fromStream);
+        Assert.False(fromStream.ByteLengthIsLowerBound);
+        Assert.True(stream.CanRead);
+    }
+
+    [Fact]
+    public void OversizedStreamStopsAtLimitPlusOneAndReportsOnlyALowerBound()
+    {
+        using var stream = new ShortReadStream(new byte[SiiEncodedText.MaximumBytes + 1000], 4096);
+        SiiFixtureReport report = SiiFixtureInspector.Inspect(stream);
+        Assert.Equal(SiiFixtureStatus.TooLarge, report.Status);
+        Assert.Equal(SiiEncodedText.MaximumBytes + 1, stream.Position);
+        Assert.Equal(SiiEncodedText.MaximumBytes + 1, report.ByteLength);
+        Assert.True(report.ByteLengthIsLowerBound);
+        Assert.Null(report.Sha256);
+        Assert.True(stream.CanRead);
+    }
+
+    [Fact]
+    public void ExactLimitIsNotMisreportedAsOversized()
+    {
+        using var stream = new ShortReadStream(new byte[SiiEncodedText.MaximumBytes], 4096);
+        SiiFixtureReport report = SiiFixtureInspector.Inspect(stream);
+        Assert.Equal(SiiFixtureStatus.UnsupportedTextOrContainer, report.Status);
+        Assert.False(report.ByteLengthIsLowerBound);
+        Assert.Equal(SiiEncodedText.MaximumBytes, stream.Position);
+    }
+
+    [Fact]
+    public void StreamReadFailureDoesNotBecomeASuccessfulReport()
+    {
+        using var stream = new FailingStream();
+        Assert.Throws<IOException>(() => SiiFixtureInspector.Inspect(stream));
+    }
+
+    private sealed class ShortReadStream(byte[] bytes, int maxRead) : MemoryStream(bytes, writable: false)
+    {
+        public override int Read(byte[] buffer, int offset, int count) =>
+            base.Read(buffer, offset, Math.Min(count, maxRead));
+    }
+
+    private sealed class FailingStream : MemoryStream
+    {
+        public override int Read(byte[] buffer, int offset, int count) => throw new IOException("Synthetic read failure");
+    }
     [Theory]
     [InlineData(false, SiiTextEncoding.Utf8)]
     [InlineData(true, SiiTextEncoding.Utf8Bom)]

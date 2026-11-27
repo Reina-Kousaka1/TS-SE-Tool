@@ -50,6 +50,12 @@ the contents or a file path. Unsupported encodings and containers are reported
 without attempting decompression or decryption. Real test copies require
 explicit authorization; profile scanning and production writes stay disabled.
 
+The inspector also accepts a caller-owned stream and reads no more than the
+byte limit plus one detection byte; an oversized stream's reported length is
+marked as a lower bound. Read errors propagate rather than becoming success
+reports. It neither opens paths nor closes the caller's stream. This API does
+not activate a file picker, automatic profile discovery or game-save reading.
+
 Fixture-inspection self-review (not independent): the byte limit is checked
 before hashing, strict decoding precedes parsing, syntax errors are structured,
 and an unchanged byte comparison is reported separately from parsing. A clean

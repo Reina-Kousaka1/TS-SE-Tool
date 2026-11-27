@@ -9,6 +9,32 @@ namespace TSSE.Savegames.Diagnostics;
 /// </summary>
 public static class SiiFixtureInspector
 {
+    /// <summary>
+    /// Inspects an explicitly supplied stream, reading at most the byte limit
+    /// plus one detection byte. The caller retains ownership of the stream.
+    /// No file discovery, writes, decompression, or game validation is performed.
+    /// </summary>
+    public static SiiFixtureReport Inspect(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (!stream.CanRead)
+            throw new ArgumentException("The stream must be readable.", nameof(stream));
+
+        using var buffer = new MemoryStream();
+        var chunk = new byte[8192];
+        while (buffer.Length <= SiiEncodedText.MaximumBytes)
+        {
+            int remaining = SiiEncodedText.MaximumBytes + 1 - (int)buffer.Length;
+            int read = stream.Read(chunk, 0, Math.Min(chunk.Length, remaining));
+            if (read == 0)
+                return Inspect(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
+            buffer.Write(chunk, 0, read);
+        }
+
+        return new SiiFixtureReport(SiiFixtureStatus.TooLarge, (int)buffer.Length, null, null,
+            null, null, null, null, null) { ByteLengthIsLowerBound = true };
+    }
+
     public static SiiFixtureReport Inspect(ReadOnlySpan<byte> bytes)
     {
         if (bytes.Length > SiiEncodedText.MaximumBytes)
@@ -57,4 +83,8 @@ public sealed record SiiFixtureReport(
     int? BlockCount,
     int? OpaqueLineCount,
     SiiSyntaxErrorCode? SyntaxError,
-    int? ErrorLine);
+    int? ErrorLine)
+{
+    /// <summary>True if a bounded stream was stopped before its full length was read.</summary>
+    public bool ByteLengthIsLowerBound { get; init; }
+}
