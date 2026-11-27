@@ -26,6 +26,30 @@
         </StackPanel>
       </Border>
 
+      <Border IsVisible="{Binding IsSavegameExplorer}"
+              Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
+              BorderThickness="1" CornerRadius="16" Padding="16">
+        <StackPanel Spacing="10" DataContext="{Binding ProfileDemo}">
+          <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding BalanceLabel}" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding BalanceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding BalanceLabel}" />
+            <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="balance" />
+          </Grid>
+          <TextBlock Text="{Binding ExperienceLabel}" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding ExperienceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding ExperienceLabel}" />
+            <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="experience" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="{Binding UndoLabel}" Command="{Binding ActionCommand}" CommandParameter="undo" />
+            <Button Content="{Binding RedoLabel}" Command="{Binding ActionCommand}" CommandParameter="redo" />
+          </StackPanel>
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <Border IsVisible="{Binding IsVehicleStudio}" Background="{DynamicResource SurfaceBrush}"
               BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
         <StackPanel Spacing="12">

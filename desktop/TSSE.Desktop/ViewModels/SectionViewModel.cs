@@ -40,6 +40,7 @@ public sealed class SectionViewModel : ObservableObject
         ThirtyDaysLabel = _text.Get("analytics.window.thirtyDays");
         SelectVehicleCategoryCommand = new RelayCommand<string>(SelectVehicleCategory);
         SelectAnalyticsWindowCommand = new RelayCommand<string>(SelectAnalyticsWindow);
+        ProfileDemo = new ProfileDemoViewModel(_text);
     }
 
     public string PageKey { get; }
@@ -53,6 +54,8 @@ public sealed class SectionViewModel : ObservableObject
     public bool IsVehicleStudio => PageKey == "vehicle-studio";
     public bool IsEconomyIntelligence => PageKey == "economy-intelligence";
     public bool IsSettings => PageKey == "settings";
+    public bool IsSavegameExplorer => PageKey == "savegame-explorer";
+    public ProfileDemoViewModel ProfileDemo { get; }
     public string SettingsStorageHeading { get; }
     public string SettingsStorageMessage { get; }
     public string VehicleCategoryHeading { get; }

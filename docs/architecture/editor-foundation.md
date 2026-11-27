@@ -8,6 +8,18 @@ undo and redo move through them, and a different edit after undo drops redo.
 Unchanged or invalid edits leave history intact. Callers of the generic history
 must supply immutable snapshots and a validator.
 
+The Savegame Explorer offers a clearly labelled temporary profile demo for
+balance and experience, with per-field validation and undo/redo. Its initial
+zeroes are scratch values, not data read from a profile. No loading or saving
+is connected to this demo. Vehicle and job editing and real profile mapping
+remain future work.
+
+CI evidence for core commit 29add2b: run 45980964128 passed its .NET 10 test
+steps on all seven jobs. Six jobs completed successfully; the Linux x64 job
+failed later while refreshing the Microsoft Ubuntu package feed (HTTP 403),
+before its package smoke tests. This is an external feed failure, not evidence
+that packaging passed.
+
 The legacy application's Bank.cs represents money_account as Int64 and
 Economy.cs represents experience_points as UInt32. This informs the isolated
 value ranges only; it does not prove compatibility with current game versions.

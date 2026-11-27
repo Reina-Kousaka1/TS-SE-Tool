@@ -15,6 +15,7 @@
     <EmbeddedResource Include="Resources\*.json" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\TSSE.Core\TSSE.Core.csproj" />
     <ProjectReference Include="..\..\src\TSSE.GameAdapters\TSSE.GameAdapters.csproj" />
     <ProjectReference Include="..\..\src\TSSE.Savegames\TSSE.Savegames.csproj" />
   </ItemGroup>
