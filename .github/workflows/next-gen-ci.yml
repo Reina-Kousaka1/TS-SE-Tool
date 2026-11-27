@@ -48,6 +48,13 @@ jobs:
         run: |
           & "$env:WINDIR\SysWOW64\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/TSSE.NativeDecoderProbe/Test-GetMemoryFormat-x86.ps1
           if ($LASTEXITCODE -ne 0) { throw 'Synthetic native format probe failed.' }
+      - name: Probe legacy x86 decoder with a fixed synthetic fixture
+        if: matrix.rid == 'win-x64'
+        timeout-minutes: 2
+        shell: pwsh
+        run: |
+          & "$env:WINDIR\SysWOW64\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/TSSE.NativeDecoderProbe/Test-DecodeSynthetic-x86.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Synthetic native decode probe failed.' }
       - name: Publish and test the Windows fixture inspector
         if: matrix.rid == 'win-x64'
         shell: pwsh

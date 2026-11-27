@@ -152,8 +152,9 @@ The original `MethodsDecodeSave.cs` calls `SII_Decrypt.dll` twice and sets
 `FileDecoded` after the second call without checking its result. The new
 `LegacyDecodeSafetyCheck` does not invoke that DLL: it checks supplied status
 codes and conservative size limits, then only reports syntax evidence after
-rejecting malformed, opaque or ambiguous output. The contract and size rules
-remain unverified against the native library and genuine saves. No decoder is
+rejecting malformed, opaque or ambiguous output. The size contract has been
+partially probed with one synthetic native input as described below, but remains
+unverified for genuine saves. No decoder is
 registered or enabled; these checks do not grant file-read or write permission.
 The separate size-query check can be called before allocation and returns a
 bounded integer only on a successful query with a nonzero size within the
@@ -179,7 +180,8 @@ oversized tables are rejected. The table layout and forwarder distinction follow
 the [Microsoft PE specification](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format).
 An RVA may point to code or data: this evidence does not confirm a callable
 function, calling convention, parameter sizes, implementation, trust, or
-platform compatibility. No native calls or container decoding are enabled.
+platform compatibility. No native calls or container decoding are enabled in
+the application.
 Export-probe self-review (not independent): input and table counts are bounded,
 names are checked as terminated ASCII, ordinal indexes are range-checked, and
 forwarded entries are distinguished. Synthetic corruption tests and the checked-in
@@ -198,6 +200,29 @@ effects, establish binary provenance or game compatibility, or authorize
 loading it in the application. Hash verification and dependency search
 restrictions are best effort, not a security sandbox. A reviewed isolation
 design and real approved test-copy evidence remain required.
+
+`tools/TSSE.NativeDecoderProbe/Test-DecodeSynthetic-x86.ps1` constructs a fixed
+binary fixture in memory from the documented historical BSII v2 structure; it
+contains one synthetic Int32 field and no game data. It runs only the known-hash
+x86 DLL in a separate process, makes a bounded output-size query, caps allocation,
+and validates returned length, UTF-8, and the expected structure and field.
+Locally, the full-buffer call produced the expected text. Crucially, calls with
+declared output capacities of zero and one returned success with reported sizes
+zero and one respectively; the one-byte case did not write beyond its declared
+capacity in this test. Therefore a success code alone does not establish complete
+output. The existing `LegacyDecodeSafetyCheck` rejects zero-length and malformed
+output, but syntactically valid truncation is still possible; no production
+decoder or write path is enabled. Windows x64 CI repeats this fixed synthetic
+test with a two-minute step timeout. The process and hash checks do not constitute
+a sandbox, the historical format description is unofficial, and no genuine save,
+encryption, game semantics or save reconstruction was tested. The generated
+fixture is not copied from a player or from the external documentation example.
+
+Synthetic decoder self-review (not independent): native input is generated from
+constants, no arguments or game files are accepted, and no output is written to
+a file. The experiment cannot prove memory safety, origin or ABI compatibility
+across builds. Any future application integration needs explicit isolation,
+completeness checks, real approved fixtures and separate security review.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
