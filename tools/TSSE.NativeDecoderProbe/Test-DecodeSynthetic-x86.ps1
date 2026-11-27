@@ -38,6 +38,11 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0x27); WriteString(writer, "xp"); // UInt32 field
             writer.Write((uint)0x27); WriteString(writer, "xp_value");
             writer.Write((uint)0x31); WriteString(writer, "balance"); // Int64 field
+            writer.Write((uint)0x33); WriteString(writer, "wide_nil");
+            writer.Write((uint)0x33); WriteString(writer, "wide_high");
+            writer.Write((uint)0x33); WriteString(writer, "wide_low");
+            writer.Write((uint)0x33); WriteString(writer, "wide_value");
+            writer.Write((uint)0x01); WriteString(writer, "label");
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
             writer.Write((byte)0xff); writer.Write((ulong)0x1234); // nameless ID
@@ -45,6 +50,11 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write(uint.MaxValue);
             writer.Write(uint.MaxValue - 1);
             writer.Write(long.MinValue);
+            writer.Write(ulong.MaxValue);
+            writer.Write(0xffffffff00000001ul);
+            writer.Write(0x00000001fffffffful);
+            writer.Write(9876543210ul);
+            WriteString(writer, "route demo");
             writer.Write((uint)0); writer.Write((byte)0); // end marker
             return stream.ToArray();
         }
@@ -90,7 +100,10 @@ public static class SyntheticNativeDecodeProbe {
 $decoded = [SyntheticNativeDecodeProbe]::Check($dllPath)
 if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synthetic\s*:' -or $decoded -notmatch '(?m)^\s*value:\s*42\s*$' -or
     $decoded -notmatch '(?m)^\s*xp:\s*nil\s*$' -or $decoded -notmatch '(?m)^\s*xp_value:\s*4294967294\s*$' -or
-    $decoded -notmatch '(?m)^\s*balance:\s*-9223372036854775808\s*$') {
+    $decoded -notmatch '(?m)^\s*balance:\s*-9223372036854775808\s*$' -or
+    $decoded -notmatch '(?m)^\s*wide_nil:\s*nil\s*$' -or $decoded -notmatch '(?m)^\s*wide_high:\s*nil\s*$' -or
+    $decoded -notmatch '(?m)^\s*wide_low:\s*nil\s*$' -or $decoded -notmatch '(?m)^\s*wide_value:\s*9876543210\s*$' -or
+    $decoded -notmatch '(?m)^\s*label:\s*"route demo"\s*$') {
     throw ('The fixed synthetic decoded text did not contain the expected structure and value: ' + $decoded)
 }
 Write-Output 'Synthetic x86 DecodeMemory: success with 0/1 reported bytes for undersized capacities; bounded decode contained expected values; no save file used.'

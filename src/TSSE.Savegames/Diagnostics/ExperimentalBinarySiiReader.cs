@@ -12,7 +12,8 @@ namespace TSSE.Savegames.Diagnostics;
 public static class ExperimentalBinarySiiReader
 {
     public const int MaximumBytes = 8 * 1024 * 1024;
-    private const int MaximumStructures = 1024, MaximumBlocks = 4096, MaximumFieldsPerStructure = 256, MaximumNameBytes = 128;
+    private const int MaximumStructures = 1024, MaximumBlocks = 4096, MaximumFieldsPerStructure = 256, MaximumNameBytes = 128, MaximumStringBytes = 65536;
+    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
 
     public static IReadOnlyList<ExperimentalBinaryBlock> Read(ReadOnlySpan<byte> input)
     {
@@ -45,7 +46,7 @@ public static class ExperimentalBinarySiiReader
                 {
                     uint type = cursor.UInt32();
                     if (type == 0) break;
-                    if (type is not (0x25 or 0x27 or 0x31)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    if (type is not (0x01 or 0x25 or 0x27 or 0x31 or 0x33)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     if (fields.Count >= MaximumFieldsPerStructure) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                     string field = cursor.Name();
                     if (!fieldNames.Add(field)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
@@ -63,6 +64,8 @@ public static class ExperimentalBinarySiiReader
                 var values = new Dictionary<string, int>(StringComparer.Ordinal);
                 var unsignedValues = new Dictionary<string, ExperimentalBinaryUInt32>(StringComparer.Ordinal);
                 var longValues = new Dictionary<string, long>(StringComparer.Ordinal);
+                var unsignedLongValues = new Dictionary<string, ExperimentalBinaryUInt64>(StringComparer.Ordinal);
+                var stringValues = new Dictionary<string, string>(StringComparer.Ordinal);
                 foreach (Field field in structure.Fields)
                 {
                     switch (field.Type)
@@ -70,13 +73,17 @@ public static class ExperimentalBinarySiiReader
                         case 0x25: values.Add(field.Name, cursor.Int32()); break;
                         case 0x27: unsignedValues.Add(field.Name, new ExperimentalBinaryUInt32(cursor.UInt32())); break;
                         case 0x31: longValues.Add(field.Name, cursor.Int64()); break;
+                        case 0x33: unsignedLongValues.Add(field.Name, new ExperimentalBinaryUInt64(cursor.UInt64())); break;
+                        case 0x01: stringValues.Add(field.Name, cursor.Text()); break;
                         default: throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     }
                 }
                 blocks.Add(new ExperimentalBinaryBlock(structure.Name, id, new ReadOnlyDictionary<string, int>(values))
                 {
                     UInt32Fields = new ReadOnlyDictionary<string, ExperimentalBinaryUInt32>(unsignedValues),
-                    Int64Fields = new ReadOnlyDictionary<string, long>(longValues)
+                    Int64Fields = new ReadOnlyDictionary<string, long>(longValues),
+                    UInt64Fields = new ReadOnlyDictionary<string, ExperimentalBinaryUInt64>(unsignedLongValues),
+                    StringFields = new ReadOnlyDictionary<string, string>(stringValues)
                 });
             }
         }
@@ -104,6 +111,13 @@ public static class ExperimentalBinarySiiReader
         public int Int32() => BinaryPrimitives.ReadInt32LittleEndian(Take(4));
         public long Int64() => BinaryPrimitives.ReadInt64LittleEndian(Take(8));
         public ulong UInt64() => BinaryPrimitives.ReadUInt64LittleEndian(Take(8));
+        public string Text()
+        {
+            uint length = UInt32();
+            if (length > MaximumStringBytes) throw Error(ExperimentalBinarySiiError.LimitExceeded);
+            try { return StrictUtf8.GetString(Take((int)length)); }
+            catch (DecoderFallbackException) { throw Error(ExperimentalBinarySiiError.InvalidStringEncoding); }
+        }
         public string Name()
         {
             uint length = UInt32();
@@ -121,6 +135,8 @@ public sealed record ExperimentalBinaryBlock(string Type, ulong NamelessId, IRea
 {
     public IReadOnlyDictionary<string, ExperimentalBinaryUInt32> UInt32Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryUInt32>(new Dictionary<string, ExperimentalBinaryUInt32>());
     public IReadOnlyDictionary<string, long> Int64Fields { get; init; } = new ReadOnlyDictionary<string, long>(new Dictionary<string, long>());
+    public IReadOnlyDictionary<string, ExperimentalBinaryUInt64> UInt64Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryUInt64>(new Dictionary<string, ExperimentalBinaryUInt64>());
+    public IReadOnlyDictionary<string, string> StringFields { get; init; } = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
 }
 /// <summary>Raw 0x27 bytes are retained; the legacy decoder renders all bits set as nil.</summary>
 public readonly record struct ExperimentalBinaryUInt32(uint Raw)
@@ -128,7 +144,13 @@ public readonly record struct ExperimentalBinaryUInt32(uint Raw)
     public bool IsLegacyNil => Raw == uint.MaxValue;
     public uint? LegacyValue => IsLegacyNil ? null : Raw;
 }
-public enum ExperimentalBinarySiiError { InvalidHeader, UnsupportedVersion, Truncated, UnsupportedType, UnsupportedIdentifier, UnsupportedName, InvalidStructure, Ambiguous, LimitExceeded, TrailingData }
+/// <summary>Raw 0x33 bits are preserved; the legacy decoder prints nil when either 32-bit half is all ones.</summary>
+public readonly record struct ExperimentalBinaryUInt64(ulong Raw)
+{
+    public bool LegacyRendersNil => (Raw & uint.MaxValue) == uint.MaxValue || (Raw >> 32) == uint.MaxValue;
+    public ulong? LegacyValue => LegacyRendersNil ? null : Raw;
+}
+public enum ExperimentalBinarySiiError { InvalidHeader, UnsupportedVersion, Truncated, UnsupportedType, UnsupportedIdentifier, UnsupportedName, InvalidStringEncoding, InvalidStructure, Ambiguous, LimitExceeded, TrailingData }
 public sealed class ExperimentalBinarySiiException(ExperimentalBinarySiiError error, int offset) : FormatException($"Unsupported or invalid experimental binary SII ({error}) at byte {offset}.")
 {
     public ExperimentalBinarySiiError Error { get; } = error;
