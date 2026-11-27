@@ -7,6 +7,37 @@ namespace TSSE.Savegames.Tests;
 public sealed class SiiEditSessionTests
 {
     [Fact]
+    public void UnencodableReplacementRejectsWholeBatchAndPreservesRedo()
+    {
+      foreach (string value in new[] { "\"bad\0value\"", "\"bad\ud800value\"", "\"bad\udc00value\"", "\"bad\ud800\ud800\"" })
+      {
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
+        session.Apply([new("bank", "a", "money_account", "2")]);
+        Assert.True(session.Undo());
+        Assert.Throws<ArgumentException>(() => session.Apply([
+            new("bank", "a", "money_account", "3"),
+            new("economy", "b", "experience_points", value)
+        ]));
+        Assert.Equal(Original, session.PreviewText);
+        Assert.Empty(session.Changes);
+        Assert.True(session.CanRedo);
+        Assert.True(session.Redo());
+        Assert.Contains("mod_extra: \"未知\"", session.PreviewText, StringComparison.Ordinal);
+      }
+    }
+
+    [Fact]
+    public void ReplacementAcceptsValidSupplementaryUnicode()
+    {
+        const string input = "root {\n name: \"old\"\n}\n";
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(input));
+        session.Apply([new("root", null, "name", "\"🚌\"")]);
+        Assert.Contains("\"🚌\"", session.PreviewText, StringComparison.Ordinal);
+        Assert.True(session.Undo());
+        Assert.Equal(input, session.PreviewText);
+    }
+
+    [Fact]
     public void RevertAllIsExactUndoableAndNoOpPreservesRedo()
     {
         var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));

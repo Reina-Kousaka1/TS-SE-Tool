@@ -285,6 +285,21 @@ public sealed class SiiSyntaxDocument
             !string.Equals(rawValue, rawValue.Trim(), StringComparison.Ordinal))
             throw new ArgumentException("A replacement value must be a single unpadded SII value.", nameof(rawValue));
 
+        for (int i = 0; i < rawValue.Length; i++)
+        {
+            char character = rawValue[i];
+            if (character == '\0')
+                throw new ArgumentException("A replacement value cannot contain NUL.", nameof(rawValue));
+            if (char.IsHighSurrogate(character))
+            {
+                if (i + 1 >= rawValue.Length || !char.IsLowSurrogate(rawValue[i + 1]))
+                    throw new ArgumentException("A replacement value must contain valid UTF-16.", nameof(rawValue));
+                i++;
+            }
+            else if (char.IsLowSurrogate(character))
+                throw new ArgumentException("A replacement value must contain valid UTF-16.", nameof(rawValue));
+        }
+
         if (OpaqueLines.Count > 0)
             throw new InvalidOperationException("The document contains unclassified syntax and cannot be edited safely.");
 

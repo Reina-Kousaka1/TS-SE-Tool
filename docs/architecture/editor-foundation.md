@@ -73,6 +73,14 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+Replacement values reject NUL and isolated UTF-16 surrogates before editing.
+Valid supplementary characters remain available. This does not validate game
+text encodings or change how existing unknown fields are preserved. Rejection
+leaves the complete batch and redo history intact. Architecture self-review
+(not independent): the shared syntax entry point performs the check for all
+callers; encoded output still has its own strict checks. Real-game encoding
+compatibility remains unverified.
+
 An edit with a non-null target ID fails closed when the ID is repeated across
 block types. Batch failure preserves the original preview and redo history.
 This conservative synthetic syntax rule does not establish game semantics.
