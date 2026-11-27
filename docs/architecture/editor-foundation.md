@@ -26,6 +26,23 @@ displays an embedded synthetic SII document in memory. No loading or saving
 is connected to this demo. The vehicle and job demos also use synthetic data;
 real profile mapping and game compatibility remain future work.
 
+The explorer also contains a separate synthetic `user_profile` metadata example.
+The legacy `SaveFileProfileData.cs` names `profile_name`, `cached_experience`,
+and `cached_distance`; this preview reads the two cached UInt32 values and can
+change the example name. It deliberately accepts only a conservative 1–64
+ASCII-letter/digit/underscore subset, not arbitrary SCS string encodings. Those
+limits are preview restrictions, not claims about the game. Its independent
+undo/redo history never renames a profile directory, updates game data, scans
+profiles, or writes files. It rejects unknown string formats, ambiguous fields
+and invalid numeric values, while preserving unknown syntax fields. Unicode
+profile names and current game compatibility are not supported or verified.
+
+Metadata self-review (not independent): this is a separate in-memory document
+and history, rather than conflating profile metadata with the game save. Only
+one explicit field can be edited through the existing syntax session; cached
+statistics are read-only. Actual profile renaming would need directory,
+cross-file and game-version validation and remains disabled.
+
 CI evidence for core commit 29add2b: run 45980964128 passed its .NET 10 test
 steps on all seven jobs. Six jobs completed successfully; the Linux x64 job
 failed later while refreshing the Microsoft Ubuntu package feed (HTTP 403),

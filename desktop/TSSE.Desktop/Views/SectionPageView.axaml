@@ -44,6 +44,24 @@
         </StackPanel>
       </Border>
 
+      <Border IsVisible="{Binding IsSavegameExplorer}" Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
+        <StackPanel DataContext="{Binding ProfileMetadataDemo}" Spacing="8">
+          <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CachedValues}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CurrentName}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding NameLabel}" />
+          <TextBox Text="{Binding Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding NameLabel}" />
+          <WrapPanel>
+            <Button Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="apply" />
+            <Button Content="{Binding UndoLabel}" Command="{Binding ActionCommand}" CommandParameter="undo" />
+            <Button Content="{Binding RedoLabel}" Command="{Binding ActionCommand}" CommandParameter="redo" />
+          </WrapPanel>
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <Border IsVisible="{Binding IsSavegameExplorer}"
               Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource DividerBrush}"
               BorderThickness="1" CornerRadius="16" Padding="16">

@@ -43,6 +43,7 @@ public sealed class SectionViewModel : ObservableObject
         SelectAnalyticsWindowCommand = new RelayCommand<string>(SelectAnalyticsWindow);
         DemoWorkspace workspace = demoWorkspace ?? new DemoWorkspace();
         ProfileDemo = new ProfileDemoViewModel(_text, workspace);
+        ProfileMetadataDemo = new ProfileMetadataDemoViewModel(_text);
         VehicleDemo = new VehicleDemoViewModel(_text, workspace);
         JobDemo = new JobDemoViewModel(_text, workspace);
         FixtureDiagnostics = new FixtureDiagnosticsViewModel(_text);
@@ -63,6 +64,7 @@ public sealed class SectionViewModel : ObservableObject
     public bool IsCompatibilityLab => PageKey == "compatibility-lab";
     public FixtureDiagnosticsViewModel FixtureDiagnostics { get; }
     public ProfileDemoViewModel ProfileDemo { get; }
+    public ProfileMetadataDemoViewModel ProfileMetadataDemo { get; }
     public VehicleDemoViewModel VehicleDemo { get; }
     public JobDemoViewModel JobDemo { get; }
     public bool IsJobs => PageKey == "jobs";

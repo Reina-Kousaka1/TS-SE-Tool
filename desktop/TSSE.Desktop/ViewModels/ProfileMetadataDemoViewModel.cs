@@ -1,0 +1,57 @@
+using TSSE.Desktop.Services;
+using TSSE.GameAdapters.Editing;
+using TSSE.Savegames.Syntax;
+
+namespace TSSE.Desktop.ViewModels;
+
+/// <summary>Isolated example of profile metadata, never a real profile or file.</summary>
+public sealed class ProfileMetadataDemoViewModel : ObservableObject
+{
+    private readonly IUiTextCatalog _text;
+    private readonly LegacyProfileMetadataPreview _preview = new(SiiSyntaxDocument.Parse(
+        "SiiNunit\n{\n user_profile : demo.metadata {\n  profile_name: Example_1\n  cached_experience: 100\n  cached_distance: 200\n  unknown_mod: \"preserved\"\n }\n}\n"), "demo.metadata");
+    private string _input = "Example_1";
+    private string _message;
+
+    public ProfileMetadataDemoViewModel(IUiTextCatalog text)
+    {
+        _text = text ?? throw new ArgumentNullException(nameof(text));
+        _message = _text.Get("profileMetadata.ready");
+        ActionCommand = new RelayCommand<string>(Execute);
+    }
+
+    public string Heading => _text.Get("profileMetadata.heading");
+    public string Description => _text.Get("profileMetadata.description");
+    public string NameLabel => _text.Get("profileMetadata.name");
+    public string ApplyLabel => _text.Get("profileMetadata.apply");
+    public string UndoLabel => _text.Get("profileDemo.undo");
+    public string RedoLabel => _text.Get("profileDemo.redo");
+    public string CachedValues => _text.Format("profileMetadata.cached", _preview.CachedExperience, _preview.CachedDistance);
+    public string CurrentName => _text.Format("profileMetadata.current", _preview.Name);
+    public string Input { get => _input; set => SetProperty(ref _input, value ?? ""); }
+    public string Message { get => _message; private set => SetProperty(ref _message, value); }
+    public RelayCommand<string> ActionCommand { get; }
+
+    private void Execute(string action)
+    {
+        bool success;
+        try
+        {
+            success = action switch
+            {
+                "apply" => Apply(),
+                "undo" => _preview.Undo(),
+                "redo" => _preview.Redo(),
+                _ => false
+            };
+        }
+        catch (ArgumentException) { success = false; }
+        catch (InvalidOperationException) { success = false; }
+        Message = _text.Get(success ? "profileMetadata.applied" : "profileMetadata.invalid");
+        if (!success) return;
+        Input = _preview.Name;
+        OnPropertyChanged(nameof(CurrentName));
+    }
+
+    private bool Apply() { _preview.SetName(Input); return true; }
+}
