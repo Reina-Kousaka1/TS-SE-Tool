@@ -1,5 +1,10 @@
 {
   "fixture.heading": "Synthetische Formatdiagnose",
+  "fixture.binaryHeaderVersion": "BSII-Formatversionshinweis: {0}; {1}",
+  "fixture.binaryHeader.NotInspected": "BSII-Header nicht geprüft.",
+  "fixture.binaryHeader.Incomplete": "Unvollständiger BSII-Header; Version nicht verfügbar.",
+  "fixture.binaryHeader.LegacyDocumentedVersion": "historisch dokumentiert; Dekodierung und Spielkompatibilität ungeprüft",
+  "fixture.binaryHeader.UnrecognizedVersion": "nicht historisch dokumentiert; Dekodierung nicht unterstützt",
   "jobDemo.discardUnits": "Mengenentwurf verwerfen",
   "jobDemo.discardDistance": "Distanzentwurf verwerfen",
   "jobDemo.discardModel": "Frachtmodellindex-Entwurf verwerfen",

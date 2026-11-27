@@ -26,6 +26,7 @@
           </ComboBox>
           <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Signature}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding BinaryHeader}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding RoundTrip}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Duplicates}" TextWrapping="Wrap" />

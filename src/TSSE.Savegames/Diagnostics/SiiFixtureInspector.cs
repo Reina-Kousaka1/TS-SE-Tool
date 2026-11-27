@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Buffers.Binary;
 using TSSE.Savegames.Syntax;
 
 namespace TSSE.Savegames.Diagnostics;
@@ -46,8 +47,15 @@ public static class SiiFixtureInspector
             return new(SiiFixtureStatus.TooLarge, bytes.Length, null, null, null, null, null, null, null) { SignatureHint = hint };
         string hash = Convert.ToHexString(SHA256.HashData(bytes));
         if (hint is SiiSignatureHint.EncryptedPrefix or SiiSignatureHint.BinaryPrefix or SiiSignatureHint.ThreeNkPrefix)
+        {
+            uint? binaryVersion = hint == SiiSignatureHint.BinaryPrefix && bytes.Length >= 8
+                ? BinaryPrimitives.ReadUInt32LittleEndian(bytes[4..8]) : null;
+            BinarySiiHeaderHint binaryHeader = hint != SiiSignatureHint.BinaryPrefix ? BinarySiiHeaderHint.NotInspected :
+                binaryVersion is null ? BinarySiiHeaderHint.Incomplete :
+                binaryVersion is 1 or 2 or 3 ? BinarySiiHeaderHint.LegacyDocumentedVersion : BinarySiiHeaderHint.UnrecognizedVersion;
             return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
-                null, null, null, null) { SignatureHint = hint };
+                null, null, null, null) { SignatureHint = hint, BinaryHeader = binaryHeader, BinaryFormatVersion = binaryVersion };
+        }
         try
         {
             SiiEncodedText text = SiiEncodedText.Parse(bytes);
@@ -93,6 +101,9 @@ public static class SiiFixtureInspector
 /// <summary>A four-byte hint only, never proof that a container is valid or decodable.</summary>
 public enum SiiSignatureHint { Unknown, TextPrefix, EncryptedPrefix, BinaryPrefix, ThreeNkPrefix }
 
+/// <summary>Header hint based on historical documentation; never validates or decodes a container.</summary>
+public enum BinarySiiHeaderHint { NotInspected, Incomplete, LegacyDocumentedVersion, UnrecognizedVersion }
+
 public enum SiiFixtureStatus
 {
     ParsedSyntaxOnly,
@@ -118,6 +129,9 @@ public sealed record SiiFixtureReport(
     /// <summary>True if a bounded stream was stopped before its full length was read.</summary>
     public bool ByteLengthIsLowerBound { get; init; }
     public SiiSignatureHint SignatureHint { get; init; }
+    public BinarySiiHeaderHint BinaryHeader { get; init; }
+    /// <summary>Raw BSII header version, not the game or save version.</summary>
+    public uint? BinaryFormatVersion { get; init; }
     /// <summary>One-based parser column when available; otherwise unknown.</summary>
     public int? ErrorColumn { get; init; }
     /// <summary>Repeated non-null IDs beyond their first occurrence; null when syntax was not parsed.</summary>

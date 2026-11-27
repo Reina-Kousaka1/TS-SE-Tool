@@ -45,6 +45,8 @@ public sealed class FixtureDiagnosticsViewModelTests
         demo.Selected = demo.Examples.Single(item => item.Key == "unexpected-close");
         Assert.Contains("Zeile 1, Spalte 1", demo.Error, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "binary");
+        Assert.Contains("BSII-Formatversionshinweis: 2", demo.BinaryHeader, StringComparison.Ordinal);
+        Assert.Contains("ungeprüft", demo.BinaryHeader, StringComparison.Ordinal);
         Assert.Contains("nicht verfügbar", demo.Duplicates, StringComparison.Ordinal);
         Assert.Contains("Binärpräfix", demo.Signature, StringComparison.Ordinal);
         Assert.Contains("nicht durchgeführt", demo.RoundTrip, StringComparison.Ordinal);

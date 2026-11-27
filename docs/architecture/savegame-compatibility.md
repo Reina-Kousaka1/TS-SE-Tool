@@ -97,6 +97,15 @@ The latter three prefixes are rejected as unsupported before text parsing. A
 prefix is only a hint: it establishes neither validity nor game compatibility,
 and BOM-prefixed or other forms can remain unknown. Tests use synthetic bytes;
 there is no decoder, decryption, profile discovery or real fixture evidence.
+For an eight-byte BSII header the report exposes the little-endian container
+format version as a hint. Versions 1–3 are only the historical set described
+in [SII Decrypt's format notes](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Documents/Binary%20SII%20-%20Format.txt);
+that document itself describes the format as unofficial and incomplete. A
+short header is reported as incomplete and other values as unrecognized. All
+BSII inputs remain unsupported: a header is not container validation, a game
+version, or permission to decode. No source code from the MPL-2.0 project was
+incorporated. Its [test-data notice](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/TestFiles/readme.txt)
+states that player saves were withheld, so it provides no genuine fixture here.
 The original `MethodsDecodeSave.cs` calls `SII_Decrypt.dll` twice and sets
 `FileDecoded` after the second call without checking its result. The new
 `LegacyDecodeSafetyCheck` does not invoke that DLL: it checks supplied status

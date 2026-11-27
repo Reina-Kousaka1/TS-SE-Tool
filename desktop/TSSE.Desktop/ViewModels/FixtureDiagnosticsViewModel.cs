@@ -37,6 +37,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             OnPropertyChanged();
             OnPropertyChanged(nameof(Status));
             OnPropertyChanged(nameof(Signature));
+            OnPropertyChanged(nameof(BinaryHeader));
             OnPropertyChanged(nameof(RoundTrip));
             OnPropertyChanged(nameof(Error));
             OnPropertyChanged(nameof(Duplicates));
@@ -46,6 +47,9 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
 
     public string Status => _text.Format("fixture.status", _text.Get("fixture.status." + _report.Status));
     public string Signature => _text.Format("fixture.signature", _text.Get("fixture.signature." + _report.SignatureHint));
+    public string BinaryHeader => _report.BinaryFormatVersion is uint version
+        ? _text.Format("fixture.binaryHeaderVersion", version, _text.Get("fixture.binaryHeader." + _report.BinaryHeader))
+        : _text.Get("fixture.binaryHeader." + _report.BinaryHeader);
     public string RoundTrip => _text.Format("fixture.roundtrip", _text.Get(_report.ByteRoundTripEqual switch
     {
         true => "fixture.yes", false => "fixture.no", _ => "fixture.notAvailable"
@@ -79,7 +83,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         "unclosed" => "SiiNunit\n{\n demo : sample {\n  value: 1\n",
         "unexpected-close" => "}",
         "encrypted" => "ScsC synthetic prefix only",
-        "binary" => "BSII synthetic prefix only",
+        "binary" => "BSII\u0002\u0000\u0000\u0000",
         "threenk" => "3nK\u0001synthetic prefix only",
         _ => throw new ArgumentOutOfRangeException(nameof(key))
     };

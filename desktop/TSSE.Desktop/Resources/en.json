@@ -1,5 +1,10 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "fixture.binaryHeaderVersion": "BSII format version hint: {0}; {1}",
+  "fixture.binaryHeader.NotInspected": "BSII header not inspected.",
+  "fixture.binaryHeader.Incomplete": "Incomplete BSII header; version unavailable.",
+  "fixture.binaryHeader.LegacyDocumentedVersion": "documented historically; decoding and game compatibility unverified",
+  "fixture.binaryHeader.UnrecognizedVersion": "not in the historical documented set; decoding unsupported",
   "jobDemo.discardUnits": "Discard units draft",
   "jobDemo.discardDistance": "Discard distance draft",
   "jobDemo.discardModel": "Discard cargo model index draft",

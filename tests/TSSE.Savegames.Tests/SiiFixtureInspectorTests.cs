@@ -8,6 +8,41 @@ namespace TSSE.Savegames.Tests;
 
 public sealed class SiiFixtureInspectorTests
 {
+    [Theory]
+    [InlineData(1u, BinarySiiHeaderHint.LegacyDocumentedVersion)]
+    [InlineData(2u, BinarySiiHeaderHint.LegacyDocumentedVersion)]
+    [InlineData(3u, BinarySiiHeaderHint.LegacyDocumentedVersion)]
+    [InlineData(0u, BinarySiiHeaderHint.UnrecognizedVersion)]
+    [InlineData(uint.MaxValue, BinarySiiHeaderHint.UnrecognizedVersion)]
+    public void BinaryHeaderVersionIsOnlyAHintAndNeverEnablesDecoding(uint version, BinarySiiHeaderHint expected)
+    {
+        byte[] input = new byte[8];
+        "BSII"u8.CopyTo(input);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(input.AsSpan(4), version);
+        SiiFixtureReport report = SiiFixtureInspector.Inspect(input);
+        Assert.Equal(SiiFixtureStatus.UnsupportedTextOrContainer, report.Status);
+        Assert.Equal(expected, report.BinaryHeader);
+        Assert.Equal(version, report.BinaryFormatVersion);
+        Assert.Null(report.ByteRoundTripEqual);
+        using var stream = new ShortReadStream(input, 2);
+        Assert.Equal(report, SiiFixtureInspector.Inspect(stream));
+    }
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    public void IncompleteBinaryHeaderDoesNotInventAVersion(int length)
+    {
+        byte[] input = new byte[length];
+        "BSII"u8.CopyTo(input);
+        SiiFixtureReport report = SiiFixtureInspector.Inspect(input);
+        Assert.Equal(BinarySiiHeaderHint.Incomplete, report.BinaryHeader);
+        Assert.Null(report.BinaryFormatVersion);
+        Assert.Equal(SiiFixtureStatus.UnsupportedTextOrContainer, report.Status);
+    }
+
     [Fact]
     public void DuplicateHintsCountRepeatedIdsAndFieldsWithoutTreatingIndexedFieldsAsDuplicates()
     {
