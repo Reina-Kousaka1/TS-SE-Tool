@@ -7,6 +7,17 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyProfilePreviewTests
 {
+    [Theory]
+    [InlineData("e")]
+    [InlineData("b")]
+    public void AmbiguousEconomyOrBankIdAcrossBlockTypesFailsClosed(string duplicateId)
+    {
+        string input = Synthetic.Replace(" economy : e {", " mod : " + duplicateId + " {\n  unknown: preserved\n }\n economy : e {", StringComparison.Ordinal);
+        var document = SiiSyntaxDocument.Parse(input);
+        Assert.Throws<InvalidOperationException>(() => new LegacyProfilePreview(document, "e"));
+        Assert.Equal(input, document.ToText());
+    }
+
     private const string Synthetic = "SiiNunit\n{\n economy : e {\n  bank: b\n  experience_points: 0005\n  mod_value: \"未知\"\n }\n bank : b {\n  money_account: -42\n  unknown: nil\n }\n}\n";
 
     [Fact]
