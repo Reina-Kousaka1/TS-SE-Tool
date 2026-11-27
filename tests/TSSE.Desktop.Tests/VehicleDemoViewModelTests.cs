@@ -239,7 +239,33 @@ public sealed class VehicleDemoViewModelTests
         demo.SelectCategory("Trailers");
         demo.OdometerInput = "400";
         demo.ActionCommand.Execute("odometer");
-        Assert.DoesNotContain("odometer: 400", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("odometer: 400", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TrailerOdometerDraftsAreIsolatedByVehicleAndCategory()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.OdometerInput = "111";
+        demo.SelectCategory("Trailers");
+        Assert.Equal("500", demo.OdometerInput);
+        demo.OdometerInput = "600";
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Equal("900", demo.OdometerInput);
+        demo.OdometerInput = "1000";
+        demo.ActionCommand.Execute("odometer");
+        demo.SelectedTrailer = "demo.trailer";
+        Assert.Equal("600", demo.OdometerInput);
+        demo.ActionCommand.Execute("odometer");
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal("500", demo.OdometerInput);
+        demo.ActionCommand.Execute("redo");
+        Assert.Equal("600", demo.OdometerInput);
+        demo.SelectCategory("Trucks");
+        Assert.Equal("111", demo.OdometerInput);
+        demo.SelectCategory("Trailers");
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Equal("1000", demo.OdometerInput);
     }
     [Fact]
     public void AccessoryInspectionReportsSyntheticStatusesWithoutChangingTheWorkspace()

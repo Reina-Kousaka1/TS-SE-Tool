@@ -171,7 +171,7 @@
           <TextBlock Text="{Binding AccessoryHeading}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding AccessoryDescription}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding AccessorySummary}" TextWrapping="Wrap" />
-          <StackPanel IsVisible="{Binding CanRefuel}" Spacing="8">
+          <StackPanel Spacing="8">
             <TextBlock Text="{Binding OdometerLabel}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding OdometerDetail}" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

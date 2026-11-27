@@ -29,7 +29,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private string _selectedTrailer = "demo.trailer";
     private string _selectedTruck = "demo.truck";
     private readonly Dictionary<(bool Trailer, string Target, string Field), (string Text, string Base)> _drafts = new();
-    private readonly Dictionary<string, (string Text, string Base)> _odometerDrafts = new(StringComparer.Ordinal);
+    private readonly Dictionary<(bool Trailer, string Target), (string Text, string Base)> _odometerDrafts = new();
 
     public VehicleDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -86,14 +86,10 @@ public sealed class VehicleDemoViewModel : ObservableObject
             if (_isTrailer || value is null || !TruckChoices.Contains(value, StringComparer.Ordinal) || value == _selectedTruck) return;
             LegacyVehiclePreview candidate = _workspace.Workspace.SelectTruck(value);
             SaveDraft();
-            if (OdometerInput == _lastOdometer) _odometerDrafts.Remove(_selectedTruck);
-            else _odometerDrafts[_selectedTruck] = (OdometerInput, _odometerBase);
+            SaveOdometerDraft();
             _truck = candidate;
             _selectedTruck = value;
-            _lastOdometer = _truck.Odometer.ToString(CultureInfo.InvariantCulture);
-            if (_odometerDrafts.TryGetValue(value, out var draft) && draft.Text != _lastOdometer)
-                SetOdometerInput(draft.Text, draft.Base);
-            else SetOdometerInput(_lastOdometer, _lastOdometer);
+            LoadOdometer();
             OnPropertyChanged();
             OnPropertyChanged(nameof(AccessorySummary));
             LoadField();
@@ -131,8 +127,10 @@ public sealed class VehicleDemoViewModel : ObservableObject
             if (!_isTrailer || value is null || !TrailerChoices.Contains(value, StringComparer.Ordinal) || value == _selectedTrailer) return;
             LegacyVehiclePreview candidate = _workspace.Workspace.SelectTrailer(value);
             SaveDraft();
+            SaveOdometerDraft();
             _trailer = candidate;
             _selectedTrailer = value;
+            LoadOdometer();
             OnPropertyChanged();
             OnPropertyChanged(nameof(AccessorySummary));
             LoadField();
@@ -198,7 +196,9 @@ public sealed class VehicleDemoViewModel : ObservableObject
         bool trailer = category == "Trailers";
         if (_isTrailer == trailer) return;
         SaveDraft();
+        SaveOdometerDraft();
         _isTrailer = trailer;
+        LoadOdometer();
         _selectedField = Fields[0];
         OnPropertyChanged(nameof(Fields));
         OnPropertyChanged(nameof(CanRefuel));
@@ -232,10 +232,10 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 Session.SetValue(SelectedField.Name, value);
                 success = true;
             }
-            else if ((action is "odometer" or "odometer-reviewed") && CanRefuel &&
+            else if ((action is "odometer" or "odometer-reviewed") &&
                 uint.TryParse(OdometerInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint odometer))
             {
-                _truck.SetOdometer(odometer);
+                Session.SetOdometer(odometer);
                 success = true;
             }
             else if (action == "undo") success = Session.Undo();
@@ -299,7 +299,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
             }
             if (action is "odometer" or "odometer-reviewed")
             {
-                _odometerDrafts.Remove(_selectedTruck);
+                _odometerDrafts.Remove((_isTrailer, DraftTarget));
                 _odometerBase = _lastOdometer;
                 SetProperty(ref _odometerInput, _lastOdometer, nameof(OdometerInput));
                 NotifyOdometerDraft();
@@ -315,7 +315,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
 
     private void RefreshFromWorkspace()
     {
-        string currentOdometer = _truck.Odometer.ToString(CultureInfo.InvariantCulture);
+        string currentOdometer = Session.Odometer.ToString(CultureInfo.InvariantCulture);
         bool cleanOdometer = OdometerInput == _lastOdometer;
         _lastOdometer = currentOdometer;
         if (cleanOdometer || OdometerInput == currentOdometer)
@@ -374,6 +374,19 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _odometerBase = baseValue;
         SetProperty(ref _odometerInput, value, nameof(OdometerInput));
         NotifyOdometerDraft();
+    }
+    private void SaveOdometerDraft()
+    {
+        var key = (_isTrailer, DraftTarget);
+        if (OdometerInput == _lastOdometer) _odometerDrafts.Remove(key);
+        else _odometerDrafts[key] = (OdometerInput, _odometerBase);
+    }
+    private void LoadOdometer()
+    {
+        _lastOdometer = Session.Odometer.ToString(CultureInfo.InvariantCulture);
+        if (_odometerDrafts.TryGetValue((_isTrailer, DraftTarget), out var draft) && draft.Text != _lastOdometer)
+            SetOdometerInput(draft.Text, draft.Base);
+        else SetOdometerInput(_lastOdometer, _lastOdometer);
     }
     private IReadOnlyList<VehicleDemoField> CreateFields(string[] names) =>
         names.Select(name => new VehicleDemoField(name, _text.Get("vehicleDemo.field." + name))).ToArray();
