@@ -50,6 +50,12 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(0x3f000000u, block.Float32Fields["fuel"].RawBits);
         Assert.Equal(0.5f, block.Float32Fields["fuel"].Value);
         Assert.Equal(new uint[] { 0x3f000000, 0x3fa00000, 0x80000000 }, block.Float32ArrayFields["wear"].Select(value => value.RawBits));
+        Assert.Equal(new[] { int.MinValue, int.MaxValue }, block.Int32ArrayFields["signed_values"]);
+        Assert.Equal(new uint[] { 0, uint.MaxValue, uint.MaxValue - 1 }, block.UInt32ArrayFields["unsigned_values"].Select(value => value.Raw));
+        Assert.True(block.UInt32ArrayFields["unsigned_values"][1].IsLegacyNil);
+        Assert.Equal(new[] { long.MinValue, long.MaxValue }, block.Int64ArrayFields["long_values"]);
+        Assert.True(block.UInt64ArrayFields["wide_values"][1].LegacyRendersNil);
+        Assert.Equal(0xffffffff00000001ul, block.UInt64ArrayFields["wide_values"][1].Raw);
         Assert.Equal(before, input);
     }
 
@@ -77,6 +83,15 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(floatArrayCount: uint.MaxValue)).Error);
         Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(floatArrayCount: 4096)).Error);
         Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(floatBits: []))).Float32ArrayFields["wear"]);
+    }
+
+    [Fact]
+    public void IntegerArraysRejectExcessiveOrTruncatedLengths()
+    {
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(integerArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(integerArrayCount: uint.MaxValue)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(integerArrayCount: 4096)).Error);
+        Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(integerArrayCount: 0))).Int32ArrayFields["signed_values"]);
     }
 
     [Fact]
@@ -138,7 +153,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -165,6 +180,11 @@ public sealed class ExperimentalBinarySiiReaderTests
             uint[] floats = floatBits ?? [0x3f000000, 0x3fa00000, 0x80000000];
             writer.Write(floatArrayCount ?? (uint)floats.Length);
             if (floatArrayCount is null) foreach (uint bits in floats) writer.Write(bits);
+            writer.Write(integerArrayCount ?? 2);
+            if (integerArrayCount is null) { writer.Write(int.MinValue); writer.Write(int.MaxValue); }
+            writer.Write((uint)3); writer.Write(0u); writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1);
+            writer.Write((uint)2); writer.Write(long.MinValue); writer.Write(long.MaxValue);
+            writer.Write((uint)3); writer.Write(0ul); writer.Write(0xffffffff00000001ul); writer.Write(9876543210ul);
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -186,6 +206,10 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x3c); Name("refs");
         writer.Write((uint)0x05); Name("fuel");
         writer.Write((uint)0x06); Name("wear");
+        writer.Write((uint)0x26); Name("signed_values");
+        writer.Write((uint)0x28); Name("unsigned_values");
+        writer.Write((uint)0x32); Name("long_values");
+        writer.Write((uint)0x34); Name("wide_values");
         writer.Write((uint)0);
         Data();
         if (duplicateBlock) Data();

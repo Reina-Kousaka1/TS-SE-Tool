@@ -46,7 +46,7 @@ public static class ExperimentalBinarySiiReader
                 {
                     uint type = cursor.UInt32();
                     if (type == 0) break;
-                    if (type is not (0x01 or 0x05 or 0x06 or 0x25 or 0x27 or 0x31 or 0x33 or 0x39 or 0x3a or 0x3b or 0x3c or 0x3d)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    if (type is not (0x01 or 0x05 or 0x06 or 0x25 or 0x26 or 0x27 or 0x28 or 0x31 or 0x32 or 0x33 or 0x34 or 0x39 or 0x3a or 0x3b or 0x3c or 0x3d)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     if (fields.Count >= MaximumFieldsPerStructure) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                     string field = cursor.Name();
                     if (!fieldNames.Add(field)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
@@ -70,6 +70,10 @@ public static class ExperimentalBinarySiiReader
                 var referenceArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryReference>>(StringComparer.Ordinal);
                 var floats = new Dictionary<string, ExperimentalBinaryFloat32>(StringComparer.Ordinal);
                 var floatArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryFloat32>>(StringComparer.Ordinal);
+                var intArrays = new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal);
+                var uintArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(StringComparer.Ordinal);
+                var longArrays = new Dictionary<string, IReadOnlyList<long>>(StringComparer.Ordinal);
+                var ulongArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(StringComparer.Ordinal);
                 foreach (Field field in structure.Fields)
                 {
                     switch (field.Type)
@@ -81,6 +85,10 @@ public static class ExperimentalBinarySiiReader
                         case 0x01: stringValues.Add(field.Name, cursor.Text()); break;
                         case 0x05: floats.Add(field.Name, new ExperimentalBinaryFloat32(cursor.UInt32())); break;
                         case 0x06: floatArrays.Add(field.Name, cursor.FloatArray()); break;
+                        case 0x26: intArrays.Add(field.Name, cursor.Int32Array()); break;
+                        case 0x28: uintArrays.Add(field.Name, cursor.UInt32Array()); break;
+                        case 0x32: longArrays.Add(field.Name, cursor.Int64Array()); break;
+                        case 0x34: ulongArrays.Add(field.Name, cursor.UInt64Array()); break;
                         case 0x39 or 0x3b or 0x3d: references.Add(field.Name, cursor.Reference(field.Type)); break;
                         case 0x3a or 0x3c: referenceArrays.Add(field.Name, cursor.ReferenceArray(field.Type)); break;
                         default: throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
@@ -95,7 +103,11 @@ public static class ExperimentalBinarySiiReader
                     ReferenceFields = new ReadOnlyDictionary<string, ExperimentalBinaryReference>(references),
                     ReferenceArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryReference>>(referenceArrays),
                     Float32Fields = new ReadOnlyDictionary<string, ExperimentalBinaryFloat32>(floats),
-                    Float32ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32>>(floatArrays)
+                    Float32ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32>>(floatArrays),
+                    Int32ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<int>>(intArrays),
+                    UInt32ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(uintArrays),
+                    Int64ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<long>>(longArrays),
+                    UInt64ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(ulongArrays)
                 });
             }
         }
@@ -142,12 +154,41 @@ public static class ExperimentalBinarySiiReader
         }
         public IReadOnlyList<ExperimentalBinaryFloat32> FloatArray()
         {
+            int count = FixedArrayCount(4);
+            var values = new List<ExperimentalBinaryFloat32>(count);
+            for (int i = 0; i < count; i++) values.Add(new ExperimentalBinaryFloat32(UInt32()));
+            return values.AsReadOnly();
+        }
+        public IReadOnlyList<int> Int32Array()
+        {
+            int count = FixedArrayCount(4); var result = new List<int>(count);
+            for (int i = 0; i < count; i++) result.Add(Int32());
+            return result.AsReadOnly();
+        }
+        public IReadOnlyList<ExperimentalBinaryUInt32> UInt32Array()
+        {
+            int count = FixedArrayCount(4); var result = new List<ExperimentalBinaryUInt32>(count);
+            for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryUInt32(UInt32()));
+            return result.AsReadOnly();
+        }
+        public IReadOnlyList<long> Int64Array()
+        {
+            int count = FixedArrayCount(8); var result = new List<long>(count);
+            for (int i = 0; i < count; i++) result.Add(Int64());
+            return result.AsReadOnly();
+        }
+        public IReadOnlyList<ExperimentalBinaryUInt64> UInt64Array()
+        {
+            int count = FixedArrayCount(8); var result = new List<ExperimentalBinaryUInt64>(count);
+            for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryUInt64(UInt64()));
+            return result.AsReadOnly();
+        }
+        private int FixedArrayCount(int elementSize)
+        {
             uint count = UInt32();
             if (count > MaximumArrayItems) throw Error(ExperimentalBinarySiiError.LimitExceeded);
-            if ((long)count * 4 > _input.Length - _position) throw Error(ExperimentalBinarySiiError.Truncated);
-            var values = new List<ExperimentalBinaryFloat32>((int)count);
-            for (uint i = 0; i < count; i++) values.Add(new ExperimentalBinaryFloat32(UInt32()));
-            return values.AsReadOnly();
+            if ((long)count * elementSize > _input.Length - _position) throw Error(ExperimentalBinarySiiError.Truncated);
+            return (int)count;
         }
         public string Text()
         {
@@ -179,6 +220,10 @@ public sealed record ExperimentalBinaryBlock(string Type, ulong NamelessId, IRea
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryReference>> ReferenceArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryReference>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryReference>>());
     public IReadOnlyDictionary<string, ExperimentalBinaryFloat32> Float32Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryFloat32>(new Dictionary<string, ExperimentalBinaryFloat32>());
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32>> Float32ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryFloat32>>());
+    public IReadOnlyDictionary<string, IReadOnlyList<int>> Int32ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<int>>(new Dictionary<string, IReadOnlyList<int>>());
+    public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>> UInt32ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>());
+    public IReadOnlyDictionary<string, IReadOnlyList<long>> Int64ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<long>>(new Dictionary<string, IReadOnlyList<long>>());
+    public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>> UInt64ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>());
 }
 /// <summary>Bit-preserving IEEE-754 view; non-finite values are not declared valid game values.</summary>
 public readonly record struct ExperimentalBinaryFloat32(uint RawBits)

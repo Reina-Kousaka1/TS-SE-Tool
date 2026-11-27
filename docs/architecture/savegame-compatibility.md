@@ -241,8 +241,8 @@ It returns typed Int32, UInt32, Int64, UInt64, Float32 and strict UTF-8 string v
 its end marker, is valid. Duplicate structures, field names and nameless IDs,
 unknown structure references, unsupported types or identifiers, trailing data,
 and every truncated prefix fail without a partial result. Its synthetic fixture
-uses the same independently constructed structure and value as the native x86
-probe; each test validates its own result, without claiming complete decoder
+uses an overlapping independently constructed structure and values with the
+native x86 probe; each test validates its own result, without claiming complete decoder
 equivalence. Unsupported data is rejected rather than discarded. No binary
 reader is registered for real saves, no profile access is enabled, and no
 roundtrip or game compatibility is claimed.
@@ -287,6 +287,23 @@ The array limit is 4,096 entries, checked before allocation. Finite synthetic
 values and negative zero are compared with the bundled x86 decoder; NaN and
 infinity bit-preservation tests exercise only the managed reader. No semantic
 game validation, binary writing or real-save support follows from these tests.
+
+The experimental reader also recognizes bounded arrays of historical Int32,
+UInt32, Int64 and UInt64 types. Unsigned array entries preserve raw bits and
+expose the same legacy nil-rendering distinction as the corresponding scalars.
+On fixed synthetic inputs the bundled x86 decoder agreed for Int32, UInt32 and
+UInt64 array examples. A separate synthetic Int64-array example returned the
+generic native error `-1` during its size query, both for integer boundary
+values and for small values; the cause is not established. Int64-array support
+therefore has managed synthetic tests only and remains unconfirmed against the
+native decoder or game data. All numeric arrays are bounded to 4,096 entries
+and reject truncation before allocating their result.
+
+Array investigation self-review (not independent): isolated fixture variants
+separated each array type while retaining the same existing synthetic fields;
+only the Int64-array variant produced this observed error. No conclusion is
+drawn about the native root cause or compatibility of real files. No write path
+or game adapter is enabled.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
