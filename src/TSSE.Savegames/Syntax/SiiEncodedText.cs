@@ -78,8 +78,14 @@ public sealed class SiiEncodedText
     }
 
     public byte[] ToBytes()
+        => Encode(Syntax);
+
+    internal byte[] Encode(SiiSyntaxDocument syntax)
     {
-        string text = Syntax.ToText();
+        ArgumentNullException.ThrowIfNull(syntax);
+        string text = syntax.ToText();
+        if (text.Contains('\0'))
+            throw new InvalidDataException("NUL characters are not supported in SII text.");
         int payloadLength;
         try
         {

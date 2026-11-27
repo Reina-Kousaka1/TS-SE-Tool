@@ -44,10 +44,19 @@ UTF-16 LE/BE, retaining the original BOM and encoding. It checks syntax,
 encoding and byte limits before returning an edited value. It has no file I/O
 and is not a decoder for compressed or encrypted game saves.
 
+`SiiEncodedEditSession` combines this wrapper with the bounded SII edit
+history. Every candidate is encoded and checked before history changes;
+undo/redo returns the corresponding bytes with the original BOM and encoding.
+It operates only on caller-supplied in-memory bytes and remains disconnected
+from real save scanning and file writes.
+
 Encoding self-review (not independent): malformed bytes and unpaired
 surrogates are rejected rather than replaced; unchanged synthetic inputs are
 tested for byte equality. BOM-less UTF-16, UTF-32, arbitrary legacy encodings
 and actual game-save container compatibility remain unsupported or unverified.
+Encoded-session self-review (not independent): candidate validation runs before
+the underlying history is changed; tests cover rejected batches, redo
+preservation, unknown Unicode fields and BOM-preserving undo/redo.
 
 `SiiEditSession` stages explicit field replacements against an already parsed
 syntax document and groups each batch into one undo entry. A failed replacement,

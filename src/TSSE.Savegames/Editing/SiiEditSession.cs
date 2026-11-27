@@ -13,18 +13,27 @@ public sealed class SiiEditSession
     public const int MaximumHistoryStates = 16;
     private readonly EditHistory<SiiSyntaxDocument> _history;
     private readonly SiiSyntaxDocument _original;
+    private readonly Action<SiiSyntaxDocument>? _validateCandidate;
     private readonly HashSet<(string Type, string? Id, string Field)> _knownTargets = new();
 
     public SiiEditSession(SiiSyntaxDocument initial)
+        : this(initial, null)
+    {
+    }
+
+    internal SiiEditSession(SiiSyntaxDocument initial, Action<SiiSyntaxDocument>? validateCandidate)
     {
         ArgumentNullException.ThrowIfNull(initial);
         if (initial.ToText().Length > MaximumPreviewCharacters)
             throw new ArgumentException("The document exceeds the in-memory preview limit.", nameof(initial));
         _original = initial;
+        _validateCandidate = validateCandidate;
+        _validateCandidate?.Invoke(initial);
         _history = new EditHistory<SiiSyntaxDocument>(initial, static doc => doc.ToText().Length <= MaximumPreviewCharacters, MaximumHistoryStates);
     }
 
     public string PreviewText => _history.Current.ToText();
+    internal SiiSyntaxDocument CurrentSyntax => _history.Current;
     public bool IsDirty => _history.IsDirty;
     public bool CanUndo => _history.CanUndo;
     public bool CanRedo => _history.CanRedo;
@@ -72,6 +81,7 @@ public sealed class SiiEditSession
 
         if (!string.Equals(candidate.ToText(), _history.Current.ToText(), StringComparison.Ordinal))
         {
+            _validateCandidate?.Invoke(candidate);
             if (!_history.TryApply(candidate))
                 throw new InvalidOperationException("The document exceeds the in-memory preview limit.");
             _knownTargets.UnionWith(targets);
