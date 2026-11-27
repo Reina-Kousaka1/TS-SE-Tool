@@ -73,6 +73,14 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+The syntax parser does not classify inline comments. As a conservative loss
+prevention measure, replacing a field is refused when its old or new value has
+a whitespace-separated `#` or `//` marker outside quoted text. Quoted markers
+remain editable. This does not claim that every such marker is a valid SII
+comment or that every comment form is recognized; real-format verification is
+still required. Architecture self-review (not independent): failed batched
+edits leave the original preview and redo history untouched.
+
 Replacement values reject NUL and isolated UTF-16 surrogates before editing.
 Valid supplementary characters remain available. This does not validate game
 text encodings or change how existing unknown fields are preserved. Rejection

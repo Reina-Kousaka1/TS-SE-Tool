@@ -6,6 +6,35 @@ namespace TSSE.Savegames.Tests;
 
 public sealed class SiiEditSessionTests
 {
+    [Theory]
+    [InlineData("1 # note")]
+    [InlineData("1 // note")]
+    [InlineData("\"quoted \\\" text\" # note")]
+    public void PossibleInlineCommentsCannotBeSilentlyDiscarded(string oldValue)
+    {
+        string input = "root {\n value: " + oldValue + "\n other: 0\n}\n";
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(input));
+        session.Apply([new("root", null, "other", "1")]);
+        Assert.True(session.Undo());
+        Assert.Throws<InvalidOperationException>(() => session.Apply([
+            new("root", null, "other", "2"), new("root", null, "value", "3")
+        ]));
+        Assert.Equal(input, session.PreviewText);
+        Assert.True(session.CanRedo);
+    }
+
+    [Fact]
+    public void QuotedCommentMarkersCanBeEditedButUnquotedMarkersCannotBeIntroduced()
+    {
+        const string input = "root {\n value: \"# //\"\n}\n";
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(input));
+        Assert.Throws<InvalidOperationException>(() => session.Apply([new("root", null, "value", "1 # note")]));
+        session.Apply([new("root", null, "value", "\"new # //\"")]);
+        Assert.Contains("\"new # //\"", session.PreviewText, StringComparison.Ordinal);
+        Assert.True(session.Undo());
+        Assert.Equal(input, session.PreviewText);
+    }
+
     [Fact]
     public void UnencodableReplacementRejectsWholeBatchAndPreservesRedo()
     {

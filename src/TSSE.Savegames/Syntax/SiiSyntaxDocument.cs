@@ -319,6 +319,8 @@ public sealed class SiiSyntaxDocument
             throw new InvalidOperationException("The requested field is missing or ambiguous.");
 
         SiiField fieldToChange = matchingFields[0];
+        if (HasPossibleInlineComment(fieldToChange.Value) || HasPossibleInlineComment(rawValue))
+            throw new InvalidOperationException("A possible inline comment cannot be safely edited.");
         int lineIndex = fieldToChange.LineNumber - 1;
         string originalLine = _lines[lineIndex].Text;
         int colonIndex = originalLine.IndexOf(':');
@@ -356,6 +358,28 @@ public sealed class SiiSyntaxDocument
     }
 
     public string ToText() => Render(_lines);
+
+    // Inline comments are not classified by this syntax parser. Refuse an edit
+    // if a comment-like marker outside a quoted string could be lost or added.
+    private static bool HasPossibleInlineComment(string value)
+    {
+        bool quoted = false, escaped = false;
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+            if (quoted)
+            {
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') quoted = false;
+                continue;
+            }
+            if (c == '"') { quoted = true; continue; }
+            if ((i == 0 || char.IsWhiteSpace(value[i - 1])) &&
+                (c == '#' || c == '/' && i + 1 < value.Length && value[i + 1] == '/')) return true;
+        }
+        return false;
+    }
 
     private static bool HasSameBlockLayout(IReadOnlyList<SiiBlock> left, IReadOnlyList<SiiBlock> right)
     {
