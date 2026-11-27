@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text;
 
 namespace TSSE.Savegames.Diagnostics;
@@ -23,7 +24,7 @@ public static class ExperimentalBinarySiiReader
         if (cursor.UInt32() != 2) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedVersion);
         var structures = new Dictionary<uint, Structure>();
         var blocks = new List<ExperimentalBinaryBlock>();
-        var ids = new HashSet<ulong>();
+        var ids = new HashSet<string>(StringComparer.Ordinal);
         while (!cursor.End)
         {
             uint kind = cursor.UInt32();
@@ -58,9 +59,18 @@ public static class ExperimentalBinarySiiReader
             {
                 if (blocks.Count >= MaximumBlocks) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                 if (!structures.TryGetValue(kind, out Structure? structure)) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
-                if (cursor.Byte() != 0xff) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedIdentifier);
-                ulong id = cursor.UInt64();
-                if (!ids.Add(id)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
+                ExperimentalBinaryReference rawId = cursor.Reference(0);
+                string identity;
+                ulong? nameless = null;
+                if (rawId.IsNamelessMarker)
+                {
+                    nameless = rawId.RawParts[0];
+                    identity = NamelessText(nameless.Value);
+                }
+                else if (rawId.IsNullMarker || !rawId.TryGetLegacyText(out string? named) || named is null)
+                    throw cursor.Error(ExperimentalBinarySiiError.UnsupportedIdentifier);
+                else identity = named;
+                if (!ids.Add(identity)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
                 var values = new Dictionary<string, int>(StringComparer.Ordinal);
                 var unsignedValues = new Dictionary<string, ExperimentalBinaryUInt32>(StringComparer.Ordinal);
                 var longValues = new Dictionary<string, long>(StringComparer.Ordinal);
@@ -94,8 +104,9 @@ public static class ExperimentalBinarySiiReader
                         default: throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     }
                 }
-                blocks.Add(new ExperimentalBinaryBlock(structure.Name, id, new ReadOnlyDictionary<string, int>(values))
+                blocks.Add(new ExperimentalBinaryBlock(structure.Name, nameless, new ReadOnlyDictionary<string, int>(values))
                 {
+                    Identifier = new ExperimentalBinaryBlockIdentifier(rawId.Marker, rawId.RawParts),
                     UInt32Fields = new ReadOnlyDictionary<string, ExperimentalBinaryUInt32>(unsignedValues),
                     Int64Fields = new ReadOnlyDictionary<string, long>(longValues),
                     UInt64Fields = new ReadOnlyDictionary<string, ExperimentalBinaryUInt64>(unsignedLongValues),
@@ -116,6 +127,16 @@ public static class ExperimentalBinarySiiReader
 
     private sealed record Field(string Name, uint Type);
     private sealed record Structure(string Name, IReadOnlyList<Field> Fields);
+
+    private static string NamelessText(ulong id)
+    {
+        string hex = id.ToString("x", CultureInfo.InvariantCulture);
+        int first = hex.Length % 4;
+        if (first == 0) first = 4;
+        var result = new StringBuilder("_nameless.").Append(hex.AsSpan(0, first));
+        for (int i = first; i < hex.Length; i += 4) result.Append('.').Append(hex.AsSpan(i, 4));
+        return result.ToString();
+    }
 
     private ref struct Cursor(ReadOnlySpan<byte> input)
     {
@@ -210,8 +231,10 @@ public static class ExperimentalBinarySiiReader
     }
 }
 
-public sealed record ExperimentalBinaryBlock(string Type, ulong NamelessId, IReadOnlyDictionary<string, int> Int32Fields)
+public sealed record ExperimentalBinaryBlock(string Type, ulong? NamelessId, IReadOnlyDictionary<string, int> Int32Fields)
 {
+    /// <summary>Original block marker and parts; null only for caller-constructed records.</summary>
+    public ExperimentalBinaryBlockIdentifier? Identifier { get; init; }
     public IReadOnlyDictionary<string, ExperimentalBinaryUInt32> UInt32Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryUInt32>(new Dictionary<string, ExperimentalBinaryUInt32>());
     public IReadOnlyDictionary<string, long> Int64Fields { get; init; } = new ReadOnlyDictionary<string, long>(new Dictionary<string, long>());
     public IReadOnlyDictionary<string, ExperimentalBinaryUInt64> UInt64Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryUInt64>(new Dictionary<string, ExperimentalBinaryUInt64>());
@@ -224,6 +247,12 @@ public sealed record ExperimentalBinaryBlock(string Type, ulong NamelessId, IRea
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>> UInt32ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>());
     public IReadOnlyDictionary<string, IReadOnlyList<long>> Int64ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<long>>(new Dictionary<string, IReadOnlyList<long>>());
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>> UInt64ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>());
+}
+/// <summary>Raw block identity; a legacy text match does not establish game semantics.</summary>
+public sealed record ExperimentalBinaryBlockIdentifier(byte Marker, IReadOnlyList<ulong> RawParts)
+{
+    public bool IsNameless => Marker == 0xff;
+    public bool TryGetLegacyText(out string? text) => new ExperimentalBinaryReference(0, Marker, RawParts).TryGetLegacyText(out text);
 }
 /// <summary>Bit-preserving IEEE-754 view; non-finite values are not declared valid game values.</summary>
 public readonly record struct ExperimentalBinaryFloat32(uint RawBits)

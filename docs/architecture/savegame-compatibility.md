@@ -227,7 +227,7 @@ completeness checks, real approved fixtures and separate security review.
 Managed binary-reader design self-review (not independent): the Windows-only
 legacy DLL cannot serve the other target platforms. A separate, read-only
 in-memory experiment is limited to the documented historical v2 structure,
-nameless IDs and a small set of integer and string fields. It will enforce input, block, field and name
+nameless and supported encoded IDs and a small set of integer and string fields. It will enforce input, block, field and name
 limits, reject unknown versions/types and trailing or incomplete data, and
 return no partial result. It will not be registered with any adapter, wired to
 profile scanning or the desktop, or provide a binary serializer. This narrow
@@ -272,8 +272,14 @@ fixture and the x86 decoder probe. An optional legacy-text interpretation fails
 for unrepresentable components and never resolves ownership or target validity.
 It masks the historically ignored high bit only for display; the raw bit remains
 available, so identical display text must not be used as a unique identity.
-Binary data-block IDs themselves remain limited to nameless IDs. The reader
-also accepts synthetic reference arrays of historical types `0x3a` and `0x3c`,
+Synthetic data-block IDs may be nameless or encoded; original marker and parts
+are retained. Null or unrepresentable encoded block IDs are rejected. The
+reader rejects duplicate legacy text identities, including collisions caused by
+the masked high bit or between an encoded name and a nameless rendering. This
+is a conservative ambiguity check, not a claim that the historical text form
+proves game identity. The bundled x86 decoder and managed reader both accept a
+constructed two-part named block, and managed tests cover collision and truncated
+input. Real saves remain unverified. The reader also accepts synthetic reference arrays of historical types `0x3a` and `0x3c`,
 retaining order, duplicates and each element's raw marker and parts. A count
 over 4,096 or truncated data fails before an array is returned. Empty and mixed
 arrays are covered by both the managed tests and the bundled x86 DLL probe;

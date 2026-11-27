@@ -14,6 +14,7 @@ public sealed class ExperimentalBinarySiiReaderTests
         var block = Assert.Single(ExperimentalBinarySiiReader.Read(input));
         Assert.Equal("synthetic", block.Type);
         Assert.Equal(0x1234ul, block.NamelessId);
+        Assert.True(block.Identifier!.IsNameless);
         Assert.Equal(42, block.Int32Fields["value"]);
         Assert.Equal(uint.MaxValue, block.UInt32Fields["xp"].Raw);
         Assert.True(block.UInt32Fields["xp"].IsLegacyNil);
@@ -57,6 +58,38 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.True(block.UInt64ArrayFields["wide_values"][1].LegacyRendersNil);
         Assert.Equal(0xffffffff00000001ul, block.UInt64ArrayFields["wide_values"][1].Raw);
         Assert.Equal(before, input);
+    }
+
+    [Fact]
+    public void NamedBlockIdentityPreservesRawPartsAndRejectsLegacyTextCollisions()
+    {
+        ulong[] named = [0x800000000000000bul, 12];
+        byte[] input = Fixture(namedBlockParts: named);
+        var block = Assert.Single(ExperimentalBinarySiiReader.Read(input));
+        Assert.Null(block.NamelessId);
+        var identifier = Assert.IsType<ExperimentalBinaryBlockIdentifier>(block.Identifier);
+        Assert.False(identifier.IsNameless);
+        Assert.Equal(named, identifier.RawParts);
+        Assert.True(identifier.TryGetLegacyText(out string? text));
+        Assert.Equal("a.b", text);
+        Assert.Equal(ExperimentalBinarySiiError.Ambiguous,
+            Reject(Fixture(duplicateBlock: true, namedBlockParts: [11, 12], secondNamedBlockParts: named)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Ambiguous,
+            Reject(Fixture(duplicateBlock: true, secondNamedBlockParts: [Encode("_nameless"), Encode("1234")])).Error);
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(namedBlockParts: [38])).Error);
+        for (int length = 0; length < input.Length; length++)
+        {
+            byte[] prefix = input[..length];
+            Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(prefix));
+        }
+    }
+
+    private static ulong Encode(string text)
+    {
+        const string alphabet = "0123456789abcdefghijklmnopqrstuvwxyz_";
+        ulong value = 0;
+        for (int i = text.Length - 1; i >= 0; i--) value = checked(value * 38 + (ulong)(alphabet.IndexOf(text[i]) + 1));
+        return value;
     }
 
     [Fact]
@@ -130,7 +163,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     {
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedVersion, Reject(Fixture(version: 3)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x3f)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(idKind: 1)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(idKind: 0)).Error);
         Assert.Equal(ExperimentalBinarySiiError.TrailingData, Reject([.. Fixture(), 0]).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(new byte[ExperimentalBinarySiiReader.MaximumBytes + 1]).Error);
     }
@@ -153,14 +186,17 @@ public sealed class ExperimentalBinarySiiReaderTests
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
         void Name(string value) { byte[] bytes = Encoding.ASCII.GetBytes(value); writer.Write((uint)bytes.Length); writer.Write(bytes); }
-        void Data()
+        void Data(ulong[]? namedParts)
         {
-            writer.Write((uint)1); writer.Write(idKind); writer.Write(0x1234ul); writer.Write(42);
+            writer.Write((uint)1);
+            if (namedParts is null) { writer.Write(idKind); writer.Write(0x1234ul); }
+            else { writer.Write((byte)namedParts.Length); foreach (ulong part in namedParts) writer.Write(part); }
+            writer.Write(42);
             writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1); writer.Write(long.MinValue);
             writer.Write(ulong.MaxValue); writer.Write(0xffffffff00000001ul); writer.Write(0x00000001fffffffful); writer.Write(9876543210ul);
             byte[] content = textBytes ?? Encoding.UTF8.GetBytes("route demo");
@@ -211,8 +247,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x32); Name("long_values");
         writer.Write((uint)0x34); Name("wide_values");
         writer.Write((uint)0);
-        Data();
-        if (duplicateBlock) Data();
+        Data(namedBlockParts);
+        if (duplicateBlock) Data(secondNamedBlockParts ?? namedBlockParts);
         writer.Write((uint)0); writer.Write((byte)0);
         return stream.ToArray();
     }

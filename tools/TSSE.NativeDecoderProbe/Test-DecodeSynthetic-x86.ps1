@@ -56,7 +56,7 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0x34); WriteString(writer, "wide_values");
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
-            writer.Write((byte)0xff); writer.Write((ulong)0x1234); // nameless ID
+            writer.Write((byte)2); writer.Write(0x800000000000000bul); writer.Write(12ul); // synthetic named ID
             writer.Write((int)42);
             writer.Write(uint.MaxValue);
             writer.Write(uint.MaxValue - 1);
@@ -130,7 +130,7 @@ public static class SyntheticNativeDecodeProbe {
 '@
 
 $decoded = [SyntheticNativeDecodeProbe]::Check($dllPath)
-if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synthetic\s*:' -or $decoded -notmatch '(?m)^\s*value:\s*42\s*$' -or
+if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synthetic\s*:\s*a\.b\s*\{' -or $decoded -notmatch '(?m)^\s*value:\s*42\s*$' -or
     $decoded -notmatch '(?m)^\s*xp:\s*nil\s*$' -or $decoded -notmatch '(?m)^\s*xp_value:\s*4294967294\s*$' -or
     $decoded -notmatch '(?m)^\s*balance:\s*-9223372036854775808\s*$' -or
     $decoded -notmatch '(?m)^\s*wide_nil:\s*nil\s*$' -or $decoded -notmatch '(?m)^\s*wide_high:\s*nil\s*$' -or
