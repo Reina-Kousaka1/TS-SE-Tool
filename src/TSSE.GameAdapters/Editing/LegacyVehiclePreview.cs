@@ -104,7 +104,12 @@ public sealed class LegacyVehiclePreview
     }
 
     /// <summary>Resets body/chassis wear across a validated synthetic trailer chain.</summary>
-    public void RepairTrailerChainBody()
+    public void RepairTrailerChainBody() => RepairTrailerChain(includeCargoAndWheels: false);
+
+    /// <summary>Validates and resets synthetic body, chassis, cargo and wheel wear as one edit.</summary>
+    public void RepairTrailerChainAll() => RepairTrailerChain(includeCargoAndWheels: true);
+
+    private void RepairTrailerChain(bool includeCargoAndWheels)
     {
         if (_blockType != "trailer")
             throw new InvalidOperationException("Only trailer chains are supported.");
@@ -120,13 +125,17 @@ public sealed class LegacyVehiclePreview
             if (blocks.Length != 1)
                 throw new InvalidOperationException("A trailer in the chain is missing or ambiguous.");
             SiiBlock block = blocks[0];
-            foreach (string name in new[] { "trailer_body_wear", "chassis_wear" })
+            string[] names = includeCargoAndWheels
+                ? ["trailer_body_wear", "chassis_wear", "cargo_damage"]
+                : ["trailer_body_wear", "chassis_wear"];
+            foreach (string name in names)
             {
                 SiiField[] values = block.Fields.Where(field => field.Name == name).ToArray();
                 if (values.Length != 1 || !TryParseRatio(values[0].Value, out float value))
                     throw new InvalidOperationException("A trailer wear value is missing, ambiguous, or unsupported.");
                 if (value != 0) edits.Add(new("trailer", current, name, "0"));
             }
+            if (includeCargoAndWheels) CollectWheelRepairs(block, "trailer", current, edits);
             SiiField[] links = block.Fields.Where(field => field.Name == "slave_trailer").ToArray();
             if (links.Length != 1 || string.IsNullOrWhiteSpace(links[0].Value))
                 throw new InvalidOperationException("A trailer link is missing or ambiguous.");
@@ -142,6 +151,13 @@ public sealed class LegacyVehiclePreview
     {
         SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
         SiiBlock block = FindBlock(document);
+        var edits = new List<SiiFieldEdit>();
+        CollectWheelRepairs(block, _blockType, _blockId, edits);
+        _session.Apply(edits);
+    }
+
+    private static void CollectWheelRepairs(SiiBlock block, string type, string id, List<SiiFieldEdit> edits)
+    {
         SiiField[] countFields = block.Fields.Where(field => field.Name == "wheels_wear").ToArray();
         if (countFields.Length != 1 ||
             !int.TryParse(countFields[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out int count) ||
@@ -151,16 +167,14 @@ public sealed class LegacyVehiclePreview
         SiiField[] elements = block.Fields.Where(field => field.Name.StartsWith("wheels_wear[", StringComparison.Ordinal)).ToArray();
         if (elements.Length != count)
             throw new InvalidOperationException("The wheel array is incomplete or ambiguous.");
-        var edits = new List<SiiFieldEdit>();
         for (int i = 0; i < count; i++)
         {
             string name = "wheels_wear[" + i.ToString(CultureInfo.InvariantCulture) + "]";
             SiiField[] matching = elements.Where(field => field.Name == name).ToArray();
             if (matching.Length != 1 || !TryParseRatio(matching[0].Value, out float value))
                 throw new InvalidOperationException("A wheel value is missing, ambiguous, or unsupported.");
-            if (value != 0) edits.Add(new(_blockType, _blockId, name, "0"));
+            if (value != 0) edits.Add(new(type, id, name, "0"));
         }
-        _session.Apply(edits);
     }
 
     public bool Undo() => _session.Undo();

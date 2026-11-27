@@ -47,6 +47,8 @@
   "editor.noChanges": "No changes.",
   "jobDemo.distance": "Planned distance in km (nonnegative integer)",
   "vehicleDemo.repairChain": "Reset body wear across demo trailer chain",
+  "vehicleDemo.repairChainAll": "Reset all listed demo trailer damage",
+  "vehicleDemo.repairChainAllDetail": "Resets cargo, body, chassis and existing wheel values across the selected synthetic chain as one undoable change.",
   "vehicleDemo.trailerSelection": "Selected synthetic trailer (chain operations start here)",
   "vehicleDemo.truckSelection": "Selected synthetic truck",
   "vehicleDemo.repairWheels": "Reset wheel wear",

@@ -6,6 +6,35 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyVehiclePreviewTests
 {
+    [Fact]
+    public void FullChainRepairIsAtomicPreservesWheelArraysAndHasOneUndo()
+    {
+        const string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.4\n wheels_wear: 1\n wheels_wear[0]: &3f000000\n slave_trailer: b\n mod: \"保持\"\n}\ntrailer : b {\n trailer_body_wear: 0.5\n chassis_wear: 0.6\n cargo_damage: 0.7\n wheels_wear: 1\n wheels_wear[0]: 0.8\n slave_trailer: null\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "a");
+        preview.RepairTrailerChainAll();
+        Assert.Equal(8, preview.Changes.Count);
+        Assert.Contains("wheels_wear: 1", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod: \"保持\"", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("slave_trailer: b", preview.PreviewText, StringComparison.Ordinal);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+        Assert.True(preview.Redo());
+        Assert.Equal(8, preview.Changes.Count);
+    }
+
+    [Theory]
+    [InlineData("wheels_wear[0]: bad")]
+    [InlineData("wheels_wear[1]: 0.2")]
+    [InlineData("wheels_wear[0]: 0.2\n wheels_wear[0]: 0.3")]
+    public void InvalidLaterChainWheelPreventsAnyRepair(string wheelField)
+    {
+        string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.4\n wheels_wear: 1\n wheels_wear[0]: 0.5\n slave_trailer: b\n}\ntrailer : b {\n trailer_body_wear: 0.5\n chassis_wear: 0.6\n cargo_damage: 0.7\n wheels_wear: 1\n " + wheelField + "\n slave_trailer: null\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "a");
+        Assert.Throws<InvalidOperationException>(() => preview.RepairTrailerChainAll());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
     [Theory]
     [InlineData("1.00000001")]
     [InlineData("1.00000000000000001")]

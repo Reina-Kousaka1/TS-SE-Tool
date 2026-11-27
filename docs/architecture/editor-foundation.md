@@ -265,6 +265,12 @@ Chain self-review (not independent): traversal and validation complete before
 the existing atomic syntax session is updated. The demo does not establish
 compatibility with real trailer relationships or write any files.
 
+The synthetic chain demo also exposes a full repair action for body, chassis,
+cargo and existing wheel values. Every link and field is validated before one
+atomic history entry; wheel counts and array entries are retained instead of
+being removed as in the original application. The action starts at the chosen
+demo trailer. It does not validate game-level cargo or trailer relationships.
+
 ## Experimental active job mapping
 
 `LegacyJobPreview` follows an explicitly selected synthetic player block's

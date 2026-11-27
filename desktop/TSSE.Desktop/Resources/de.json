@@ -47,6 +47,8 @@
   "editor.noChanges": "Keine Änderungen.",
   "jobDemo.distance": "Geplante Strecke in km (nichtnegative Ganzzahl)",
   "vehicleDemo.repairChain": "Aufbauverschleiß der Demo-Trailerkette zurücksetzen",
+  "vehicleDemo.repairChainAll": "Alle aufgeführten Demo-Anhängerschäden zurücksetzen",
+  "vehicleDemo.repairChainAllDetail": "Setzt Fracht-, Aufbau-, Fahrgestell- und vorhandene Radwerte der ausgewählten synthetischen Kette gemeinsam zurück; die Änderung ist rückgängig machbar.",
   "vehicleDemo.trailerSelection": "Ausgewählter synthetischer Anhänger (Kettenaktionen beginnen hier)",
   "vehicleDemo.truckSelection": "Ausgewählter synthetischer Truck",
   "vehicleDemo.repairWheels": "Radverschleiß zurücksetzen",

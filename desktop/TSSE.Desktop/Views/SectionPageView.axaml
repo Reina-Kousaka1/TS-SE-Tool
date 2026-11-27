@@ -134,6 +134,10 @@
             <Button IsVisible="{Binding CanRefuel}" Content="{Binding RefuelLabel}" Command="{Binding ActionCommand}" CommandParameter="refuel" />
           </StackPanel>
           <Button IsVisible="{Binding CanRepairChain}" Content="{Binding ChainRepairLabel}" Command="{Binding ActionCommand}" CommandParameter="chain" />
+          <StackPanel IsVisible="{Binding CanRepairChain}" Spacing="4">
+            <TextBlock Text="{Binding ChainRepairAllDetail}" TextWrapping="Wrap" />
+            <Button Content="{Binding ChainRepairAllLabel}" Command="{Binding ActionCommand}" CommandParameter="chain-all" />
+          </StackPanel>
           <TextBlock Text="{Binding AccessoryHeading}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding AccessoryDescription}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding AccessorySummary}" TextWrapping="Wrap" />

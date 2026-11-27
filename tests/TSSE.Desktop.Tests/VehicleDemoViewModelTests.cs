@@ -8,6 +8,33 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void FullTrailerChainRepairIsVisibleAndUndoableAsOneDemoChange()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.SelectCategory("Trailers");
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("chain-all");
+        Assert.DoesNotContain("cargo_damage: 0.25", demo.PreviewText, StringComparison.Ordinal);
+        Assert.DoesNotContain("wheels_wear[0]: 0.6", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"second\"", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.DoesNotContain("cargo_damage: 0.25", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FullRepairStartsAtSelectedTrailer()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.SelectCategory("Trailers");
+        demo.SelectedTrailer = "demo.trailer2";
+        demo.ActionCommand.Execute("chain-all");
+        Assert.Contains("cargo_damage: 0.1", demo.PreviewText, StringComparison.Ordinal);
+        Assert.DoesNotContain("cargo_damage: 0.25", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("trailer_body_wear: 0.2", demo.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void TruckSelectionIsolatesRatioAndOdometerDraftsAndSharesHistory()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
