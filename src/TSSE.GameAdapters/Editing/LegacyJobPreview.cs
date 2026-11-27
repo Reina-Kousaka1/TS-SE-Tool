@@ -11,8 +11,14 @@ public sealed class LegacyJobPreview
     private readonly string? _jobId;
 
     public LegacyJobPreview(SiiSyntaxDocument document, string playerId)
+        : this(new SiiEditSession(document), playerId)
     {
-        ArgumentNullException.ThrowIfNull(document);
+    }
+
+    internal LegacyJobPreview(SiiEditSession session, string playerId)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(session.PreviewText);
         ArgumentException.ThrowIfNullOrWhiteSpace(playerId);
         if (document.OpaqueLines.Count != 0)
             throw new InvalidOperationException("Unclassified syntax cannot be safely edited.");
@@ -26,7 +32,7 @@ public sealed class LegacyJobPreview
             _ = Value(job, "cargo");
             _ = ReadUnits(job);
         }
-        _session = new SiiEditSession(document);
+        _session = session;
     }
 
     public bool HasActiveJob => _jobId is not null;

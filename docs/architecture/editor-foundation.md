@@ -39,6 +39,20 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+`LegacySyntheticWorkspace` combines explicitly selected profile, truck,
+trailer and job blocks in one in-memory syntax session. Changes in different
+domains share a single ordered undo/redo history and change list. It does not
+discover profiles, resolve ownership automatically, or access files. Its
+constructor requires the relevant synthetic block identifiers; no game
+compatibility is implied. Existing UI demos still use separate sessions.
+
+Workspace self-review (not independent): only typed preview operations can
+modify the shared session; those operations do not change the profile or job
+references captured during construction. Shared undo and redo apply to the
+whole document, rather than just the selected domain. Unknown fields remain
+in the original syntax. Real-save ownership and cross-field validation remain
+open before any production integration.
+
 An independent plain-text byte wrapper supports strict UTF-8 and BOM-marked
 UTF-16 LE/BE, retaining the original BOM and encoding. It checks syntax,
 encoding and byte limits before returning an edited value. It has no file I/O

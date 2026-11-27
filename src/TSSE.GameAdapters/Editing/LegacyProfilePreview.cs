@@ -17,8 +17,14 @@ public sealed class LegacyProfilePreview
     private readonly string _bankId;
 
     public LegacyProfilePreview(SiiSyntaxDocument document, string economyId)
+        : this(new SiiEditSession(document), economyId)
     {
-        ArgumentNullException.ThrowIfNull(document);
+    }
+
+    internal LegacyProfilePreview(SiiEditSession session, string economyId)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(session.PreviewText);
         ArgumentException.ThrowIfNullOrWhiteSpace(economyId);
         if (document.OpaqueLines.Count != 0)
             throw new InvalidOperationException("Unclassified syntax cannot be safely edited.");
@@ -27,7 +33,7 @@ public sealed class LegacyProfilePreview
         _bankId = FindValue(economy, "bank");
         if (string.IsNullOrWhiteSpace(_bankId) || _bankId == "nil")
             throw new InvalidOperationException("The economy bank reference is missing.");
-        _session = new SiiEditSession(document);
+        _session = session;
         _ = Current;
     }
 

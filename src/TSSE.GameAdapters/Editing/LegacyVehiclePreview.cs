@@ -19,8 +19,14 @@ public sealed class LegacyVehiclePreview
     private readonly string _blockId;
 
     public LegacyVehiclePreview(SiiSyntaxDocument document, LegacyVehicleKind kind, string blockId)
+        : this(new SiiEditSession(document), kind, blockId)
     {
-        ArgumentNullException.ThrowIfNull(document);
+    }
+
+    internal LegacyVehiclePreview(SiiEditSession session, LegacyVehicleKind kind, string blockId)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(session.PreviewText);
         ArgumentException.ThrowIfNullOrWhiteSpace(blockId);
         if (document.OpaqueLines.Count != 0)
             throw new InvalidOperationException("Unclassified syntax cannot be safely edited.");
@@ -31,7 +37,7 @@ public sealed class LegacyVehiclePreview
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
         _blockId = blockId;
-        _session = new SiiEditSession(document);
+        _session = session;
         _ = FindBlock(document);
     }
 
