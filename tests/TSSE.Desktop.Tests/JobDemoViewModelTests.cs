@@ -8,6 +8,20 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void RouteSwapIsVisibleAndUndoableWithoutChangingCargo()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        Assert.Contains("Source: company.demo_source → target: company.demo_target", demo.Route, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("swap-route");
+        Assert.Contains("Source: company.demo_target → target: company.demo_source", demo.Route, StringComparison.Ordinal);
+        Assert.Equal("cargo.synthetic", demo.Cargo);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("Source: company.demo_target", demo.Route, StringComparison.Ordinal);
+    }
+    [Fact]
     public void ApplyBothIsOneUndoableEditAndRejectsInvalidDraft()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

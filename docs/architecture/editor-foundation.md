@@ -310,6 +310,11 @@ entry. Both existing values and both input values must be valid; stale drafts
 block the combined action. Undo restores both fields together.
 A missing, invalid or ambiguous
 target fails closed. `null` and `nil` mean no active job in this preview.
+The synthetic job page displays and can swap the existing `source_company` and
+`target_company` raw values in one undoable edit. Missing, duplicate or empty
+references fail closed; equal references produce no history entry. The legacy
+`Player_Job` model declares both fields. No geographic, payment, placement or
+cargo relationships are recomputed or validated by this synthetic operation.
 The operation does not update other job, cargo or trailer data, and therefore
 does not establish game-level consistency or compatibility. The Jobs page
 connects it to an embedded synthetic example; it has no file operations.

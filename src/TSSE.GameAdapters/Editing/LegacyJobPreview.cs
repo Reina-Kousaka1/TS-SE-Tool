@@ -44,6 +44,21 @@ public sealed class LegacyJobPreview
     public string CargoReference => Value(CurrentJob(), "cargo");
     public int UnitsCount => ReadUnits(CurrentJob());
     public int PlannedDistanceKm => ReadNonnegativeInt(CurrentJob(), "planned_distance_km");
+    public string SourceCompany => RouteValue(CurrentJob(), "source_company");
+    public string TargetCompany => RouteValue(CurrentJob(), "target_company");
+
+    /// <summary>Swaps two existing synthetic raw references without inventing route semantics.</summary>
+    public void SwapRoute()
+    {
+        SiiBlock job = CurrentJob();
+        string source = RouteValue(job, "source_company");
+        string target = RouteValue(job, "target_company");
+        if (source == target) return;
+        _session.Apply([
+            new("player_job", _jobId, "source_company", target),
+            new("player_job", _jobId, "target_company", source)
+        ]);
+    }
 
     public void SetUnitsCount(int count)
     {
@@ -85,6 +100,14 @@ public sealed class LegacyJobPreview
 
     private static int ReadUnits(SiiBlock job)
         => ReadNonnegativeInt(job, "units_count");
+
+    private static string RouteValue(SiiBlock job, string name)
+    {
+        string value = Value(job, name);
+        if (string.IsNullOrWhiteSpace(value) || value is "nil" or "null")
+            throw new InvalidOperationException("The route reference is empty or unsupported.");
+        return value;
+    }
 
     private static int ReadNonnegativeInt(SiiBlock job, string field)
     {

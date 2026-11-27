@@ -194,6 +194,10 @@
           <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding CargoLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Cargo}" />
+          <TextBlock Text="{Binding RouteLabel}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Route}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding RouteDetail}" TextWrapping="Wrap" />
+          <Button Content="{Binding SwapRouteLabel}" Command="{Binding ActionCommand}" CommandParameter="swap-route" />
           <TextBlock Text="{Binding UnitsLabel}" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <TextBox Text="{Binding UnitsInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding UnitsLabel}" />

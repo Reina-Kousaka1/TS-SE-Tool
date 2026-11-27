@@ -33,6 +33,10 @@ public sealed class JobDemoViewModel : ObservableObject
     public string Description => _text.Get("jobDemo.description");
     public string CargoLabel => _text.Get("jobDemo.cargo");
     public string Cargo => _session.CargoReference;
+    public string RouteLabel => _text.Get("jobDemo.route");
+    public string RouteDetail => _text.Get("jobDemo.routeDetail");
+    public string Route => _text.Format("jobDemo.routeValue", _session.SourceCompany, _session.TargetCompany);
+    public string SwapRouteLabel => _text.Get("jobDemo.swapRoute");
     public string UnitsLabel => _text.Get("jobDemo.units");
     public string DistanceLabel => _text.Get("jobDemo.distance");
     public string ApplyLabel => _text.Get("jobDemo.apply");
@@ -82,6 +86,7 @@ public sealed class JobDemoViewModel : ObservableObject
                 _session.SetPlannedDistanceKm(distance);
                 success = true;
             }
+            else if (action == "swap-route") { _session.SwapRoute(); success = true; }
             else if (action == "undo") success = _session.Undo();
             else if (action == "redo") success = _session.Redo();
         }
@@ -112,6 +117,7 @@ public sealed class JobDemoViewModel : ObservableObject
         _lastDistance = distance;
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
+        OnPropertyChanged(nameof(Route));
         NotifyDrafts();
     }
 

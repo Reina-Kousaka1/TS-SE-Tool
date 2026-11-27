@@ -7,6 +7,48 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyJobPreviewTests
 {
     [Fact]
+    public void RouteSwapPreservesUnrelatedDataAndHasOneUndoStep()
+    {
+        string input = Synthetic.Replace("cargo: cargo.synthetic", "cargo: cargo.synthetic\n  source_company: company.α\n  target_company: company.β", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        editor.SwapRoute();
+        Assert.Equal("company.β", editor.SourceCompany);
+        Assert.Equal("company.α", editor.TargetCompany);
+        Assert.Equal(2, editor.Changes.Count);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+        Assert.True(editor.Redo());
+        Assert.Equal("company.β", editor.SourceCompany);
+    }
+
+    [Theory]
+    [InlineData("target_company: nil")]
+    [InlineData("target_company: null")]
+    [InlineData("target_company: a\n  target_company: b")]
+    [InlineData("other: b")]
+    public void InvalidRouteDoesNotPartiallySwap(string target)
+    {
+        string input = Synthetic.Replace("cargo: cargo.synthetic", "cargo: cargo.synthetic\n  source_company: company.a\n  " + target, StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<InvalidOperationException>(() => editor.SwapRoute());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+    }
+
+    [Fact]
+    public void EqualReferencesAreANoOpAndPreserveRedo()
+    {
+        string input = Synthetic.Replace("cargo: cargo.synthetic", "cargo: cargo.synthetic\n  source_company: company.a\n  target_company: company.a", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        editor.SetUnitsCount(4);
+        Assert.True(editor.Undo());
+        editor.SwapRoute();
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.CanRedo);
+    }
+    [Fact]
     public void BothJobValuesAreAtomicAndShareOneUndoStep()
     {
         string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  planned_distance_km: 00120", StringComparison.Ordinal);
