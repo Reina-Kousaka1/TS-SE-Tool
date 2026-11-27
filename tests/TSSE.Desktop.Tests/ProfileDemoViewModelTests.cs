@@ -35,4 +35,23 @@ public sealed class ProfileDemoViewModelTests
         var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));
         Assert.Contains("nicht aus einem Spiel", demo.Description, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void LegacyLevelSelectionUpdatesOnlySyntheticExperienceAndSupportsUndo()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en-US")));
+        demo.LevelInput = "5";
+        demo.ActionCommand.Execute("level");
+        Assert.Equal("4399", demo.ExperienceInput);
+        Assert.Contains("level 5", demo.LevelProgress, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"preserved\"", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("ats");
+        Assert.Contains("ATS", demo.LevelProgress, StringComparison.Ordinal);
+        string before = demo.PreviewText;
+        demo.LevelInput = "151";
+        demo.ActionCommand.Execute("level");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal("0", demo.ExperienceInput);
+    }
 }

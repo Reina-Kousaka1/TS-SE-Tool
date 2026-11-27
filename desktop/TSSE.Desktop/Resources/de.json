@@ -1,4 +1,8 @@
 {
+  "profileDemo.levelHeading": "Levelberechnung des ursprünglichen Tools",
+  "profileDemo.levelDescription": "Alte ETS2- oder ATS-Tabelle auswählen. Die Kompatibilität mit aktuellen Spielen ist unbestätigt. Beim Setzen des Levels werden die XP knapp unter das nächste Level gesetzt.",
+  "profileDemo.levelLabel": "Level (0–150)",
+  "profileDemo.levelProgress": "Alte {0}-Tabelle: Level {1}; nächstes Level bei {2} XP",
   "page.jobs.title": "Aufträge",
   "page.jobs.eyebrow": "EDITOR",
   "page.jobs.subtitle": "Auftragsbearbeitung mit synthetischen Daten erkunden.",

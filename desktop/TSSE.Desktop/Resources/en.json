@@ -1,4 +1,8 @@
 {
+  "profileDemo.levelHeading": "Legacy level calculation",
+  "profileDemo.levelDescription": "Select the legacy ETS2 or ATS table. Current game compatibility is unverified. Setting a level uses the XP just below the next level.",
+  "profileDemo.levelLabel": "Level (0–150)",
+  "profileDemo.levelProgress": "Legacy {0} table: level {1}; next level at {2} XP",
   "page.jobs.title": "Jobs",
   "page.jobs.eyebrow": "EDITOR",
   "page.jobs.subtitle": "Explore active job editing with synthetic data.",

@@ -25,9 +25,17 @@ The legacy application's Bank.cs represents money_account as Int64 and
 Economy.cs represents experience_points as UInt32. This informs the isolated
 value ranges only; it does not prove compatibility with current game versions.
 Negative balances are accepted; experience is unsigned. Input parsing is
-invariant decimal without whitespace or thousands separators. Level conversion
-and game-specific rules are intentionally unavailable pending compatibility
-evidence. No file or SII field is changed by the session.
+invariant decimal without whitespace or thousands separators. A legacy level
+calculator uses the two threshold tables found in the original FormMethods.cs;
+the synthetic profile demo lets users select either table and set the XP just
+below a requested next level, matching the legacy level-setting behavior for
+levels 0–150. It uses wider arithmetic to avoid overflow at UInt32.MaxValue.
+These tables are not verified against current game versions. No file is changed.
+
+Level self-review (not independent): table selection is explicit, calculations
+do not change XP until the user applies a level, and the SII edit stays within
+the existing in-memory session. Values beyond level 150 are rejected rather
+than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
