@@ -36,12 +36,20 @@ public sealed class LegacyJobPreview
     public bool CanRedo => _session.CanRedo;
     public string CargoReference => Value(CurrentJob(), "cargo");
     public int UnitsCount => ReadUnits(CurrentJob());
+    public int PlannedDistanceKm => ReadNonnegativeInt(CurrentJob(), "planned_distance_km");
 
     public void SetUnitsCount(int count)
     {
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         if (UnitsCount == count) return;
         _session.Apply([new("player_job", _jobId, "units_count", count.ToString(CultureInfo.InvariantCulture))]);
+    }
+
+    public void SetPlannedDistanceKm(int distance)
+    {
+        if (distance < 0) throw new ArgumentOutOfRangeException(nameof(distance));
+        if (PlannedDistanceKm == distance) return;
+        _session.Apply([new("player_job", _jobId, "planned_distance_km", distance.ToString(CultureInfo.InvariantCulture))]);
     }
 
     public bool Undo() => _session.Undo();
@@ -54,9 +62,12 @@ public sealed class LegacyJobPreview
     }
 
     private static int ReadUnits(SiiBlock job)
+        => ReadNonnegativeInt(job, "units_count");
+
+    private static int ReadNonnegativeInt(SiiBlock job, string field)
     {
-        if (!int.TryParse(Value(job, "units_count"), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int count) || count < 0)
-            throw new InvalidOperationException("The units count is invalid or unsupported.");
+        if (!int.TryParse(Value(job, field), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int count) || count < 0)
+            throw new InvalidOperationException("The requested value is invalid or unsupported.");
         return count;
     }
 

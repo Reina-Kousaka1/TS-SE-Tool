@@ -137,7 +137,10 @@ compatibility with real trailer relationships or write any files.
 `current_job` reference to a unique `player_job` block. The legacy Player,
 Player_Job and SiiNunit classes provide the names and Int32 units field.
 The cargo reference is displayed as raw data, and `units_count` may be
-changed as a nonnegative integer in memory. A missing, invalid or ambiguous
+changed as a nonnegative integer in memory. The separately selected
+`planned_distance_km` field is also editable as a nonnegative Int32, based
+on the legacy Player_Job model; it does not recompute routes or payment.
+A missing, invalid or ambiguous
 target fails closed. `null` and `nil` mean no active job in this preview.
 The operation does not update other job, cargo or trailer data, and therefore
 does not establish game-level consistency or compatibility. The Jobs page
@@ -151,7 +154,8 @@ fixtures and in-game validation before any production use.
 
 UI self-review (not independent): the Jobs page constructs a constant synthetic
 document, labels it as a demo, and has no file or save command. The visible
-warning states that changing units does not validate cargo or trailer relations.
+warning states that changing units or distance does not validate cargo, route
+or trailer relations.
 
 ## Architecture self-review (not independent)
 

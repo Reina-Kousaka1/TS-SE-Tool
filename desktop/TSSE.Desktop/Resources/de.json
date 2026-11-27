@@ -1,4 +1,5 @@
 {
+  "jobDemo.distance": "Geplante Strecke in km (nichtnegative Ganzzahl)",
   "vehicleDemo.repairChain": "Aufbauverschleiß der Demo-Trailerkette zurücksetzen",
   "vehicleDemo.repairWheels": "Radverschleiß zurücksetzen",
   "editor.historyLimit": "Der Verlauf der Demo ist voll. Einen Schritt rückgängig machen, bevor eine andere Änderung erfolgt; es wurden keine Daten geändert.",
@@ -16,7 +17,7 @@
   "page.jobs.emptyTitle": "Spielkompatibilität unbestätigt",
   "page.jobs.emptyMessage": "Echte Auftragsdaten sind erst nach Kompatibilitätsprüfungen verfügbar.",
   "jobDemo.heading": "Aktiver Auftrag — synthetische Demo",
-  "jobDemo.description": "Nur ein temporäres Beispiel. Die Stückzahländerung prüft keine verknüpften Fracht- oder Trailerdaten und verändert keine Spieldatei.",
+  "jobDemo.description": "Nur ein temporäres Beispiel. Änderungen an Stückzahl oder Strecke prüfen keine verknüpften Fracht-, Routen- oder Trailerdaten und verändern keine Spieldatei.",
   "jobDemo.cargo": "Synthetische Frachtreferenz",
   "jobDemo.units": "Stückzahl (nichtnegative Ganzzahl)",
   "jobDemo.apply": "Wert übernehmen",

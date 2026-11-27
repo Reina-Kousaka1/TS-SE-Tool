@@ -8,6 +8,22 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void DistanceEditingUpdatesPreviewAndCanBeUndone()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string before = demo.PreviewText;
+        demo.DistanceInput = "500";
+        demo.ActionCommand.Execute("distance");
+        Assert.Contains("planned_distance_km: 500", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("units_count: 3", demo.PreviewText, StringComparison.Ordinal);
+        demo.DistanceInput = "-1";
+        demo.ActionCommand.Execute("distance");
+        Assert.Contains("planned_distance_km: 500", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(before, demo.PreviewText);
+        Assert.Equal("120", demo.DistanceInput);
+    }
+    [Fact]
     public void HistoryLimitIsExplainedAndLastPreviewRemainsIntact()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

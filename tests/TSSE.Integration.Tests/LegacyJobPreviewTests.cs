@@ -6,6 +6,36 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyJobPreviewTests
 {
+    [Fact]
+    public void PlannedDistanceIsAnIndependentUndoableSyntheticEdit()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  planned_distance_km: 00120", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Equal(120, editor.PlannedDistanceKm);
+        editor.SetPlannedDistanceKm(120);
+        Assert.Equal(input, editor.PreviewText);
+        editor.SetPlannedDistanceKm(int.MaxValue);
+        Assert.Contains("planned_distance_km: 2147483647", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("units_count: 0003", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetPlannedDistanceKm(-1));
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal(int.MaxValue, editor.PlannedDistanceKm);
+    }
+
+    [Theory]
+    [InlineData("planned_distance_km: -1")]
+    [InlineData("planned_distance_km: 2147483648")]
+    [InlineData("planned_distance_km: 1\n  planned_distance_km: 2")]
+    public void InvalidPlannedDistanceCannotBeOverwritten(string field)
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  " + field, StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<InvalidOperationException>(() => editor.SetPlannedDistanceKm(10));
+        Assert.Equal(input, editor.PreviewText);
+    }
     private const string Synthetic = "SiiNunit\n{\n player : p {\n  current_job: j\n }\n player_job : j {\n  cargo: cargo.synthetic\n  units_count: 0003\n  mod_data: \"保持\"\n }\n}\n";
 
     [Fact]

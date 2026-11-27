@@ -1,4 +1,5 @@
 {
+  "jobDemo.distance": "Planned distance in km (nonnegative integer)",
   "vehicleDemo.repairChain": "Reset body wear across demo trailer chain",
   "vehicleDemo.repairWheels": "Reset wheel wear",
   "editor.historyLimit": "The demo history is full. Undo an edit before making a different change; no data was changed.",
@@ -16,7 +17,7 @@
   "page.jobs.emptyTitle": "Game compatibility is unverified",
   "page.jobs.emptyMessage": "Real job data is unavailable until game compatibility is validated.",
   "jobDemo.heading": "Active job — synthetic demo",
-  "jobDemo.description": "Temporary example only. Editing units here does not validate related cargo or trailer data and cannot change a game file.",
+  "jobDemo.description": "Temporary example only. Editing units or distance does not validate related cargo, route or trailer data and cannot change a game file.",
   "jobDemo.cargo": "Synthetic cargo reference",
   "jobDemo.units": "Units (nonnegative integer)",
   "jobDemo.apply": "Apply value",
