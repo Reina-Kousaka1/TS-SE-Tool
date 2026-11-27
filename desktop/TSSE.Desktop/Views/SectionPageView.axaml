@@ -47,6 +47,8 @@
             <Button Content="{Binding RedoLabel}" Command="{Binding ActionCommand}" CommandParameter="redo" />
           </StackPanel>
           <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding PreviewLabel}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding PreviewText}" FontFamily="monospace" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 

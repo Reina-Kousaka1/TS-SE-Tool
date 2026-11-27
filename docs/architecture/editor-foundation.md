@@ -10,7 +10,8 @@ must supply immutable snapshots and a validator.
 
 The Savegame Explorer offers a clearly labelled temporary profile demo for
 balance and experience, with per-field validation and undo/redo. Its initial
-zeroes are scratch values, not data read from a profile. No loading or saving
+zeroes are scratch values, not data read from a profile. The demo edits and
+displays an embedded synthetic SII document in memory. No loading or saving
 is connected to this demo. Vehicle and job editing and real profile mapping
 remain future work.
 
@@ -36,7 +37,7 @@ duplicate target, or unclassified syntax leaves the current text and redo histor
 unchanged. Unchanged replacements do not create history entries. This is a
 syntax-level facility for synthetic tests; it has no file access, save-version
 validation, or mapping from profile models to real game files. The UI profile
-demo remains detached. Unknown recognized fields and blocks remain in the
+demo uses only embedded synthetic text. Unknown recognized fields and blocks remain in the
 original text; unclassified syntax blocks edits.
 
 Architecture self-review (not independent): existing `WithFieldValue` reparses
@@ -54,8 +55,8 @@ reference and maps legacy `money_account` (Int64) and `experience_points`
 supported by the legacy Bank and Economy implementations, not validated
 against current games. Missing or duplicate targets, invalid numbers and
 unclassified syntax fail closed. Only changed values are replaced, in one batch;
-unchanged number formatting and unknown fields remain intact. The UI and file
-operations do not use this mapping. Actual game-version validation, a verified
+unchanged number formatting and unknown fields remain intact. The UI uses this
+mapping for its embedded example; file operations do not use it. Actual game-version validation, a verified
 adapter, and explicit write authorization remain mandatory.
 
 Architecture self-review (not independent): the reference is resolved once
@@ -63,6 +64,12 @@ from the selected economy block, and this mapping has no operation to change
 that reference. The underlying syntax session makes the batch atomic; no save
 operation is provided. Explicit selection is not evidence that the economy
 block belongs to a real user profile, so this interface is synthetic-only.
+
+UI self-review (not independent): the view model constructs only a constant
+synthetic document, has no file selection or save command, and exposes the
+updated text as a visibly labelled preview. The adapter and syntax session stay
+in memory; no feature gate is changed. Test evidence must cover validation,
+undo/redo and preservation of an unknown field in the displayed preview.
 
 ## Architecture self-review (not independent)
 

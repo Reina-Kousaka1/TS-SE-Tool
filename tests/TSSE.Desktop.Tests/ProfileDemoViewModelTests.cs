@@ -14,13 +14,17 @@ public sealed class ProfileDemoViewModelTests
         Assert.Contains("not loaded from a game", demo.Description, StringComparison.Ordinal);
         demo.BalanceInput = "-123";
         demo.ActionCommand.Execute("balance");
+        Assert.Contains("money_account: -123", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"preserved\"", demo.PreviewText, StringComparison.Ordinal);
         demo.ExperienceInput = "not a number";
         demo.ActionCommand.Execute("experience");
         Assert.Contains("Invalid", demo.Message, StringComparison.Ordinal);
         demo.ActionCommand.Execute("undo");
+        Assert.Contains("money_account: 0", demo.PreviewText, StringComparison.Ordinal);
         Assert.Equal("0", demo.BalanceInput);
         Assert.Equal("0", demo.ExperienceInput);
         demo.ActionCommand.Execute("redo");
+        Assert.Contains("money_account: -123", demo.PreviewText, StringComparison.Ordinal);
         Assert.Equal("-123", demo.BalanceInput);
         Assert.Contains("No game file was changed", demo.Message, StringComparison.Ordinal);
     }

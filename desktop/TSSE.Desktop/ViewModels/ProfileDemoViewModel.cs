@@ -1,13 +1,17 @@
 using System.Globalization;
 using TSSE.Core.Editing;
 using TSSE.Desktop.Services;
+using TSSE.GameAdapters.Editing;
+using TSSE.Savegames.Syntax;
 
 namespace TSSE.Desktop.ViewModels;
 
 /// <summary>Scratch values only; this view model never opens or writes a game save.</summary>
 public sealed class ProfileDemoViewModel : ObservableObject
 {
-    private readonly ProfileEditSession _session = new(new ProfileValues(0, 0));
+    private const string SyntheticDocument =
+        "SiiNunit\n{\n economy : demo.economy {\n  bank: demo.bank\n  experience_points: 0\n  demo_unknown: \"preserved\"\n }\n bank : demo.bank {\n  money_account: 0\n }\n}\n";
+    private readonly LegacyProfilePreview _session = new(SiiSyntaxDocument.Parse(SyntheticDocument), "demo.economy");
     private readonly IUiTextCatalog _text;
     private string _balanceInput = "0";
     private string _experienceInput = "0";
@@ -27,6 +31,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string ApplyLabel => _text.Get("profileDemo.apply");
     public string UndoLabel => _text.Get("profileDemo.undo");
     public string RedoLabel => _text.Get("profileDemo.redo");
+    public string PreviewLabel => _text.Get("profileDemo.preview");
+    public string PreviewText => _session.PreviewText;
     public string BalanceInput { get => _balanceInput; set => SetProperty(ref _balanceInput, value ?? string.Empty); }
     public string ExperienceInput { get => _experienceInput; set => SetProperty(ref _experienceInput, value ?? string.Empty); }
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
@@ -34,19 +40,37 @@ public sealed class ProfileDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
-        bool success = action switch
+        bool success;
+        try
         {
-            "balance" => _session.TrySetBalance(BalanceInput),
-            "experience" => _session.TrySetExperience(ExperienceInput),
-            "undo" => _session.Undo(),
-            "redo" => _session.Redo(),
-            _ => false
-        };
+            ProfileValues current = _session.Current;
+            success = action switch
+            {
+                "balance" when long.TryParse(BalanceInput, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long balance)
+                    => Apply(current with { Balance = balance }),
+                "experience" when uint.TryParse(ExperienceInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint experience)
+                    => Apply(current with { Experience = experience }),
+                "undo" => _session.Undo(),
+                "redo" => _session.Redo(),
+                _ => false
+            };
+        }
+        catch (InvalidOperationException)
+        {
+            success = false;
+        }
         Message = _text.Get(success ? "profileDemo.applied" : "profileDemo.invalid");
+        if (success) OnPropertyChanged(nameof(PreviewText));
         if (success && action is "undo" or "redo")
         {
             BalanceInput = _session.Current.Balance.ToString(CultureInfo.InvariantCulture);
             ExperienceInput = _session.Current.Experience.ToString(CultureInfo.InvariantCulture);
         }
+    }
+
+    private bool Apply(ProfileValues values)
+    {
+        _session.Apply(values);
+        return true;
     }
 }

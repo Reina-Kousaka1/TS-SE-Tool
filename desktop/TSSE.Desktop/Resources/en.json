@@ -6,6 +6,7 @@
   "profileDemo.apply": "Apply value",
   "profileDemo.undo": "Undo",
   "profileDemo.redo": "Redo",
+  "profileDemo.preview": "Synthetic SII preview (memory only)",
   "profileDemo.ready": "Scratch values are ready.",
   "profileDemo.applied": "Scratch session updated. No game file was changed.",
   "profileDemo.invalid": "Invalid value or no further undo/redo available. The session was not changed.",

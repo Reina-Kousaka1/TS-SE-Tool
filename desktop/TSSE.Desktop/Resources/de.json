@@ -6,6 +6,7 @@
   "profileDemo.apply": "Wert übernehmen",
   "profileDemo.undo": "Rückgängig",
   "profileDemo.redo": "Wiederholen",
+  "profileDemo.preview": "Synthetische SII-Vorschau (nur im Speicher)",
   "profileDemo.ready": "Die temporären Werte sind bereit.",
   "profileDemo.applied": "Die Demo wurde aktualisiert. Keine Spieldatei wurde geändert.",
   "profileDemo.invalid": "Ungültiger Wert oder kein weiterer Schritt verfügbar. Die Demo blieb unverändert.",
