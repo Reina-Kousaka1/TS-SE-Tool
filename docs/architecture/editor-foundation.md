@@ -121,6 +121,16 @@ Wheel self-review (not independent): all elements are validated before publishin
 the batch; the fixed entry limit bounds repeated syntax reparsing. No traversal
 of linked trailers or alteration of accessories is performed.
 
+An explicit trailer-chain demo action follows the legacy `slave_trailer`
+reference and resets only body and chassis wear in all visited synthetic
+trailers as one undoable batch. Cargo, wheels and accessories are unchanged.
+Missing or duplicate fields and targets, invalid ratios, cycles, or chains
+longer than 64 trailers reject the entire action.
+
+Chain self-review (not independent): traversal and validation complete before
+the existing atomic syntax session is updated. The demo does not establish
+compatibility with real trailer relationships or write any files.
+
 ## Experimental active job mapping
 
 `LegacyJobPreview` follows an explicitly selected synthetic player block's

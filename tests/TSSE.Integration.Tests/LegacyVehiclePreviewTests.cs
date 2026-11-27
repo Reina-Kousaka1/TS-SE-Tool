@@ -6,6 +6,33 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyVehiclePreviewTests
 {
+    [Fact]
+    public void TrailerChainRepairIsAtomicAndPreservesCargoAndUnknownFields()
+    {
+        const string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.7\n slave_trailer: b\n}\ntrailer : b {\n trailer_body_wear: 0.4\n chassis_wear: 0.5\n mod: \"保留\"\n slave_trailer: null\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "a");
+        preview.RepairTrailerChainBody();
+        Assert.Contains("cargo_damage: 0.7", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod: \"保留\"", preview.PreviewText, StringComparison.Ordinal);
+        Assert.DoesNotContain("trailer_body_wear: 0.4", preview.PreviewText, StringComparison.Ordinal);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+        Assert.True(preview.Redo());
+    }
+
+    [Theory]
+    [InlineData("slave_trailer: a")]
+    [InlineData("slave_trailer: missing")]
+    [InlineData("slave_trailer: null\n slave_trailer: null")]
+    public void InvalidTrailerChainNeverPartiallyRepairs(string link)
+    {
+        string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n " + link + "\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "a");
+        Assert.Throws<InvalidOperationException>(() => preview.RepairTrailerChainBody());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
     [Theory]
     [InlineData(LegacyVehicleKind.Truck, "vehicle")]
     [InlineData(LegacyVehicleKind.Trailer, "trailer")]

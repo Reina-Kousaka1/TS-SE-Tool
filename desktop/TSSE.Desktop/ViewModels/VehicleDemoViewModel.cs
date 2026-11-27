@@ -9,7 +9,7 @@ namespace TSSE.Desktop.ViewModels;
 /// <summary>Editable synthetic examples, with no file access.</summary>
 public sealed class VehicleDemoViewModel : ObservableObject
 {
-    private const string Fixture = "SiiNunit\n{\n vehicle : demo.truck {\n  fuel_relative: 0.5\n  engine_wear: 0.2\n  transmission_wear: 0.1\n  cabin_wear: 0\n  chassis_wear: 0.3\n  wheels_wear: 2\n  wheels_wear[0]: 0.2\n  wheels_wear[1]: 0.1\n  demo_unknown: \"preserved\"\n }\n trailer : demo.trailer {\n  cargo_damage: 0.1\n  trailer_body_wear: 0.2\n  chassis_wear: 0.3\n  wheels_wear: 1\n  wheels_wear[0]: 0.4\n  demo_unknown: \"preserved\"\n }\n}\n";
+    private const string Fixture = "SiiNunit\n{\n vehicle : demo.truck {\n  fuel_relative: 0.5\n  engine_wear: 0.2\n  transmission_wear: 0.1\n  cabin_wear: 0\n  chassis_wear: 0.3\n  wheels_wear: 2\n  wheels_wear[0]: 0.2\n  wheels_wear[1]: 0.1\n  demo_unknown: \"preserved\"\n }\n trailer : demo.trailer {\n  cargo_damage: 0.1\n  trailer_body_wear: 0.2\n  chassis_wear: 0.3\n  wheels_wear: 1\n  wheels_wear[0]: 0.4\n  slave_trailer: demo.trailer2\n  demo_unknown: \"preserved\"\n }\n trailer : demo.trailer2 {\n  trailer_body_wear: 0.7\n  chassis_wear: 0.8\n  slave_trailer: null\n  demo_unknown: \"second\"\n }\n}\n";
     private readonly IUiTextCatalog _text;
     private readonly LegacyVehiclePreview _truck = new(SiiSyntaxDocument.Parse(Fixture), LegacyVehicleKind.Truck, "demo.truck");
     private readonly LegacyVehiclePreview _trailer = new(SiiSyntaxDocument.Parse(Fixture), LegacyVehicleKind.Trailer, "demo.trailer");
@@ -43,6 +43,8 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string RepairDetail => _text.Get("vehicleDemo.repairDetail");
     public string RefuelLabel => _text.Get("vehicleDemo.refuel");
     public string WheelRepairLabel => _text.Get("vehicleDemo.repairWheels");
+    public string ChainRepairLabel => _text.Get("vehicleDemo.repairChain");
+    public bool CanRepairChain => _isTrailer;
     public bool CanRefuel => !_isTrailer;
     public string PreviewLabel => _text.Get("vehicleDemo.preview");
     public string PreviewText => Session.PreviewText;
@@ -68,6 +70,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _isTrailer = trailer;
         OnPropertyChanged(nameof(Fields));
         OnPropertyChanged(nameof(CanRefuel));
+        OnPropertyChanged(nameof(CanRepairChain));
         _selectedField = Fields[0];
         OnPropertyChanged(nameof(SelectedField));
         OnPropertyChanged(nameof(PreviewText));
@@ -95,6 +98,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
             else if (action == "wheels")
             {
                 Session.RepairWheelWear();
+                success = true;
+            }
+            else if (action == "chain" && CanRepairChain)
+            {
+                Session.RepairTrailerChainBody();
                 success = true;
             }
             else if (action == "refuel" && CanRefuel)

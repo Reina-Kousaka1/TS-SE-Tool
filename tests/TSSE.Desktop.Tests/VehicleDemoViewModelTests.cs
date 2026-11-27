@@ -8,6 +8,20 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void TrailerChainDemoRepairsBothBodiesInOneUndo()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        Assert.False(demo.CanRepairChain);
+        demo.SelectCategory("Trailers");
+        Assert.True(demo.CanRepairChain);
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("chain");
+        Assert.DoesNotContain("trailer_body_wear: 0.7", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"second\"", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(before, demo.PreviewText);
+    }
+    [Fact]
     public void WheelRepairIsSeparateAndUndoableInBothCategories()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

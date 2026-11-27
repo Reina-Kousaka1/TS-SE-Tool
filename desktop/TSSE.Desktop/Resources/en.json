@@ -1,4 +1,5 @@
 {
+  "vehicleDemo.repairChain": "Reset body wear across demo trailer chain",
   "vehicleDemo.repairWheels": "Reset wheel wear",
   "editor.historyLimit": "The demo history is full. Undo an edit before making a different change; no data was changed.",
   "vehicleDemo.repair": "Reset listed body wear",

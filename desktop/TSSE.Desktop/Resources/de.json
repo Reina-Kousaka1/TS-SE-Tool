@@ -1,4 +1,5 @@
 {
+  "vehicleDemo.repairChain": "Aufbauverschleiß der Demo-Trailerkette zurücksetzen",
   "vehicleDemo.repairWheels": "Radverschleiß zurücksetzen",
   "editor.historyLimit": "Der Verlauf der Demo ist voll. Einen Schritt rückgängig machen, bevor eine andere Änderung erfolgt; es wurden keine Daten geändert.",
   "vehicleDemo.repair": "Aufgeführten Verschleiß zurücksetzen",

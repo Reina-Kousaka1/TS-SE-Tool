@@ -75,6 +75,40 @@ public sealed class LegacyVehiclePreview
         _session.Apply(edits);
     }
 
+    /// <summary>Resets body/chassis wear across a validated synthetic trailer chain.</summary>
+    public void RepairTrailerChainBody()
+    {
+        if (_blockType != "trailer")
+            throw new InvalidOperationException("Only trailer chains are supported.");
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var edits = new List<SiiFieldEdit>();
+        string current = _blockId;
+        while (true)
+        {
+            if (seen.Count >= 64 || !seen.Add(current))
+                throw new InvalidOperationException("The trailer chain is cyclic or exceeds its limit.");
+            SiiBlock[] blocks = document.Blocks.Where(block => block.Type == "trailer" && block.Id == current).ToArray();
+            if (blocks.Length != 1)
+                throw new InvalidOperationException("A trailer in the chain is missing or ambiguous.");
+            SiiBlock block = blocks[0];
+            foreach (string name in new[] { "trailer_body_wear", "chassis_wear" })
+            {
+                SiiField[] values = block.Fields.Where(field => field.Name == name).ToArray();
+                if (values.Length != 1 || !TryParseRatio(values[0].Value, out float value))
+                    throw new InvalidOperationException("A trailer wear value is missing, ambiguous, or unsupported.");
+                if (value != 0) edits.Add(new("trailer", current, name, "0"));
+            }
+            SiiField[] links = block.Fields.Where(field => field.Name == "slave_trailer").ToArray();
+            if (links.Length != 1 || string.IsNullOrWhiteSpace(links[0].Value))
+                throw new InvalidOperationException("A trailer link is missing or ambiguous.");
+            string next = links[0].Value;
+            if (next is "null" or "nil") break;
+            current = next;
+        }
+        _session.Apply(edits);
+    }
+
     /// <summary>Sets existing, strictly validated synthetic wheel values to zero without removing the array.</summary>
     public void RepairWheelWear()
     {
