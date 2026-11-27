@@ -12,7 +12,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private readonly DemoWorkspace _workspace;
     private readonly IUiTextCatalog _text;
     private readonly LegacyVehiclePreview _truck;
-    private readonly LegacyVehiclePreview _trailer;
+    private LegacyVehiclePreview _trailer;
     private readonly IReadOnlyList<VehicleDemoField> _truckFields;
     private readonly IReadOnlyList<VehicleDemoField> _trailerFields;
     private bool _isTrailer;
@@ -24,7 +24,8 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private string _odometerInput = "12345";
     private string _lastOdometer = "12345";
     private string _odometerBase = "12345";
-    private readonly Dictionary<(bool Trailer, string Field), (string Text, string Base)> _drafts = new();
+    private string _selectedTrailer = "demo.trailer";
+    private readonly Dictionary<(string Target, string Field), (string Text, string Base)> _drafts = new();
 
     public VehicleDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -60,6 +61,24 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string WheelRepairLabel => _text.Get("vehicleDemo.repairWheels");
     public string ChainRepairLabel => _text.Get("vehicleDemo.repairChain");
     public bool CanRepairChain => _isTrailer;
+    public IReadOnlyList<string> TrailerChoices { get; } = ["demo.trailer", "demo.trailer2"];
+    public string TrailerSelectionLabel => _text.Get("vehicleDemo.trailerSelection");
+    private string DraftTarget => _isTrailer ? _selectedTrailer : "demo.truck";
+    public string SelectedTrailer
+    {
+        get => _selectedTrailer;
+        set
+        {
+            if (!_isTrailer || value is null || !TrailerChoices.Contains(value, StringComparer.Ordinal) || value == _selectedTrailer) return;
+            LegacyVehiclePreview candidate = _workspace.Workspace.SelectTrailer(value);
+            SaveDraft();
+            _trailer = candidate;
+            _selectedTrailer = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AccessorySummary));
+            LoadField();
+        }
+    }
     public bool CanRefuel => !_isTrailer;
     public string PreviewLabel => _text.Get("vehicleDemo.preview");
     public string PreviewText => Session.PreviewText;
@@ -75,7 +94,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
             {
                 var document = SiiSyntaxDocument.Parse(Session.PreviewText);
                 var entries = LegacyAccessoryInspector.InspectDeclaredArray(document,
-                    _isTrailer ? "trailer" : "vehicle", _isTrailer ? "demo.trailer" : "demo.truck");
+                    _isTrailer ? "trailer" : "vehicle", DraftTarget);
                 return entries.Count == 0 ? _text.Get("accessory.emptyList") :
                     string.Join(Environment.NewLine, entries.Select(entry =>
                         _text.Format("accessory.row", entry.Index, entry.RawReference,
@@ -195,7 +214,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
             _workspace.NotifyChanged();
             if (action is "apply" or "apply-stale")
             {
-                _drafts.Remove((_isTrailer, SelectedField.Name));
+                _drafts.Remove((DraftTarget, SelectedField.Name));
                 SetInput(_lastValue, _lastValue);
             }
             if (action is "odometer" or "odometer-reviewed")
@@ -236,7 +255,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
 
     private void SaveDraft()
     {
-        var key = (_isTrailer, SelectedField.Name);
+        var key = (DraftTarget, SelectedField.Name);
         if (ValueInput == _lastValue) _drafts.Remove(key);
         else _drafts[key] = (ValueInput, _inputBase);
     }
@@ -244,7 +263,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private void LoadField()
     {
         _lastValue = Session.GetValue(SelectedField.Name).ToString("R", CultureInfo.InvariantCulture);
-        if (_drafts.TryGetValue((_isTrailer, SelectedField.Name), out var draft) && draft.Text != _lastValue)
+        if (_drafts.TryGetValue((DraftTarget, SelectedField.Name), out var draft) && draft.Text != _lastValue)
             SetInput(draft.Text, draft.Base);
         else
             SetInput(_lastValue, _lastValue);

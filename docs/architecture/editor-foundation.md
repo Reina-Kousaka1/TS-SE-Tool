@@ -70,6 +70,9 @@ constructor requires the relevant synthetic block identifiers; no game
 compatibility is implied. The profile, vehicle and job demos share one
 workspace and label undo/redo as cross-section operations. Draft input is
 preserved when another section changes the underlying synthetic document.
+The demo's two explicitly listed synthetic trailers can be selected separately.
+Drafts are scoped to trailer identity and field; chain operations begin at the
+selected trailer. The selection does not discover or enumerate game profiles.
 UI workspace self-review (not independent): the catalog owns the shared demo
 and its view models for the same lifetime. Notifications refresh previews,
 change lists and committed values; a text box that differs from its last

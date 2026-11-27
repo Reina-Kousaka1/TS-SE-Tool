@@ -7,6 +7,20 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacySyntheticWorkspaceTests
 {
+    [Fact]
+    public void ExplicitTrailerSelectionSharesHistoryAndRejectsMissingTargets()
+    {
+        var workspace = Create();
+        var selected = workspace.SelectTrailer("r");
+        selected.SetValue("trailer_body_wear", 0);
+        Assert.True(workspace.Undo());
+        Assert.Equal(0.4f, selected.GetValue("trailer_body_wear"));
+        Assert.True(workspace.Redo());
+        Assert.Equal(0f, selected.GetValue("trailer_body_wear"));
+        string before = workspace.PreviewText;
+        Assert.Throws<InvalidOperationException>(() => workspace.SelectTrailer("missing"));
+        Assert.Equal(before, workspace.PreviewText);
+    }
     private const string Fixture = "SiiNunit\n{\n economy : e {\n  bank: b\n  experience_points: 5\n }\n bank : b {\n  money_account: 10\n }\n player : p {\n  current_job: j\n }\n player_job : j {\n  cargo: cargo.synthetic\n  units_count: 3\n }\n vehicle : t {\n  fuel_relative: 0.5\n }\n trailer : r {\n  trailer_body_wear: 0.4\n  mod_field: \"未知\"\n }\n}\n";
 
     [Fact]

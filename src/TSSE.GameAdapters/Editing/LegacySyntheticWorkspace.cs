@@ -25,6 +25,8 @@ public sealed class LegacySyntheticWorkspace
     public LegacyVehiclePreview Truck { get; }
     public LegacyVehiclePreview Trailer { get; }
     public LegacyJobPreview Job { get; }
+    /// <summary>Selects an explicit synthetic trailer in the same in-memory history.</summary>
+    public LegacyVehiclePreview SelectTrailer(string blockId) => new(_session, LegacyVehicleKind.Trailer, blockId);
     public string PreviewText => _session.PreviewText;
     public IReadOnlyList<SiiFieldChange> Changes => _session.Changes;
     public bool IsDirty => _session.IsDirty;

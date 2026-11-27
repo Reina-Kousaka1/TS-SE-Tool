@@ -7,6 +7,53 @@ namespace TSSE.Desktop.Tests;
 
 public sealed class VehicleDemoViewModelTests
 {
+    [Fact]
+    public void TrailerSelectionEditsOnlyChosenTrailerAndUsesSharedHistory()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.SelectCategory("Trailers");
+        string original = demo.PreviewText;
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Equal("0.25", demo.ValueInput);
+        Assert.Contains("No example accessories", demo.AccessorySummary, StringComparison.Ordinal);
+        demo.ValueInput = "0.75";
+        demo.ActionCommand.Execute("apply");
+        Assert.Contains("cargo_damage: 0.1", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("cargo_damage: 0.75", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"second\"", demo.PreviewText, StringComparison.Ordinal);
+        demo.SelectedTrailer = "demo.trailer";
+        Assert.Equal("0.1", demo.ValueInput);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Equal("0.75", demo.ValueInput);
+    }
+
+    [Fact]
+    public void DraftsAreIsolatedPerTrailerAndStaleAfterChainRepair()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.SelectCategory("Trailers");
+        demo.SelectedField = demo.Fields.Single(item => item.Name == "trailer_body_wear");
+        demo.ValueInput = "0.9";
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Equal("0.7", demo.ValueInput);
+        demo.ValueInput = "0.6";
+        demo.SelectedTrailer = "demo.trailer";
+        Assert.Equal("0.9", demo.ValueInput);
+        demo.ActionCommand.Execute("chain");
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Equal("0.6", demo.ValueInput);
+        Assert.True(demo.IsStaleDraft);
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("apply");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("apply-stale");
+        Assert.Contains("trailer_body_wear: 0.6", demo.PreviewText, StringComparison.Ordinal);
+        demo.SelectedTrailer = "not-a-demo-trailer";
+        Assert.Equal("demo.trailer2", demo.SelectedTrailer);
+    }
     [Theory]
     [InlineData("1.00000001")]
     [InlineData("1.00000000000000001")]

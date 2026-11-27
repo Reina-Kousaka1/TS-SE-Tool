@@ -36,6 +36,7 @@
   "editor.noChanges": "Keine Änderungen.",
   "jobDemo.distance": "Geplante Strecke in km (nichtnegative Ganzzahl)",
   "vehicleDemo.repairChain": "Aufbauverschleiß der Demo-Trailerkette zurücksetzen",
+  "vehicleDemo.trailerSelection": "Ausgewählter synthetischer Anhänger (Kettenaktionen beginnen hier)",
   "vehicleDemo.repairWheels": "Radverschleiß zurücksetzen",
   "editor.historyLimit": "Der Verlauf der Demo ist voll. Einen Schritt rückgängig machen, bevor eine andere Änderung erfolgt; es wurden keine Daten geändert.",
   "vehicleDemo.repair": "Aufgeführten Verschleiß zurücksetzen",
