@@ -7,6 +7,33 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyJobPreviewTests
 {
     [Fact]
+    public void BothJobValuesAreAtomicAndShareOneUndoStep()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  planned_distance_km: 00120", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        editor.SetUnitsAndPlannedDistance(7, 250);
+        Assert.Equal(7, editor.UnitsCount);
+        Assert.Equal(250, editor.PlannedDistanceKm);
+        Assert.Equal(2, editor.Changes.Count);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        string changed = editor.PreviewText;
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetUnitsAndPlannedDistance(8, -1));
+        Assert.Equal(changed, editor.PreviewText);
+    }
+
+    [Fact]
+    public void AtomicJobEditRejectsInvalidSecondFieldBeforeChangingFirst()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  planned_distance_km: broken", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<InvalidOperationException>(() => editor.SetUnitsAndPlannedDistance(7, 250));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+    }
+    [Fact]
     public void PlannedDistanceIsAnIndependentUndoableSyntheticEdit()
     {
         string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  planned_distance_km: 00120", StringComparison.Ordinal);

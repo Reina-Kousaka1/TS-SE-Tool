@@ -218,6 +218,9 @@ The cargo reference is displayed as raw data, and `units_count` may be
 changed as a nonnegative integer in memory. The separately selected
 `planned_distance_km` field is also editable as a nonnegative Int32, based
 on the legacy Player_Job model; it does not recompute routes or payment.
+The synthetic Jobs page can also apply both values as one atomic history
+entry. Both existing values and both input values must be valid; stale drafts
+block the combined action. Undo restores both fields together.
 A missing, invalid or ambiguous
 target fails closed. `null` and `nil` mean no active job in this preview.
 The operation does not update other job, cargo or trailer data, and therefore
@@ -225,7 +228,7 @@ does not establish game-level consistency or compatibility. The Jobs page
 connects it to an embedded synthetic example; it has no file operations.
 
 Architecture self-review (not independent): job selection is fixed to the
-original reference, editing only changes a single validated integer, and the
+original reference, editing changes only explicitly selected validated integers, and the
 existing syntax transaction preserves unknown fields and supports undo/redo.
 Actual relationships, counts, game versions and online jobs require real
 fixtures and in-game validation before any production use.

@@ -40,6 +40,7 @@
   "jobDemo.cargo": "Synthetic cargo reference",
   "jobDemo.units": "Units (nonnegative integer)",
   "jobDemo.apply": "Apply value",
+  "jobDemo.applyBoth": "Apply both as one change",
   "jobDemo.undo": "Undo",
   "jobDemo.redo": "Redo",
   "jobDemo.preview": "Synthetic SII preview (memory only)",

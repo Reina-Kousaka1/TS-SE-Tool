@@ -40,6 +40,7 @@
   "jobDemo.cargo": "Synthetische Frachtreferenz",
   "jobDemo.units": "Stückzahl (nichtnegative Ganzzahl)",
   "jobDemo.apply": "Wert übernehmen",
+  "jobDemo.applyBoth": "Beide Werte gemeinsam übernehmen",
   "jobDemo.undo": "Rückgängig",
   "jobDemo.redo": "Wiederholen",
   "jobDemo.preview": "Synthetische SII-Vorschau (nur im Speicher)",

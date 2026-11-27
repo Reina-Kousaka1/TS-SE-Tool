@@ -8,6 +8,40 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void ApplyBothIsOneUndoableEditAndRejectsInvalidDraft()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.UnitsInput = "7";
+        demo.DistanceInput = "invalid";
+        demo.ActionCommand.Execute("apply-both");
+        Assert.Equal(original, demo.PreviewText);
+        demo.DistanceInput = "250";
+        demo.ActionCommand.Execute("apply-both");
+        Assert.Contains("units_count: 7", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("planned_distance_km: 250", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("planned_distance_km: 250", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ApplyBothRejectsEitherStaleDraftWithoutPartialChange()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.UnitsInput = "7";
+        demo.ActionCommand.Execute("apply");
+        demo.UnitsInput = "8";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsUnitsStale);
+        string before = demo.PreviewText;
+        demo.DistanceInput = "250";
+        demo.ActionCommand.Execute("apply-both");
+        Assert.Equal(before, demo.PreviewText);
+        Assert.True(demo.IsUnitsStale);
+    }
+    [Fact]
     public void DistanceEditingUpdatesPreviewAndCanBeUndone()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

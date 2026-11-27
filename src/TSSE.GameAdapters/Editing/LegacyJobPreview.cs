@@ -59,6 +59,21 @@ public sealed class LegacyJobPreview
         _session.Apply([new("player_job", _jobId, "planned_distance_km", distance.ToString(CultureInfo.InvariantCulture))]);
     }
 
+    /// <summary>Updates both validated synthetic job values in a single undoable transaction.</summary>
+    public void SetUnitsAndPlannedDistance(int count, int distance)
+    {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (distance < 0) throw new ArgumentOutOfRangeException(nameof(distance));
+        int currentCount = UnitsCount;
+        int currentDistance = PlannedDistanceKm;
+        var edits = new List<SiiFieldEdit>();
+        if (count != currentCount)
+            edits.Add(new("player_job", _jobId, "units_count", count.ToString(CultureInfo.InvariantCulture)));
+        if (distance != currentDistance)
+            edits.Add(new("player_job", _jobId, "planned_distance_km", distance.ToString(CultureInfo.InvariantCulture)));
+        _session.Apply(edits);
+    }
+
     public bool Undo() => _session.Undo();
     public bool Redo() => _session.Redo();
 

@@ -36,6 +36,7 @@ public sealed class JobDemoViewModel : ObservableObject
     public string UnitsLabel => _text.Get("jobDemo.units");
     public string DistanceLabel => _text.Get("jobDemo.distance");
     public string ApplyLabel => _text.Get("jobDemo.apply");
+    public string ApplyBothLabel => _text.Get("jobDemo.applyBoth");
     public string UndoLabel => _text.Get("jobDemo.undo");
     public string RedoLabel => _text.Get("jobDemo.redo");
     public string PreviewLabel => _text.Get("jobDemo.preview");
@@ -55,7 +56,8 @@ public sealed class JobDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
-        if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale))
+        if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
+            (action == "apply-both" && (IsUnitsStale || IsDistanceStale)))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -63,7 +65,14 @@ public sealed class JobDemoViewModel : ObservableObject
         bool success = false;
         try
         {
-            if ((action is "apply" or "apply-reviewed") && int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int count))
+            if (action == "apply-both" &&
+                int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int bothCount) &&
+                int.TryParse(DistanceInput, NumberStyles.None, CultureInfo.InvariantCulture, out int bothDistance))
+            {
+                _session.SetUnitsAndPlannedDistance(bothCount, bothDistance);
+                success = true;
+            }
+            else if ((action is "apply" or "apply-reviewed") && int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int count))
             {
                 _session.SetUnitsCount(count);
                 success = true;
@@ -87,8 +96,8 @@ public sealed class JobDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action is "apply" or "apply-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
-            if (action is "distance" or "distance-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
+            if (action is "apply" or "apply-reviewed" or "apply-both") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
+            if (action is "distance" or "distance-reviewed" or "apply-both") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
             NotifyDrafts();
         }
     }
