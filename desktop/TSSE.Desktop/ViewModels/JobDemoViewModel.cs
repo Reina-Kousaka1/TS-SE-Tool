@@ -47,6 +47,9 @@ public sealed class JobDemoViewModel : ObservableObject
     public string ApplyLabel => _text.Get("jobDemo.apply");
     public string ApplyBothLabel => _text.Get("jobDemo.applyBoth");
     public string ApplyBothReviewedLabel => _text.Get("jobDemo.applyBothReviewed");
+    public string DiscardUnitsLabel => _text.Get("jobDemo.discardUnits");
+    public string DiscardDistanceLabel => _text.Get("jobDemo.discardDistance");
+    public string DiscardModelLabel => _text.Get("jobDemo.discardModel");
     public string UndoLabel => _text.Get("jobDemo.undo");
     public string RedoLabel => _text.Get("jobDemo.redo");
     public string PreviewLabel => _text.Get("jobDemo.preview");
@@ -70,6 +73,15 @@ public sealed class JobDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
+        if (action is "discard-units" or "discard-distance" or "discard-model")
+        {
+            if (action == "discard-units") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
+            else if (action == "discard-distance") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
+            else { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
+            NotifyDrafts();
+            Message = _text.Get("jobDemo.draftDiscarded");
+            return;
+        }
         if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
             (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale))
         {

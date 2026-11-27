@@ -1,5 +1,9 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "jobDemo.discardUnits": "Discard units draft",
+  "jobDemo.discardDistance": "Discard distance draft",
+  "jobDemo.discardModel": "Discard cargo model index draft",
+  "jobDemo.draftDiscarded": "Draft discarded; the preview was not changed.",
   "jobDemo.modelIndex": "Synthetic cargo model index (nonnegative integer)",
   "jobDemo.modelDetail": "Legacy field only. Related cargo and model compatibility are not validated.",
   "profileDemo.applyBoth": "Apply balance and XP as one change",

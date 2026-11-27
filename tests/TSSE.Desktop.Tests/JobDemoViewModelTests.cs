@@ -8,6 +8,33 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void DiscardingJobDraftsIndividuallyPreservesOtherDraftsAndRedo()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.ModelInput = "2";
+        demo.ActionCommand.Execute("model");
+        demo.ModelInput = "3";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsModelStale);
+        demo.UnitsInput = "invalid";
+        demo.DistanceInput = "250";
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("discard-model");
+        Assert.Equal("0", demo.ModelInput);
+        Assert.False(demo.IsModelStale);
+        Assert.Equal("invalid", demo.UnitsInput);
+        Assert.Equal("250", demo.DistanceInput);
+        demo.ActionCommand.Execute("discard-units");
+        Assert.Equal("3", demo.UnitsInput);
+        Assert.Equal("250", demo.DistanceInput);
+        demo.ActionCommand.Execute("discard-distance");
+        Assert.Equal("120", demo.DistanceInput);
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("cargo_model_index: 2", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CargoModelIndexDraftIsValidatedAndRequiresReviewWhenStale()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

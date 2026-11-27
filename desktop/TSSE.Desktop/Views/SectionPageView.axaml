@@ -228,6 +228,7 @@
           </Grid>
           <TextBlock Text="{Binding ModelDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsModelStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="model-reviewed" />
+          <Button Content="{Binding DiscardModelLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-model" />
           <TextBlock Text="{Binding RouteLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Route}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding RouteDetail}" TextWrapping="Wrap" />
@@ -239,6 +240,7 @@
           </Grid>
           <TextBlock Text="{Binding UnitsDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsUnitsStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-reviewed" />
+          <Button Content="{Binding DiscardUnitsLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-units" />
           <TextBlock Text="{Binding DistanceLabel}" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <TextBox Text="{Binding DistanceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding DistanceLabel}" />
@@ -246,6 +248,7 @@
           </Grid>
           <TextBlock Text="{Binding DistanceDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsDistanceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="distance-reviewed" />
+          <Button Content="{Binding DiscardDistanceLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-distance" />
           <Button Content="{Binding ApplyBothLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-both" />
           <Button IsVisible="{Binding IsEitherStale}" Content="{Binding ApplyBothReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-both-reviewed" />
           <StackPanel Orientation="Horizontal" Spacing="8">
