@@ -90,6 +90,22 @@ one-day Actions artifact for later authorized local inspection without a
 local .NET 10 SDK. This is not a release or game compatibility proof. Other
 platforms are not packaged by this development-only step.
 
+`SiiSyntaxComparison` provides a separate in-memory comparison for explicitly
+supplied parsed documents. It lists added, removed or moved blocks and added,
+removed or changed fields; values are omitted, but names and IDs may themselves
+be sensitive. It rejects duplicate IDs, duplicate fields, ambiguous anonymous
+block identities and unclassified syntax. It compares trimmed raw values,
+ignores source ordering and formatting, and reports only the block for added or
+removed blocks. Therefore an empty result does not imply byte equality or game
+semantic equality. It performs no file access and is not wired to profile
+discovery, the desktop, or the fixture tool. Tests use synthetic input only.
+
+Architecture self-review (not independent): comparison requires two already
+parsed bounded documents, matches globally unique IDs and unambiguous anonymous
+block identities, checks parent identity, and rejects ambiguous syntax rather
+than inferring matches. It is diagnostic evidence only; names and IDs must not
+be logged or published without review. Real fixture compatibility remains open.
+
 The report includes a four-byte signature hint for `SiiN`, `ScsC`, `BSII` and
 `3nK` followed by byte `01`, as documented in the original SII Decrypt
 [format constants](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Source/SII_Decrypt_Decryptor.pas).
