@@ -9,6 +9,7 @@ public sealed class VehicleDemoViewModelTests
 {
     [Theory]
     [InlineData("1.00000001")]
+    [InlineData("1.00000000000000001")]
     [InlineData("-1e-99")]
     [InlineData("1e-99")]
     public void RoundedOrUnderflowedDraftCannotChangeVehicle(string input)

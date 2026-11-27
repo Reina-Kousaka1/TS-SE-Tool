@@ -200,14 +200,35 @@ public sealed class LegacyVehiclePreview
     public static bool TryParseDecimalRatio(string? input, out float value)
     {
         value = default;
-        if (input is null || !double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ||
+        if (input is null || input.Length > 1024 || !double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ||
             !double.IsFinite(parsed) || parsed < 0 || parsed > 1)
             return false;
 
         string significand = input.Trim();
-        int exponent = significand.IndexOfAny(['e', 'E']);
-        if (exponent >= 0) significand = significand[..exponent];
-        bool nonzero = significand.Any(c => c is >= '1' and <= '9');
+        int exponentIndex = significand.IndexOfAny(['e', 'E']);
+        int exponent = 0;
+        if (exponentIndex >= 0)
+        {
+            if (!int.TryParse(significand.AsSpan(exponentIndex + 1), NumberStyles.AllowLeadingSign,
+                CultureInfo.InvariantCulture, out exponent)) return false;
+            significand = significand[..exponentIndex];
+        }
+        bool negative = significand.StartsWith('-');
+        if (significand.StartsWith('-') || significand.StartsWith('+')) significand = significand[1..];
+        int point = significand.IndexOf('.');
+        int integerDigits = point < 0 ? significand.Length : point;
+        string digits = significand.Replace(".", "", StringComparison.Ordinal);
+        int firstNonzero = 0;
+        while (firstNonzero < digits.Length && digits[firstNonzero] == '0') firstNonzero++;
+        bool nonzero = firstNonzero < digits.Length;
+        if (negative && nonzero) return false;
+        if (nonzero)
+        {
+            long power = (long)integerDigits + exponent - firstNonzero - 1;
+            if (power > 0 || power == 0 &&
+                (digits[firstNonzero] != '1' || digits.AsSpan(firstNonzero + 1).ContainsAnyExcept('0')))
+                return false;
+        }
         // Underflow must not turn a nonzero (including negative) value into zero.
         if (parsed == 0 && nonzero) return false;
         value = (float)parsed;

@@ -8,6 +8,9 @@ public sealed class LegacyVehiclePreviewTests
 {
     [Theory]
     [InlineData("1.00000001")]
+    [InlineData("1.00000000000000001")]
+    [InlineData("10000000000000001e-16")]
+    [InlineData("0.100000000000000001e1")]
     [InlineData("-1e-99")]
     [InlineData("-1e-999")]
     [InlineData("1e-999")]
@@ -27,6 +30,9 @@ public sealed class LegacyVehiclePreviewTests
     [InlineData("-0e-999", 0f)]
     [InlineData("5e-1", 0.5f)]
     [InlineData("1", 1f)]
+    [InlineData("10e-1", 1f)]
+    [InlineData("0.100000000000000000e1", 1f)]
+    [InlineData("0.99999999999999999", 1f)]
     public void SupportedDecimalRatiosRemainAvailable(string raw, float expected)
     {
         Assert.True(LegacyVehiclePreview.TryParseDecimalRatio(raw, out float actual));

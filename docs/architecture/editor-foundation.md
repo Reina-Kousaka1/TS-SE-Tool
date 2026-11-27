@@ -55,10 +55,12 @@ integer is changed, the syntax session preserves all other source lines, and a
 trailer is rejected. No version or unit inference and no write gate are added.
 
 For synthetic wear and fuel ratios, decimal input is checked in double
-precision before conversion to the legacy single-precision value. Values that
+precision, and the decimal digit sequence is checked against the exact [0, 1]
+boundary, before conversion to the legacy single-precision value. Values that
 underflow from a nonzero decimal to zero are rejected; this avoids silently
 accepting a tiny negative value or erasing a tiny positive value. This remains
-floating-point validation, not an exact arbitrary-precision decimal grammar.
+floating-point conversion with a 1024-character input limit, not a general
+arbitrary-precision decimal implementation.
 
 `LegacySyntheticWorkspace` combines explicitly selected profile, truck,
 trailer and job blocks in one in-memory syntax session. Changes in different
