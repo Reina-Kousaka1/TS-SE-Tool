@@ -18,7 +18,9 @@ public sealed class SiiEditSessionTests
         Assert.True(session.Undo());
         Assert.Empty(session.Changes);
         Assert.True(session.Redo());
-        Assert.Equal(2, session.Changes.Count);
+        Assert.Collection(session.Changes,
+            change => Assert.Equal("money_account", change.FieldName),
+            change => Assert.Equal("experience_points", change.FieldName));
         session.Apply([new("bank", "a", "money_account", "42")]);
         Assert.Equal("experience_points", Assert.Single(session.Changes).FieldName);
         session.Apply([new("economy", "b", "experience_points", "5")]);

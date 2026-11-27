@@ -35,14 +35,14 @@ public sealed class SiiEditSession
         get
         {
             var changes = new List<SiiFieldChange>();
-            foreach ((string type, string? id, string field) in _knownTargets)
+            foreach ((string type, string? id, string fieldName) in _knownTargets)
             {
                 SiiBlock beforeBlock = _original.Blocks.Single(block => block.Type == type && block.Id == id);
                 SiiBlock afterBlock = _history.Current.Blocks.Single(block => block.Type == type && block.Id == id);
-                SiiField before = beforeBlock.Fields.Single(item => item.Name == field);
-                SiiField after = afterBlock.Fields.Single(item => item.Name == field);
+                SiiField before = beforeBlock.Fields.Single(item => item.Name == fieldName);
+                SiiField after = afterBlock.Fields.Single(item => item.Name == fieldName);
                 if (!string.Equals(before.Value, after.Value, StringComparison.Ordinal))
-                    changes.Add(new(type, id, field, before.Value, after.Value, before.LineNumber));
+                    changes.Add(new(type, id, fieldName, before.Value, after.Value, before.LineNumber));
             }
             return changes.OrderBy(change => change.LineNumber).ToList().AsReadOnly();
         }
