@@ -41,7 +41,8 @@ public sealed class JobDemoViewModelTests
         Assert.Contains("history is full", demo.Message, StringComparison.Ordinal);
         demo.ActionCommand.Execute("undo");
         demo.UnitsInput = "100";
-        demo.ActionCommand.Execute("apply");
+        Assert.True(demo.IsUnitsStale);
+        demo.ActionCommand.Execute("apply-reviewed");
         Assert.Contains("units_count: 100", demo.PreviewText, StringComparison.Ordinal);
     }
     [Fact]

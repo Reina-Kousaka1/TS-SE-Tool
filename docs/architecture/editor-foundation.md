@@ -59,6 +59,10 @@ Draft self-review (not independent): drafts are keyed by vehicle category and
 field, stay in memory, and do not modify the document until explicitly applied.
 A stale draft cannot use the normal apply action; the separate reviewed action
 is intentional. Game-save editing and file access remain disabled.
+Profile balance/experience and job units/distance use the same explicit review
+principle when a shared undo or another change alters the committed value.
+Setting a demo level leaves an unrelated experience draft intact and flags it
+when the committed XP changes.
 
 Workspace self-review (not independent): only typed preview operations can
 modify the shared session; those operations do not change the profile or job

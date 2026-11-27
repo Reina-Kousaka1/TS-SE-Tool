@@ -1,4 +1,7 @@
 {
+  "editor.staleDraft": "The saved demo value changed to {0} since this draft began. Review it before applying.",
+  "editor.staleBlocked": "The saved demo value changed. Review the draft and use the explicit apply button.",
+  "editor.applyReviewed": "Apply reviewed draft",
   "vehicleDemo.staleDraft": "The saved demo value changed to {0} since this draft began. Review it before applying.",
   "vehicleDemo.staleBlocked": "The saved demo value changed. Review the draft and use the explicit apply button.",
   "vehicleDemo.applyStale": "Apply reviewed draft",

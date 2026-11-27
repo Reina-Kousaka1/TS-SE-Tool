@@ -18,6 +18,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
     private string _message;
     private string _lastBalance = "0";
     private string _lastExperience = "0";
+    private string _baseBalance = "0";
+    private string _baseExperience = "0";
 
     public ProfileDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -53,8 +55,13 @@ public sealed class ProfileDemoViewModel : ObservableObject
         }
     }
     public string LevelInput { get => _levelInput; set => SetProperty(ref _levelInput, value ?? string.Empty); }
-    public string BalanceInput { get => _balanceInput; set => SetProperty(ref _balanceInput, value ?? string.Empty); }
-    public string ExperienceInput { get => _experienceInput; set => SetProperty(ref _experienceInput, value ?? string.Empty); }
+    public string BalanceInput { get => _balanceInput; set { if (_balanceInput == _lastBalance) _baseBalance = _lastBalance; if (SetProperty(ref _balanceInput, value ?? "")) NotifyDrafts(); } }
+    public string ExperienceInput { get => _experienceInput; set { if (_experienceInput == _lastExperience) _baseExperience = _lastExperience; if (SetProperty(ref _experienceInput, value ?? "")) NotifyDrafts(); } }
+    public bool IsBalanceStale => BalanceInput != _lastBalance && _baseBalance != _lastBalance;
+    public bool IsExperienceStale => ExperienceInput != _lastExperience && _baseExperience != _lastExperience;
+    public string BalanceDraftNotice => IsBalanceStale ? _text.Format("editor.staleDraft", _lastBalance) : "";
+    public string ExperienceDraftNotice => IsExperienceStale ? _text.Format("editor.staleDraft", _lastExperience) : "";
+    public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
     public RelayCommand<string> ActionCommand { get; }
 
@@ -66,15 +73,20 @@ public sealed class ProfileDemoViewModel : ObservableObject
             OnPropertyChanged(nameof(LevelProgress));
             return;
         }
+        if ((action == "balance" && IsBalanceStale) || (action == "experience" && IsExperienceStale))
+        {
+            Message = _text.Get("editor.staleBlocked");
+            return;
+        }
         bool success;
         try
         {
             ProfileValues current = _session.Current;
             success = action switch
             {
-                "balance" when long.TryParse(BalanceInput, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long balance)
+                "balance" or "balance-reviewed" when long.TryParse(BalanceInput, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long balance)
                     => Apply(current with { Balance = balance }),
-                "experience" when uint.TryParse(ExperienceInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint experience)
+                "experience" or "experience-reviewed" when uint.TryParse(ExperienceInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint experience)
                     => Apply(current with { Experience = experience }),
                 "level" when int.TryParse(LevelInput, NumberStyles.None, CultureInfo.InvariantCulture, out int level) && level <= 150
                     => Apply(current with { Experience = LegacyLevelCalculator.ExperienceForLevelEnd(_levelTable, level) }),
@@ -96,8 +108,9 @@ public sealed class ProfileDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action == "level")
-                ExperienceInput = _session.Current.Experience.ToString(CultureInfo.InvariantCulture);
+            if (action is "balance" or "balance-reviewed") { _baseBalance = _lastBalance; SetProperty(ref _balanceInput, _lastBalance, nameof(BalanceInput)); }
+            if (action is "experience" or "experience-reviewed") { _baseExperience = _lastExperience; SetProperty(ref _experienceInput, _lastExperience, nameof(ExperienceInput)); }
+            NotifyDrafts();
         }
     }
 
@@ -106,13 +119,22 @@ public sealed class ProfileDemoViewModel : ObservableObject
         ProfileValues values = _session.Current;
         string balance = values.Balance.ToString(CultureInfo.InvariantCulture);
         string experience = values.Experience.ToString(CultureInfo.InvariantCulture);
-        if (BalanceInput == _lastBalance) BalanceInput = balance;
-        if (ExperienceInput == _lastExperience) ExperienceInput = experience;
+        if (BalanceInput == _lastBalance || BalanceInput == balance) { _baseBalance = balance; SetProperty(ref _balanceInput, balance, nameof(BalanceInput)); }
+        if (ExperienceInput == _lastExperience || ExperienceInput == experience) { _baseExperience = experience; SetProperty(ref _experienceInput, experience, nameof(ExperienceInput)); }
         _lastBalance = balance;
         _lastExperience = experience;
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(LevelProgress));
+        NotifyDrafts();
+    }
+
+    private void NotifyDrafts()
+    {
+        OnPropertyChanged(nameof(IsBalanceStale));
+        OnPropertyChanged(nameof(IsExperienceStale));
+        OnPropertyChanged(nameof(BalanceDraftNotice));
+        OnPropertyChanged(nameof(ExperienceDraftNotice));
     }
 
     private bool Apply(ProfileValues values)

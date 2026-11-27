@@ -16,6 +16,8 @@ public sealed class JobDemoViewModel : ObservableObject
     private string _message;
     private string _lastUnits = "3";
     private string _lastDistance = "120";
+    private string _baseUnits = "3";
+    private string _baseDistance = "120";
 
     public JobDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -41,22 +43,32 @@ public sealed class JobDemoViewModel : ObservableObject
     public string ChangesLabel => _text.Get("editor.changes");
     public string SharedHistoryLabel => _text.Get("editor.sharedHistory");
     public string ChangeSummary => DemoChangeSummary.Format(_session.Changes, _text.Get("editor.noChanges"));
-    public string UnitsInput { get => _unitsInput; set => SetProperty(ref _unitsInput, value ?? ""); }
-    public string DistanceInput { get => _distanceInput; set => SetProperty(ref _distanceInput, value ?? ""); }
+    public string UnitsInput { get => _unitsInput; set { if (_unitsInput == _lastUnits) _baseUnits = _lastUnits; if (SetProperty(ref _unitsInput, value ?? "")) NotifyDrafts(); } }
+    public string DistanceInput { get => _distanceInput; set { if (_distanceInput == _lastDistance) _baseDistance = _lastDistance; if (SetProperty(ref _distanceInput, value ?? "")) NotifyDrafts(); } }
+    public bool IsUnitsStale => UnitsInput != _lastUnits && _baseUnits != _lastUnits;
+    public bool IsDistanceStale => DistanceInput != _lastDistance && _baseDistance != _lastDistance;
+    public string UnitsDraftNotice => IsUnitsStale ? _text.Format("editor.staleDraft", _lastUnits) : "";
+    public string DistanceDraftNotice => IsDistanceStale ? _text.Format("editor.staleDraft", _lastDistance) : "";
+    public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
     public RelayCommand<string> ActionCommand { get; }
 
     private void Execute(string action)
     {
+        if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale))
+        {
+            Message = _text.Get("editor.staleBlocked");
+            return;
+        }
         bool success = false;
         try
         {
-            if (action == "apply" && int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int count))
+            if ((action is "apply" or "apply-reviewed") && int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int count))
             {
                 _session.SetUnitsCount(count);
                 success = true;
             }
-            else if (action == "distance" && int.TryParse(DistanceInput, NumberStyles.None, CultureInfo.InvariantCulture, out int distance))
+            else if ((action is "distance" or "distance-reviewed") && int.TryParse(DistanceInput, NumberStyles.None, CultureInfo.InvariantCulture, out int distance))
             {
                 _session.SetPlannedDistanceKm(distance);
                 success = true;
@@ -75,8 +87,9 @@ public sealed class JobDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action == "apply") UnitsInput = _lastUnits;
-            if (action == "distance") DistanceInput = _lastDistance;
+            if (action is "apply" or "apply-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
+            if (action is "distance" or "distance-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
+            NotifyDrafts();
         }
     }
 
@@ -84,11 +97,20 @@ public sealed class JobDemoViewModel : ObservableObject
     {
         string units = _session.UnitsCount.ToString(CultureInfo.InvariantCulture);
         string distance = _session.PlannedDistanceKm.ToString(CultureInfo.InvariantCulture);
-        if (UnitsInput == _lastUnits) UnitsInput = units;
-        if (DistanceInput == _lastDistance) DistanceInput = distance;
+        if (UnitsInput == _lastUnits || UnitsInput == units) { _baseUnits = units; SetProperty(ref _unitsInput, units, nameof(UnitsInput)); }
+        if (DistanceInput == _lastDistance || DistanceInput == distance) { _baseDistance = distance; SetProperty(ref _distanceInput, distance, nameof(DistanceInput)); }
         _lastUnits = units;
         _lastDistance = distance;
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
+        NotifyDrafts();
+    }
+
+    private void NotifyDrafts()
+    {
+        OnPropertyChanged(nameof(IsUnitsStale));
+        OnPropertyChanged(nameof(IsDistanceStale));
+        OnPropertyChanged(nameof(UnitsDraftNotice));
+        OnPropertyChanged(nameof(DistanceDraftNotice));
     }
 }

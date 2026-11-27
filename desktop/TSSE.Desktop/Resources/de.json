@@ -1,4 +1,7 @@
 {
+  "editor.staleDraft": "Der gespeicherte Demowert hat sich seit Beginn dieses Entwurfs auf {0} geändert. Vor dem Übernehmen prüfen.",
+  "editor.staleBlocked": "Der gespeicherte Demowert hat sich geändert. Den Entwurf prüfen und die ausdrückliche Übernehmen-Schaltfläche verwenden.",
+  "editor.applyReviewed": "Geprüften Entwurf übernehmen",
   "vehicleDemo.staleDraft": "Der gespeicherte Demowert hat sich seit Beginn dieses Entwurfs auf {0} geändert. Vor dem Übernehmen prüfen.",
   "vehicleDemo.staleBlocked": "Der gespeicherte Demowert hat sich geändert. Den Entwurf prüfen und die ausdrückliche Übernehmen-Schaltfläche verwenden.",
   "vehicleDemo.applyStale": "Geprüften Entwurf übernehmen",
