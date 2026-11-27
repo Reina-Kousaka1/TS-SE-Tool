@@ -28,6 +28,24 @@ invariant decimal without whitespace or thousands separators. Level conversion
 and game-specific rules are intentionally unavailable pending compatibility
 evidence. No file or SII field is changed by the session.
 
+## In-memory SII edit batches
+
+`SiiEditSession` stages explicit field replacements against an already parsed
+syntax document and groups each batch into one undo entry. A failed replacement,
+duplicate target, or unclassified syntax leaves the current text and redo history
+unchanged. Unchanged replacements do not create history entries. This is a
+syntax-level facility for synthetic tests; it has no file access, save-version
+validation, or mapping from profile models to real game files. The UI profile
+demo remains detached. Unknown recognized fields and blocks remain in the
+original text; unclassified syntax blocks edits.
+
+Architecture self-review (not independent): existing `WithFieldValue` reparses
+each candidate and checks block layout and exact selected value. The new session
+only publishes a candidate after every replacement succeeds. It does not claim
+that syntactic success means game validity. Full-text snapshots and reparsing
+can be expensive; bounded history and game-specific validation are required
+before real profile editing.
+
 ## Architecture self-review (not independent)
 
 Decision: keep the editor core detached from file transactions and SII until
