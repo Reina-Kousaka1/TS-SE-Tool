@@ -330,6 +330,11 @@ demo trailer. It does not validate game-level cargo or trailer relationships.
 
 ## Experimental active job mapping
 
+The synthetic job demo permits a nonnegative `cargo_model_index` integer,
+declared by the legacy `Player_Job` model. It checks the existing field and
+shares undo/redo and stale-draft safeguards. It does not resolve or validate
+cargo/model relationships or establish compatibility with a game version.
+
 `LegacyJobPreview` follows an explicitly selected synthetic player block's
 `current_job` reference to a unique `player_job` block. The legacy Player,
 Player_Job and SiiNunit classes provide the names and Int32 units field.

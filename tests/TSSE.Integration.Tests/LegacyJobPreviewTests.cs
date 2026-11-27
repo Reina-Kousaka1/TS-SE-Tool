@@ -6,6 +6,37 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyJobPreviewTests
 {
+    [Fact]
+    public void CargoModelIndexEditPreservesOtherFieldsAndUndo()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  cargo_model_index: 0002", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        editor.SetCargoModelIndex(2);
+        Assert.Equal(input, editor.PreviewText);
+        editor.SetCargoModelIndex(int.MaxValue);
+        Assert.Contains("cargo_model_index: 2147483647", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal(int.MaxValue, editor.CargoModelIndex);
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetCargoModelIndex(-1));
+    }
+
+    [Theory]
+    [InlineData("cargo_model_index: -1")]
+    [InlineData("cargo_model_index: 2147483648")]
+    [InlineData("cargo_model_index: 1\n  cargo_model_index: 2")]
+    [InlineData("other: 1")]
+    public void InvalidCargoModelIndexCannotBeOverwritten(string field)
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  " + field, StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<InvalidOperationException>(() => editor.SetCargoModelIndex(3));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+    }
+
     [Theory]
     [InlineData("p")]
     [InlineData("j")]

@@ -1,5 +1,7 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "jobDemo.modelIndex": "Synthetic cargo model index (nonnegative integer)",
+  "jobDemo.modelDetail": "Legacy field only. Related cargo and model compatibility are not validated.",
   "profileDemo.applyBoth": "Apply balance and XP as one change",
   "profileDemo.applyBothReviewed": "Apply both after reviewing current values",
   "vehicleDemo.licensePlateHeading": "Synthetic license plate field (raw)",

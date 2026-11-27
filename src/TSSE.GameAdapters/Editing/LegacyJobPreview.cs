@@ -44,6 +44,8 @@ public sealed class LegacyJobPreview
     public string CargoReference => Value(CurrentJob(), "cargo");
     public int UnitsCount => ReadUnits(CurrentJob());
     public int PlannedDistanceKm => ReadNonnegativeInt(CurrentJob(), "planned_distance_km");
+    /// <summary>Legacy-shaped synthetic integer only; no cargo model semantics are validated.</summary>
+    public int CargoModelIndex => ReadNonnegativeInt(CurrentJob(), "cargo_model_index");
     public string SourceCompany => RouteValue(CurrentJob(), "source_company");
     public string TargetCompany => RouteValue(CurrentJob(), "target_company");
 
@@ -72,6 +74,13 @@ public sealed class LegacyJobPreview
         if (distance < 0) throw new ArgumentOutOfRangeException(nameof(distance));
         if (PlannedDistanceKm == distance) return;
         _session.Apply([new("player_job", _jobId, "planned_distance_km", distance.ToString(CultureInfo.InvariantCulture))]);
+    }
+
+    public void SetCargoModelIndex(int index)
+    {
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+        if (CargoModelIndex == index) return;
+        _session.Apply([new("player_job", _jobId, "cargo_model_index", index.ToString(CultureInfo.InvariantCulture))]);
     }
 
     /// <summary>Updates both validated synthetic job values in a single undoable transaction.</summary>

@@ -8,6 +8,29 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void CargoModelIndexDraftIsValidatedAndRequiresReviewWhenStale()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.ModelInput = "2147483648";
+        demo.ActionCommand.Execute("model");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ModelInput = "2";
+        demo.ActionCommand.Execute("model");
+        Assert.Contains("cargo_model_index: 2", demo.PreviewText, StringComparison.Ordinal);
+        demo.ModelInput = "3";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsModelStale);
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("model");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("model-reviewed");
+        Assert.Contains("cargo_model_index: 3", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+    }
+
+    [Fact]
     public void RouteSwapIsVisibleAndUndoableWithoutChangingCargo()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

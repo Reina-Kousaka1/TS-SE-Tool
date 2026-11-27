@@ -13,11 +13,14 @@ public sealed class JobDemoViewModel : ObservableObject
     private readonly LegacyJobPreview _session;
     private string _unitsInput = "3";
     private string _distanceInput = "120";
+    private string _modelInput = "0";
     private string _message;
     private string _lastUnits = "3";
     private string _lastDistance = "120";
     private string _baseUnits = "3";
     private string _baseDistance = "120";
+    private string _lastModel = "0";
+    private string _baseModel = "0";
 
     public JobDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -39,6 +42,8 @@ public sealed class JobDemoViewModel : ObservableObject
     public string SwapRouteLabel => _text.Get("jobDemo.swapRoute");
     public string UnitsLabel => _text.Get("jobDemo.units");
     public string DistanceLabel => _text.Get("jobDemo.distance");
+    public string ModelLabel => _text.Get("jobDemo.modelIndex");
+    public string ModelDetail => _text.Get("jobDemo.modelDetail");
     public string ApplyLabel => _text.Get("jobDemo.apply");
     public string ApplyBothLabel => _text.Get("jobDemo.applyBoth");
     public string ApplyBothReviewedLabel => _text.Get("jobDemo.applyBothReviewed");
@@ -51,11 +56,14 @@ public sealed class JobDemoViewModel : ObservableObject
     public string ChangeSummary => DemoChangeSummary.Format(_session.Changes, _text.Get("editor.noChanges"));
     public string UnitsInput { get => _unitsInput; set { if (_unitsInput == _lastUnits) _baseUnits = _lastUnits; if (SetProperty(ref _unitsInput, value ?? "")) NotifyDrafts(); } }
     public string DistanceInput { get => _distanceInput; set { if (_distanceInput == _lastDistance) _baseDistance = _lastDistance; if (SetProperty(ref _distanceInput, value ?? "")) NotifyDrafts(); } }
+    public string ModelInput { get => _modelInput; set { if (_modelInput == _lastModel) _baseModel = _lastModel; if (SetProperty(ref _modelInput, value ?? "")) NotifyDrafts(); } }
     public bool IsUnitsStale => UnitsInput != _lastUnits && _baseUnits != _lastUnits;
     public bool IsDistanceStale => DistanceInput != _lastDistance && _baseDistance != _lastDistance;
+    public bool IsModelStale => ModelInput != _lastModel && _baseModel != _lastModel;
     public bool IsEitherStale => IsUnitsStale || IsDistanceStale;
     public string UnitsDraftNotice => IsUnitsStale ? _text.Format("editor.staleDraft", _lastUnits) : "";
     public string DistanceDraftNotice => IsDistanceStale ? _text.Format("editor.staleDraft", _lastDistance) : "";
+    public string ModelDraftNotice => IsModelStale ? _text.Format("editor.staleDraft", _lastModel) : "";
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
     public RelayCommand<string> ActionCommand { get; }
@@ -63,7 +71,7 @@ public sealed class JobDemoViewModel : ObservableObject
     private void Execute(string action)
     {
         if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
-            (action == "apply-both" && (IsUnitsStale || IsDistanceStale)))
+            (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -88,6 +96,11 @@ public sealed class JobDemoViewModel : ObservableObject
                 _session.SetPlannedDistanceKm(distance);
                 success = true;
             }
+            else if ((action is "model" or "model-reviewed") && int.TryParse(ModelInput, NumberStyles.None, CultureInfo.InvariantCulture, out int model))
+            {
+                _session.SetCargoModelIndex(model);
+                success = true;
+            }
             else if (action == "swap-route") { _session.SwapRoute(); success = true; }
             else if (action == "undo") success = _session.Undo();
             else if (action == "redo") success = _session.Redo();
@@ -105,6 +118,7 @@ public sealed class JobDemoViewModel : ObservableObject
             _workspace.NotifyChanged();
             if (action is "apply" or "apply-reviewed" or "apply-both" or "apply-both-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
             if (action is "distance" or "distance-reviewed" or "apply-both" or "apply-both-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
+            if (action is "model" or "model-reviewed") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
             NotifyDrafts();
         }
     }
@@ -113,10 +127,13 @@ public sealed class JobDemoViewModel : ObservableObject
     {
         string units = _session.UnitsCount.ToString(CultureInfo.InvariantCulture);
         string distance = _session.PlannedDistanceKm.ToString(CultureInfo.InvariantCulture);
+        string model = _session.CargoModelIndex.ToString(CultureInfo.InvariantCulture);
         if (UnitsInput == _lastUnits || UnitsInput == units) { _baseUnits = units; SetProperty(ref _unitsInput, units, nameof(UnitsInput)); }
         if (DistanceInput == _lastDistance || DistanceInput == distance) { _baseDistance = distance; SetProperty(ref _distanceInput, distance, nameof(DistanceInput)); }
+        if (ModelInput == _lastModel || ModelInput == model) { _baseModel = model; SetProperty(ref _modelInput, model, nameof(ModelInput)); }
         _lastUnits = units;
         _lastDistance = distance;
+        _lastModel = model;
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(Route));
@@ -127,8 +144,10 @@ public sealed class JobDemoViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsUnitsStale));
         OnPropertyChanged(nameof(IsDistanceStale));
+        OnPropertyChanged(nameof(IsModelStale));
         OnPropertyChanged(nameof(IsEitherStale));
         OnPropertyChanged(nameof(UnitsDraftNotice));
         OnPropertyChanged(nameof(DistanceDraftNotice));
+        OnPropertyChanged(nameof(ModelDraftNotice));
     }
 }

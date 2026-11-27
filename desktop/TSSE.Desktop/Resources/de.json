@@ -1,5 +1,7 @@
 {
   "fixture.heading": "Synthetische Formatdiagnose",
+  "jobDemo.modelIndex": "Synthetischer Frachtmodellindex (nichtnegative Ganzzahl)",
+  "jobDemo.modelDetail": "Nur Legacy-Feld. Zugehörige Fracht und Modellkompatibilität werden nicht geprüft.",
   "profileDemo.applyBoth": "Guthaben und XP als eine Änderung übernehmen",
   "profileDemo.applyBothReviewed": "Beide nach Prüfung der aktuellen Werte übernehmen",
   "vehicleDemo.licensePlateHeading": "Synthetisches Kennzeichenfeld (Rohwert)",

@@ -220,6 +220,14 @@
           <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding CargoLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Cargo}" />
+          <TextBlock Text="{Binding ModelLabel}" />
+          <TextBlock Text="{Binding ModelDetail}" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding ModelInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding ModelLabel}" />
+            <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="model" />
+          </Grid>
+          <TextBlock Text="{Binding ModelDraftNotice}" TextWrapping="Wrap" />
+          <Button IsVisible="{Binding IsModelStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="model-reviewed" />
           <TextBlock Text="{Binding RouteLabel}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Route}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding RouteDetail}" TextWrapping="Wrap" />
