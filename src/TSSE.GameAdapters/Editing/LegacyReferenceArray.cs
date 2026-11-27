@@ -12,8 +12,8 @@ internal static class LegacyReferenceArray
         ArgumentException.ThrowIfNullOrWhiteSpace(type);
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         if (document.OpaqueLines.Count != 0) throw new InvalidOperationException("Unclassified syntax prevents safe inspection.");
-        SiiBlock[] blocks = document.Blocks.Where(block => block.Type == type && block.Id == id).ToArray();
-        if (blocks.Length != 1) throw new InvalidOperationException("The selected block is missing or ambiguous.");
+        SiiBlock[] blocks = document.Blocks.Where(block => block.Id == id).ToArray();
+        if (blocks.Length != 1 || blocks[0].Type != type) throw new InvalidOperationException("The selected block is missing or ambiguous.");
         SiiField[] counts = blocks[0].Fields.Where(item => item.Name == name).ToArray();
         if (counts.Length != 1 || !int.TryParse(counts[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out int count) || count is < 0 or > 1024)
             throw new InvalidOperationException("The array count is missing, ambiguous, or unsupported.");

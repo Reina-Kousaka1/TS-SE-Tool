@@ -6,6 +6,15 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyAccessoryInspectorTests
 {
+    [Fact]
+    public void DuplicateOwnerIdAcrossBlockTypesPreventsInspection()
+    {
+        const string input = "vehicle : v {\n accessories: 0\n}\nmod : v {\n unknown: preserved\n}\n";
+        var document = SiiSyntaxDocument.Parse(input);
+        Assert.Throws<InvalidOperationException>(() => LegacyAccessoryInspector.InspectDeclaredArray(document, "vehicle", "v"));
+        Assert.Equal(input, document.ToText());
+    }
+
     [Theory]
     [InlineData("vehicle")]
     [InlineData("trailer")]

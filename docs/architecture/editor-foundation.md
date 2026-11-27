@@ -101,6 +101,8 @@ block type, including at the first or a later link. Validation precedes the
 single batch, so an ambiguous link leaves the preview and history unchanged.
 The synthetic active-job preview likewise requires its player and job IDs to
 be unique across block types before exposing job edits.
+The shared reference-array reader applies the same source-ID check before
+inspecting synthetic player and accessory arrays.
 The synthetic assignment validator indexes only referenced block IDs in one
 document pass, still rejecting duplicate IDs across all block types. The shared
 bounded array reader indexes field names once and preserves numeric index order.
