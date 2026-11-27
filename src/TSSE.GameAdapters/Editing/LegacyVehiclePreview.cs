@@ -136,8 +136,8 @@ public sealed class LegacyVehiclePreview
         {
             if (seen.Count >= 64 || !seen.Add(current))
                 throw new InvalidOperationException("The trailer chain is cyclic or exceeds its limit.");
-            SiiBlock[] blocks = document.Blocks.Where(block => block.Type == "trailer" && block.Id == current).ToArray();
-            if (blocks.Length != 1)
+            SiiBlock[] blocks = document.Blocks.Where(block => block.Id == current).ToArray();
+            if (blocks.Length != 1 || blocks[0].Type != "trailer")
                 throw new InvalidOperationException("A trailer in the chain is missing or ambiguous.");
             SiiBlock block = blocks[0];
             string[] names = includeCargoAndWheels

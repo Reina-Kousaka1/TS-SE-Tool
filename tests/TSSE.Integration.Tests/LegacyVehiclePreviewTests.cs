@@ -62,6 +62,27 @@ public sealed class LegacyVehiclePreviewTests
     }
 
     [Theory]
+    [InlineData("a", false)]
+    [InlineData("b", false)]
+    [InlineData("a", true)]
+    [InlineData("b", true)]
+    public void ChainRepairRejectsIdentifiersSharedWithOtherBlockTypes(string duplicateId, bool fullRepair)
+    {
+        string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.4\n wheels_wear: 0\n slave_trailer: b\n}\n" +
+            "trailer : b {\n trailer_body_wear: 0.5\n chassis_wear: 0.6\n cargo_damage: 0.7\n wheels_wear: 0\n slave_trailer: null\n}\n" +
+            "vehicle : " + duplicateId + " {\n unknown_mod: \"preserved\"\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "a");
+        Assert.Throws<InvalidOperationException>(() =>
+        {
+            if (fullRepair) preview.RepairTrailerChainAll();
+            else preview.RepairTrailerChainBody();
+        });
+        Assert.Equal(input, preview.PreviewText);
+        Assert.Empty(preview.Changes);
+        Assert.False(preview.CanUndo);
+    }
+
+    [Theory]
     [InlineData("wheels_wear[0]: bad")]
     [InlineData("wheels_wear[1]: 0.2")]
     [InlineData("wheels_wear[0]: 0.2\n wheels_wear[0]: 0.3")]

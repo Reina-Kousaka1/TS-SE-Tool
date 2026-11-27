@@ -96,6 +96,9 @@ closed; shared undo/redo includes the assignment.
 Assignment self-review (not independent): all syntactic reference checks run
 before the existing atomic edit. No profile discovery or game-save access is
 added, and the separate production-write gate remains closed.
+Synthetic trailer-chain repairs also reject a chain ID shared with any other
+block type, including at the first or a later link. Validation precedes the
+single batch, so an ambiguous link leaves the preview and history unchanged.
 The synthetic assignment validator indexes only referenced block IDs in one
 document pass, still rejecting duplicate IDs across all block types. The shared
 bounded array reader indexes field names once and preserves numeric index order.
