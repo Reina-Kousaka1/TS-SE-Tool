@@ -64,6 +64,37 @@ public sealed class ExperimentalBinarySiiReaderTests
     }
 
     [Fact]
+    public void ExcessiveFieldCountReportsLimitExceeded()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write("BSII"u8);
+            writer.Write(2u);
+            writer.Write(0u);
+            writer.Write((byte)1);
+            writer.Write(1u);
+            WriteName(writer, "synthetic");
+            for (var index = 0; index < 257; index++)
+            {
+                writer.Write(0x25u);
+                WriteName(writer, $"field_{index}");
+            }
+        }
+
+        var exception = Assert.Throws<ExperimentalBinarySiiException>(() =>
+            ExperimentalBinarySiiReader.Read(stream.ToArray()));
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, exception.Error);
+    }
+
+    private static void WriteName(BinaryWriter writer, string value)
+    {
+        byte[] bytes = Encoding.ASCII.GetBytes(value);
+        writer.Write((uint)bytes.Length);
+        writer.Write(bytes);
+    }
+
+    [Fact]
     public void ReadsOnlyTheSupportedSyntheticStructureWithoutChangingInput()
     {
         byte[] input = Fixture();
