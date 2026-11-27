@@ -108,7 +108,10 @@ try:
         print(
             f"Captured native Avalonia window at {width}x{height} with {color_count} colors: {screenshot_path}.")
 
-    exit_code = process.wait(timeout=25)
+    # ARM64 runners have taken over 23 seconds before framework initialization;
+    # allow the opened window's 1.5-second close timer to run while keeping a
+    # finite deadline and requiring a clean zero exit.
+    exit_code = process.wait(timeout=45)
 except subprocess.TimeoutExpired:
     terminate_process()
     sys.exit("The Avalonia desktop process did not close after its window startup smoke test.")

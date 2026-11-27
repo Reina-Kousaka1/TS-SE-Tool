@@ -4,8 +4,8 @@
 
 The installed Linux ARM64 desktop smoke test timed out in runs 46008818803
 and 46012068209 after the .NET tests had passed; both targeted retries passed.
-The existing 25-second deadline, failure behavior and clean-shutdown requirement
-are unchanged. CI-only fixed milestones now distinguish process entry, framework
+At that point the 25-second deadline, failure behavior and clean-shutdown requirement
+remained unchanged. CI-only fixed milestones distinguish process entry, framework
 initialization, view-model construction, window opening, timer tick, window
 closing, lifetime exit and return. They contain no paths or save data and are
 disabled unless the existing smoke-test environment flag is set. The next
@@ -24,6 +24,16 @@ initialization. This does not distinguish builder creation, platform startup,
 or XAML loading; additional CI-only builder and XAML milestones narrow the next
 observation. No timeout or success criterion was altered. This remains an
 implementation-agent self-review, not an independent review.
+
+Run 46038821133 supplied more specific evidence: on Linux ARM64 the process
+logged `builder-ready`, reached `xaml-load-start` about 23.4 seconds later,
+and opened the window about 24.4 seconds after process entry. The 1.5-second
+close timer could not complete before the original 25-second deadline. The
+Python smoke test now allows 45 seconds while still requiring a clean zero exit;
+timeouts still terminate the process and fail. This is an architecture
+self-review (not independent): the change addresses a measured deadline race,
+not the unexplained slow platform startup itself. Windows retains its separate
+25-second limit. The underlying intermittent startup delay remains unproven.
 
 **Status: in progress.** Foundation and Avalonia UI are one combined Phase 2; there is no separate UI-migration Phase 3. The analytics source change in `b7afc5a` passed full matrix [45896687312](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45896687312): all seven jobs, with 114/114 tests on each of Windows x64/ARM64, Linux x64/ARM64, and macOS Intel, plus 105/105 tests on each Fedora x64/ARM64 job. Self-contained publishes, native desktop start/shutdown, Linux package checks, and Fedora RPM dependency/runtime checks passed. The current code was not run on macOS ARM64; the earlier explicit Apple Silicon run [45811585565](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/45811585565) validated older source at `222b82a`. The local machine still has only .NET SDK 8.0.425, so local .NET 10 compilation is unavailable. Real ETS2/ATS/mod/Coaches compatibility, safe operator-reviewed recovery execution, Windows MSI packaging, signing/notarization, and physical desktop accessibility/input review remain open. Savegame discovery and writes remain disabled. Phase 2 is not complete.
 
