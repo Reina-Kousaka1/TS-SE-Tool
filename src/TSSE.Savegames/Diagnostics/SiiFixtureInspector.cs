@@ -124,4 +124,6 @@ public sealed record SiiFixtureReport(
     public int? DuplicateBlockIdOccurrences { get; init; }
     /// <summary>Repeated field names beyond their first occurrence in each block; null when syntax was not parsed.</summary>
     public int? DuplicateFieldOccurrences { get; init; }
+    /// <summary>Whether all syntax lines were classified; not a semantic validity guarantee.</summary>
+    public bool? DuplicateInspectionComplete => OpaqueLineCount is int count ? count == 0 : null;
 }

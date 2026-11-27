@@ -12,6 +12,7 @@
   "fixture.example.opaque": "Unclassified syntax",
   "fixture.example.duplicates": "Repeated identifiers and fields",
   "fixture.duplicates": "Repeated block IDs: {0}; repeated field names within blocks: {1}. Diagnostic hints only.",
+  "fixture.duplicatesIncomplete": "Repeated block IDs: {0}; repeated field names within blocks: {1}. Incomplete: unclassified syntax was not inspected.",
   "fixture.duplicatesUnavailable": "Duplicate inspection unavailable.",
   "fixture.example.unclosed": "Incomplete text",
   "fixture.example.unexpected-close": "Unexpected closing brace",

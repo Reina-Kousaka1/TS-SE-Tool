@@ -55,7 +55,8 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             ? _text.Format("fixture.errorColumn", _report.SyntaxError, _report.ErrorLine ?? 0, column)
             : _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine ?? 0);
     public string Duplicates => _report.DuplicateBlockIdOccurrences is int ids && _report.DuplicateFieldOccurrences is int fields
-        ? _text.Format("fixture.duplicates", ids, fields) : _text.Get("fixture.duplicatesUnavailable");
+        ? _text.Format(_report.DuplicateInspectionComplete == false ? "fixture.duplicatesIncomplete" : "fixture.duplicates", ids, fields)
+        : _text.Get("fixture.duplicatesUnavailable");
     public string LegacyVersion
     {
         get

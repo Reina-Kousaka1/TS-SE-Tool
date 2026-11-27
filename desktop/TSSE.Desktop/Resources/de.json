@@ -12,6 +12,7 @@
   "fixture.example.opaque": "Nicht klassifizierte Syntax",
   "fixture.example.duplicates": "Wiederholte IDs und Felder",
   "fixture.duplicates": "Wiederholte Block-IDs: {0}; wiederholte Feldnamen je Block: {1}. Nur Diagnosehinweise.",
+  "fixture.duplicatesIncomplete": "Wiederholte Block-IDs: {0}; wiederholte Feldnamen je Block: {1}. Unvollständig: Nicht klassifizierte Syntax wurde nicht geprüft.",
   "fixture.duplicatesUnavailable": "Duplikatprüfung nicht verfügbar.",
   "fixture.example.unclosed": "Unvollständiger Text",
   "fixture.example.unexpected-close": "Unerwartete schließende Klammer",

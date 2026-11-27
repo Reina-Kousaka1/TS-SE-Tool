@@ -16,12 +16,14 @@ public sealed class SiiFixtureInspectorTests
         Assert.Equal(SiiFixtureStatus.ParsedSyntaxOnly, report.Status);
         Assert.Equal(1, report.DuplicateBlockIdOccurrences);
         Assert.Equal(1, report.DuplicateFieldOccurrences);
+        Assert.True(report.DuplicateInspectionComplete);
         Assert.True(report.ByteRoundTripEqual);
         using var stream = new MemoryStream(input);
         Assert.Equal(report, SiiFixtureInspector.Inspect(stream));
         SiiFixtureReport invalid = SiiFixtureInspector.Inspect("}"u8);
         Assert.Null(invalid.DuplicateBlockIdOccurrences);
         Assert.Null(invalid.DuplicateFieldOccurrences);
+        Assert.Null(invalid.DuplicateInspectionComplete);
     }
 
     [Theory]
@@ -133,6 +135,7 @@ public sealed class SiiFixtureInspectorTests
         Assert.Equal(SiiFixtureStatus.UnclassifiedSyntax, report.Status);
         Assert.True(report.ByteRoundTripEqual);
         Assert.Equal(1, report.OpaqueLineCount);
+        Assert.False(report.DuplicateInspectionComplete);
     }
 
     [Fact]

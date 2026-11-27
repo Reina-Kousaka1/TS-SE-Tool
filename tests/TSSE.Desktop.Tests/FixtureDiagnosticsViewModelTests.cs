@@ -21,6 +21,7 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("55 (compatibility unverified)", demo.LegacyVersion, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "opaque");
         Assert.Contains("unclassified syntax", demo.Status, StringComparison.Ordinal);
+        Assert.Contains("Incomplete", demo.Duplicates, StringComparison.Ordinal);
         Assert.Contains("yes", demo.RoundTrip, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "unclosed");
         Assert.Contains("invalid or incomplete", demo.Status, StringComparison.Ordinal);
