@@ -14,6 +14,9 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("parsed syntax only", demo.Status, StringComparison.Ordinal);
         Assert.Contains("text prefix", demo.Signature, StringComparison.Ordinal);
         Assert.Contains("yes", demo.RoundTrip, StringComparison.Ordinal);
+        demo.Selected = demo.Examples.Single(item => item.Key == "duplicates");
+        Assert.Contains("block IDs: 1", demo.Duplicates, StringComparison.Ordinal);
+        Assert.Contains("blocks: 1", demo.Duplicates, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "legacy-info");
         Assert.Contains("55 (compatibility unverified)", demo.LegacyVersion, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "opaque");
@@ -41,6 +44,7 @@ public sealed class FixtureDiagnosticsViewModelTests
         demo.Selected = demo.Examples.Single(item => item.Key == "unexpected-close");
         Assert.Contains("Zeile 1, Spalte 1", demo.Error, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "binary");
+        Assert.Contains("nicht verfügbar", demo.Duplicates, StringComparison.Ordinal);
         Assert.Contains("Binärpräfix", demo.Signature, StringComparison.Ordinal);
         Assert.Contains("nicht durchgeführt", demo.RoundTrip, StringComparison.Ordinal);
     }

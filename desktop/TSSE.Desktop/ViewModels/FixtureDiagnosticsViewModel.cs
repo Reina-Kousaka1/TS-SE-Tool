@@ -16,7 +16,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     public FixtureDiagnosticsViewModel(IUiTextCatalog text)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
-        Examples = new[] { "text", "legacy-info", "opaque", "unclosed", "unexpected-close", "encrypted", "binary", "threenk" }
+        Examples = new[] { "text", "legacy-info", "opaque", "duplicates", "unclosed", "unexpected-close", "encrypted", "binary", "threenk" }
             .Select(key => new FixtureDiagnosticsExample(key, _text.Get("fixture.example." + key))).ToArray();
         _selected = Examples[0];
         _report = Inspect(_selected.Key);
@@ -39,6 +39,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             OnPropertyChanged(nameof(Signature));
             OnPropertyChanged(nameof(RoundTrip));
             OnPropertyChanged(nameof(Error));
+            OnPropertyChanged(nameof(Duplicates));
             OnPropertyChanged(nameof(LegacyVersion));
         }
     }
@@ -53,6 +54,8 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         _report.ErrorColumn is int column
             ? _text.Format("fixture.errorColumn", _report.SyntaxError, _report.ErrorLine ?? 0, column)
             : _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine ?? 0);
+    public string Duplicates => _report.DuplicateBlockIdOccurrences is int ids && _report.DuplicateFieldOccurrences is int fields
+        ? _text.Format("fixture.duplicates", ids, fields) : _text.Get("fixture.duplicatesUnavailable");
     public string LegacyVersion
     {
         get
@@ -71,6 +74,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         "text" => "SiiNunit\n{\n demo : sample {\n  unknown_field: \"synthetic\"\n }\n}\n",
         "legacy-info" => "SiiNunit\n{\n save_container : demo {\n  version: 55\n  unknown_field: \"synthetic\"\n }\n}\n",
         "opaque" => "SiiNunit\n{\n demo : sample {\n  unknown syntax\n }\n}\n",
+        "duplicates" => "SiiNunit\n{\n demo : sample {\n  value: 1\n  value: 2\n }\n other : sample {\n }\n}\n",
         "unclosed" => "SiiNunit\n{\n demo : sample {\n  value: 1\n",
         "unexpected-close" => "}",
         "encrypted" => "ScsC synthetic prefix only",

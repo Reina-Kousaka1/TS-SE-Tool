@@ -8,6 +8,22 @@ namespace TSSE.Savegames.Tests;
 
 public sealed class SiiFixtureInspectorTests
 {
+    [Fact]
+    public void DuplicateHintsCountRepeatedIdsAndFieldsWithoutTreatingIndexedFieldsAsDuplicates()
+    {
+        byte[] input = Encoding.UTF8.GetBytes("root {\n item : a {\n  value: 1\n  value: 2\n  array[0]: a\n  array[1]: b\n }\n other : a {\n  value: 3\n }\n}\n");
+        SiiFixtureReport report = SiiFixtureInspector.Inspect(input);
+        Assert.Equal(SiiFixtureStatus.ParsedSyntaxOnly, report.Status);
+        Assert.Equal(1, report.DuplicateBlockIdOccurrences);
+        Assert.Equal(1, report.DuplicateFieldOccurrences);
+        Assert.True(report.ByteRoundTripEqual);
+        using var stream = new MemoryStream(input);
+        Assert.Equal(report, SiiFixtureInspector.Inspect(stream));
+        SiiFixtureReport invalid = SiiFixtureInspector.Inspect("}"u8);
+        Assert.Null(invalid.DuplicateBlockIdOccurrences);
+        Assert.Null(invalid.DuplicateFieldOccurrences);
+    }
+
     [Theory]
     [InlineData("ScsC", SiiSignatureHint.EncryptedPrefix)]
     [InlineData("BSII", SiiSignatureHint.BinaryPrefix)]

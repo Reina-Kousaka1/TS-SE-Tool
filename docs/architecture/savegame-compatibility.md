@@ -18,6 +18,11 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 | Profiles | No profile discovery or profile hierarchy reader is active. | Repository source and UI gates; no profile fixtures. | **Not tested; disabled.** |
 | Trucks and trailers | No game-specific vehicle or trailer save models are implemented. | Repository model inventory; no real fixtures. | **Not tested; unsupported.** |
 | Coaches DLC | No Coaches field names, references, or data model have been inferred. Generic block and field syntax can retain unknown text. | No genuine Coaches fixture exists. | **Not tested; unsupported.** |
+
+The in-memory fixture report counts repeated non-null block IDs across types
+and repeated exact field names within each block. Indexed names are compared
+literally. These are diagnostic hints, not schema validation; unclassified
+syntax can make the counts incomplete. Counts are unavailable when parsing fails.
 | Encoding and save containers | The in-memory plain-text wrapper accepts strict UTF-8 (with or without BOM) and BOM-marked UTF-16 LE/BE. It does not decode game compression or reconstruct binary containers. | Synthetic byte-level roundtrips only. | **Actual game-save encoding and containers unverified.** |
 
 ## Roundtrip guarantees

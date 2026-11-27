@@ -28,6 +28,7 @@
           <TextBlock Text="{Binding Signature}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding RoundTrip}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Duplicates}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding LegacyVersion}" TextWrapping="Wrap" />
         </StackPanel>
       </Border>

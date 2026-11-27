@@ -55,8 +55,18 @@ public static class SiiFixtureInspector
             int opaqueCount = text.Syntax.OpaqueLines.Count;
             SiiFixtureStatus status = !equal ? SiiFixtureStatus.ByteMismatch :
                 opaqueCount > 0 ? SiiFixtureStatus.UnclassifiedSyntax : SiiFixtureStatus.ParsedSyntaxOnly;
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            int duplicateIds = 0, duplicateFields = 0;
+            foreach (SiiBlock block in text.Syntax.Blocks)
+            {
+                if (block.Id is not null && !ids.Add(block.Id)) duplicateIds++;
+                var fields = new HashSet<string>(StringComparer.Ordinal);
+                foreach (SiiField field in block.Fields)
+                    if (!fields.Add(field.Name)) duplicateFields++;
+            }
             return new(status, bytes.Length, hash, text.EncodingKind, equal,
-                text.Syntax.Blocks.Count, opaqueCount, null, null) { SignatureHint = hint };
+                text.Syntax.Blocks.Count, opaqueCount, null, null)
+                { SignatureHint = hint, DuplicateBlockIdOccurrences = duplicateIds, DuplicateFieldOccurrences = duplicateFields };
         }
         catch (SiiSyntaxException ex)
         {
@@ -110,4 +120,8 @@ public sealed record SiiFixtureReport(
     public SiiSignatureHint SignatureHint { get; init; }
     /// <summary>One-based parser column when available; otherwise unknown.</summary>
     public int? ErrorColumn { get; init; }
+    /// <summary>Repeated non-null IDs beyond their first occurrence; null when syntax was not parsed.</summary>
+    public int? DuplicateBlockIdOccurrences { get; init; }
+    /// <summary>Repeated field names beyond their first occurrence in each block; null when syntax was not parsed.</summary>
+    public int? DuplicateFieldOccurrences { get; init; }
 }
