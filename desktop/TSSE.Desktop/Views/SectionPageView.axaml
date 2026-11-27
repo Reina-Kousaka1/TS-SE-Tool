@@ -258,6 +258,16 @@
           <TextBlock Text="{Binding UrgencyDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsUrgencyStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="urgency-reviewed" />
           <Button Content="{Binding DiscardUrgencyLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-urgency" />
+          <TextBlock Text="{Binding FerryDetail}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding FerryTimeLabel}" />
+          <TextBox Text="{Binding FerryTimeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding FerryTimeLabel}" />
+          <TextBlock Text="{Binding FerryTimeNotice}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding FerryPriceLabel}" />
+          <TextBox Text="{Binding FerryPriceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding FerryPriceLabel}" />
+          <TextBlock Text="{Binding FerryPriceNotice}" TextWrapping="Wrap" />
+          <Button Content="{Binding ApplyFerryLabel}" Command="{Binding ActionCommand}" CommandParameter="ferry" />
+          <Button IsVisible="{Binding IsFerryStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="ferry-reviewed" />
+          <Button Content="{Binding DiscardFerryLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-ferry" />
           <TextBlock Text="{Binding ModelLabel}" />
           <TextBlock Text="{Binding ModelDetail}" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

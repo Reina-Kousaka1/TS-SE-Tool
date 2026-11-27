@@ -17,6 +17,8 @@ public sealed class JobDemoViewModel : ObservableObject
     private string _urgencyInput = "0";
     private string _lastUrgency = "0";
     private string _baseUrgency = "0";
+    private string _ferryTime = "0", _lastFerryTime = "0", _baseFerryTime = "0";
+    private string _ferryPrice = "0", _lastFerryPrice = "0", _baseFerryPrice = "0";
     private string _message;
     private string _lastUnits = "3";
     private string _lastDistance = "120";
@@ -67,6 +69,18 @@ public sealed class JobDemoViewModel : ObservableObject
     public string UrgencyInput { get => _urgencyInput; set { if (_urgencyInput == _lastUrgency) _baseUrgency = _lastUrgency; if (SetProperty(ref _urgencyInput, value ?? "")) NotifyDrafts(); } }
     public bool IsUrgencyStale => UrgencyInput != _lastUrgency && _baseUrgency != _lastUrgency;
     public string UrgencyDraftNotice => IsUrgencyStale ? _text.Format("editor.staleDraft", _lastUrgency) : "";
+    public string FerryTimeLabel => _text.Get("jobDemo.ferryTime");
+    public string FerryPriceLabel => _text.Get("jobDemo.ferryPrice");
+    public string FerryDetail => _text.Get("jobDemo.ferryDetail");
+    public string ApplyFerryLabel => _text.Get("jobDemo.applyFerry");
+    public string DiscardFerryLabel => _text.Get("jobDemo.discardFerry");
+    public string FerryTimeInput { get => _ferryTime; set { if (_ferryTime == _lastFerryTime) _baseFerryTime = _lastFerryTime; if (SetProperty(ref _ferryTime, value ?? "")) NotifyDrafts(); } }
+    public string FerryPriceInput { get => _ferryPrice; set { if (_ferryPrice == _lastFerryPrice) _baseFerryPrice = _lastFerryPrice; if (SetProperty(ref _ferryPrice, value ?? "")) NotifyDrafts(); } }
+    public bool IsFerryTimeStale => FerryTimeInput != _lastFerryTime && _baseFerryTime != _lastFerryTime;
+    public bool IsFerryPriceStale => FerryPriceInput != _lastFerryPrice && _baseFerryPrice != _lastFerryPrice;
+    public bool IsFerryStale => IsFerryTimeStale || IsFerryPriceStale;
+    public string FerryTimeNotice => IsFerryTimeStale ? _text.Format("editor.staleDraft", _lastFerryTime) : "";
+    public string FerryPriceNotice => IsFerryPriceStale ? _text.Format("editor.staleDraft", _lastFerryPrice) : "";
     public string ApplyLabel => _text.Get("jobDemo.apply");
     public string ApplyBothLabel => _text.Get("jobDemo.applyBoth");
     public string ApplyBothReviewedLabel => _text.Get("jobDemo.applyBothReviewed");
@@ -96,6 +110,16 @@ public sealed class JobDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
+        if (action == "discard-ferry")
+        {
+            _baseFerryTime = _lastFerryTime;
+            _baseFerryPrice = _lastFerryPrice;
+            SetProperty(ref _ferryTime, _lastFerryTime, nameof(FerryTimeInput));
+            SetProperty(ref _ferryPrice, _lastFerryPrice, nameof(FerryPriceInput));
+            NotifyDrafts();
+            Message = _text.Get("jobDemo.draftDiscarded");
+            return;
+        }
         if (action is "discard-units" or "discard-distance" or "discard-model" or "discard-cargo" or "discard-urgency")
         {
             if (action == "discard-units") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
@@ -110,7 +134,7 @@ public sealed class JobDemoViewModel : ObservableObject
         if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
             (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale) ||
             (action == "cargo" && IsCargoStale) || (action == "cargo-details" && IsCargoDetailsStale) ||
-            (action == "urgency" && IsUrgencyStale))
+            (action == "urgency" && IsUrgencyStale) || (action == "ferry" && IsFerryStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -118,7 +142,14 @@ public sealed class JobDemoViewModel : ObservableObject
         bool success = false;
         try
         {
-            if ((action is "cargo-details" or "cargo-details-reviewed") &&
+            if ((action is "ferry" or "ferry-reviewed") &&
+                int.TryParse(FerryTimeInput, NumberStyles.None, CultureInfo.InvariantCulture, out int ferryTime) &&
+                int.TryParse(FerryPriceInput, NumberStyles.None, CultureInfo.InvariantCulture, out int ferryPrice))
+            {
+                _session.SetFerryDetails(ferryTime, ferryPrice);
+                success = true;
+            }
+            else if ((action is "cargo-details" or "cargo-details-reviewed") &&
                 int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int cargoCount) &&
                 int.TryParse(ModelInput, NumberStyles.None, CultureInfo.InvariantCulture, out int cargoModel))
             {
@@ -173,6 +204,11 @@ public sealed class JobDemoViewModel : ObservableObject
             if (action is "model" or "model-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
             if (action is "cargo" or "cargo-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
             if (action is "urgency" or "urgency-reviewed") { _baseUrgency = _lastUrgency; SetProperty(ref _urgencyInput, _lastUrgency, nameof(UrgencyInput)); }
+            if (action is "ferry" or "ferry-reviewed")
+            {
+                _baseFerryTime = _lastFerryTime; SetProperty(ref _ferryTime, _lastFerryTime, nameof(FerryTimeInput));
+                _baseFerryPrice = _lastFerryPrice; SetProperty(ref _ferryPrice, _lastFerryPrice, nameof(FerryPriceInput));
+            }
             NotifyDrafts();
         }
     }
@@ -184,16 +220,22 @@ public sealed class JobDemoViewModel : ObservableObject
         string model = _session.CargoModelIndex.ToString(CultureInfo.InvariantCulture);
         string cargo = _session.CargoReference;
         string urgency = _session.Urgency.ToString(CultureInfo.InvariantCulture);
+        string ferryTime = _session.FerryTime.ToString(CultureInfo.InvariantCulture);
+        string ferryPrice = _session.FerryPrice.ToString(CultureInfo.InvariantCulture);
         if (UnitsInput == _lastUnits || UnitsInput == units) { _baseUnits = units; SetProperty(ref _unitsInput, units, nameof(UnitsInput)); }
         if (DistanceInput == _lastDistance || DistanceInput == distance) { _baseDistance = distance; SetProperty(ref _distanceInput, distance, nameof(DistanceInput)); }
         if (ModelInput == _lastModel || ModelInput == model) { _baseModel = model; SetProperty(ref _modelInput, model, nameof(ModelInput)); }
         if (SelectedCargo == _lastCargo || SelectedCargo == cargo) { _baseCargo = cargo; SetProperty(ref _selectedCargo, cargo, nameof(SelectedCargo)); }
         if (UrgencyInput == _lastUrgency || UrgencyInput == urgency) { _baseUrgency = urgency; SetProperty(ref _urgencyInput, urgency, nameof(UrgencyInput)); }
+        if (FerryTimeInput == _lastFerryTime || FerryTimeInput == ferryTime) { _baseFerryTime = ferryTime; SetProperty(ref _ferryTime, ferryTime, nameof(FerryTimeInput)); }
+        if (FerryPriceInput == _lastFerryPrice || FerryPriceInput == ferryPrice) { _baseFerryPrice = ferryPrice; SetProperty(ref _ferryPrice, ferryPrice, nameof(FerryPriceInput)); }
         _lastUnits = units;
         _lastDistance = distance;
         _lastModel = model;
         _lastCargo = cargo;
         _lastUrgency = urgency;
+        _lastFerryTime = ferryTime;
+        _lastFerryPrice = ferryPrice;
         OnPropertyChanged(nameof(Cargo));
         OnPropertyChanged(nameof(CargoChoices));
         OnPropertyChanged(nameof(PreviewText));
@@ -216,5 +258,10 @@ public sealed class JobDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(IsCargoDetailsStale));
         OnPropertyChanged(nameof(IsUrgencyStale));
         OnPropertyChanged(nameof(UrgencyDraftNotice));
+        OnPropertyChanged(nameof(IsFerryTimeStale));
+        OnPropertyChanged(nameof(IsFerryPriceStale));
+        OnPropertyChanged(nameof(IsFerryStale));
+        OnPropertyChanged(nameof(FerryTimeNotice));
+        OnPropertyChanged(nameof(FerryPriceNotice));
     }
 }

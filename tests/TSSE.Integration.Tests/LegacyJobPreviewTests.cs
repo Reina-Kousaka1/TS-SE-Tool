@@ -7,6 +7,39 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyJobPreviewTests
 {
     [Fact]
+    public void FerryValuesAreValidatedTogetherAndUndoAsOneEdit()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  ferry_time: 0001\n  ferry_price: 0002", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetFerryDetails(3, -1));
+        Assert.Equal(input, editor.PreviewText);
+        editor.SetFerryDetails(3, int.MaxValue);
+        Assert.Equal(3, editor.FerryTime);
+        Assert.Equal(int.MaxValue, editor.FerryPrice);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        editor.SetFerryDetails(1, 2);
+        Assert.True(editor.CanRedo);
+        Assert.True(editor.Redo());
+        Assert.Equal(int.MaxValue, editor.FerryPrice);
+    }
+
+    [Theory]
+    [InlineData("ferry_price: -1")]
+    [InlineData("ferry_price: 2147483648")]
+    [InlineData("ferry_price: 1\n  ferry_price: 2")]
+    [InlineData("other: 1")]
+    public void InvalidExistingFerryFieldRejectsWholeBatch(string price)
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  ferry_time: 1\n  " + price, StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<InvalidOperationException>(() => editor.SetFerryDetails(5, 5));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+    }
+
+    [Fact]
     public void UrgencyEditPreservesUnknownFieldsAndRedoAfterRejectedValues()
     {
         string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  urgency: 00", StringComparison.Ordinal);

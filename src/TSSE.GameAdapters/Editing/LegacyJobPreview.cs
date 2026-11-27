@@ -46,6 +46,8 @@ public sealed class LegacyJobPreview
     public int PlannedDistanceKm => ReadNonnegativeInt(CurrentJob(), "planned_distance_km");
     /// <summary>Legacy-shaped synthetic integer only; no cargo model semantics are validated.</summary>
     public int CargoModelIndex => ReadNonnegativeInt(CurrentJob(), "cargo_model_index");
+    public int FerryTime => ReadNonnegativeInt(CurrentJob(), "ferry_time");
+    public int FerryPrice => ReadNonnegativeInt(CurrentJob(), "ferry_price");
     /// <summary>Historical synthetic urgency value; current game meaning is unverified.</summary>
     public int Urgency
     {
@@ -118,6 +120,19 @@ public sealed class LegacyJobPreview
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
         if (CargoModelIndex == index) return;
         _session.Apply([new("player_job", _jobId, "cargo_model_index", index.ToString(CultureInfo.InvariantCulture))]);
+    }
+
+    /// <summary>Changes historical synthetic fields atomically; units and game semantics are unverified.</summary>
+    public void SetFerryDetails(int time, int price)
+    {
+        if (time < 0) throw new ArgumentOutOfRangeException(nameof(time));
+        if (price < 0) throw new ArgumentOutOfRangeException(nameof(price));
+        int oldTime = FerryTime;
+        int oldPrice = FerryPrice;
+        var edits = new List<SiiFieldEdit>();
+        if (oldTime != time) edits.Add(new("player_job", _jobId, "ferry_time", time.ToString(CultureInfo.InvariantCulture)));
+        if (oldPrice != price) edits.Add(new("player_job", _jobId, "ferry_price", price.ToString(CultureInfo.InvariantCulture)));
+        _session.Apply(edits);
     }
 
     public void SetUrgency(int urgency)

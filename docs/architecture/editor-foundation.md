@@ -353,6 +353,16 @@ demo trailer. It does not validate game-level cargo or trailer relationships.
 
 ## Experimental active job mapping
 
+The legacy `Player_Job` model declares Int32 `ferry_time` and `ferry_price`.
+The synthetic preview can update both as one undoable batch after checking
+that both existing and proposed values are nonnegative Int32 values. Missing,
+duplicate and malformed fields fail closed; draft changes require review when
+their baselines change. Units, current game compatibility, and effects on
+route or payment are unknown. No file access or write gate is introduced.
+Architecture self-review (not independent): both original fields are read and
+validated before the batch is committed; rejected or no-op operations retain
+history. Real saves and independent review remain unverified.
+
 The synthetic job preview exposes `urgency`, declared as Int32 in the legacy
 `Player_Job` model; the original freight-market UI offers values 0, 1 and 2
 (`FormMethods.cs`). The preview accepts only those three historical choices,

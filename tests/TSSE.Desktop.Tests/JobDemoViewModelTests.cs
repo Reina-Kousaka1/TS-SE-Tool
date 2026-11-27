@@ -8,6 +8,37 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void FerryDetailsAreAtomicAndStaleDraftsRequireReview()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.FerryTimeInput = "4";
+        demo.FerryPriceInput = "invalid";
+        demo.ActionCommand.Execute("ferry");
+        Assert.Equal(original, demo.PreviewText);
+        demo.FerryPriceInput = "9";
+        demo.ActionCommand.Execute("ferry");
+        Assert.Contains("ferry_time: 4", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("ferry_price: 9", demo.PreviewText, StringComparison.Ordinal);
+        demo.FerryTimeInput = "5";
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        Assert.True(demo.IsFerryTimeStale);
+        demo.ActionCommand.Execute("ferry");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("ferry-reviewed");
+        Assert.Contains("ferry_time: 5", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        demo.FerryTimeInput = "7";
+        demo.FerryPriceInput = "8";
+        demo.ActionCommand.Execute("discard-ferry");
+        Assert.Equal("0", demo.FerryTimeInput);
+        Assert.Equal("0", demo.FerryPriceInput);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("ferry_time: 5", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void UrgencyValidatesAndProtectsStaleDrafts()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
