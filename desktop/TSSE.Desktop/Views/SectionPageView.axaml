@@ -172,6 +172,9 @@
           <TextBlock Text="{Binding AccessoryHeading}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding AccessoryDescription}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding AccessorySummary}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding LicensePlateHeading}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding LicensePlateDetail}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding LicensePlateRaw}" TextWrapping="Wrap" />
           <StackPanel Spacing="8">
             <TextBlock Text="{Binding OdometerLabel}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding OdometerDetail}" TextWrapping="Wrap" />

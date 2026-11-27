@@ -53,6 +53,16 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private LegacyVehiclePreview Session => _isTrailer ? _trailer : _truck;
     public string Heading => _text.Get("vehicleDemo.heading");
     public string Description => _text.Get("vehicleDemo.description");
+    public string LicensePlateHeading => _text.Get("vehicleDemo.licensePlateHeading");
+    public string LicensePlateDetail => _text.Get("vehicleDemo.licensePlateDetail");
+    public string LicensePlateRaw
+    {
+        get
+        {
+            try { return Session.LicensePlateRaw; }
+            catch (InvalidOperationException) { return _text.Get("vehicleDemo.licensePlateUnavailable"); }
+        }
+    }
     public string FieldLabel => _text.Get("vehicleDemo.field");
     public string ValueLabel => _text.Get("vehicleDemo.value");
     public string ApplyLabel => _text.Get("vehicleDemo.apply");
@@ -92,6 +102,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
             LoadOdometer();
             OnPropertyChanged();
             OnPropertyChanged(nameof(AccessorySummary));
+            OnPropertyChanged(nameof(LicensePlateRaw));
             LoadField();
         }
     }
@@ -133,6 +144,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
             LoadOdometer();
             OnPropertyChanged();
             OnPropertyChanged(nameof(AccessorySummary));
+            OnPropertyChanged(nameof(LicensePlateRaw));
             LoadField();
         }
     }
@@ -207,6 +219,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(AccessorySummary));
+        OnPropertyChanged(nameof(LicensePlateRaw));
         OnPropertyChanged(nameof(PlayerTrailerSummary));
         Message = _text.Get("vehicleDemo.ready");
         LoadField();
@@ -332,6 +345,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(AccessorySummary));
+        OnPropertyChanged(nameof(LicensePlateRaw));
         OnPropertyChanged(nameof(AssignedTruckLabel));
         OnPropertyChanged(nameof(AssignedTrailerLabel));
     }

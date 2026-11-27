@@ -6,6 +6,21 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyVehiclePreviewTests
 {
+    [Theory]
+    [InlineData(LegacyVehicleKind.Truck, "vehicle")]
+    [InlineData(LegacyVehicleKind.Trailer, "trailer")]
+    public void LicensePlateRawPreservesEscapesAndRejectsAmbiguity(LegacyVehicleKind kind, string type)
+    {
+        string input = type + " : t {\n license_plate: \"A\\xC3\\xA4|raw\"\n mod: preserved\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), kind, "t");
+        Assert.Equal("\"A\\xC3\\xA4|raw\"", preview.LicensePlateRaw);
+        Assert.Equal(input, preview.PreviewText);
+        string duplicate = input.Replace(" mod: preserved", " license_plate: other\n mod: preserved", StringComparison.Ordinal);
+        var invalid = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(duplicate), kind, "t");
+        Assert.Throws<InvalidOperationException>(() => invalid.LicensePlateRaw);
+        Assert.Equal(duplicate, invalid.PreviewText);
+    }
+
     [Fact]
     public void FullTruckRepairPreservesFuelWheelsAndUnknownDataWithOneUndo()
     {

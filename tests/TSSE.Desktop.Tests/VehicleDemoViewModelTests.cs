@@ -8,6 +8,18 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void LicensePlatePreviewTracksSelectedSyntheticVehicleWithoutEditing()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string before = demo.PreviewText;
+        Assert.Equal("\"DEMO|synthetic\"", demo.LicensePlateRaw);
+        demo.SelectCategory("Trailers");
+        Assert.Equal("\"TRAILER|synthetic\"", demo.LicensePlateRaw);
+        demo.SelectedTrailer = "demo.trailer2";
+        Assert.Contains("missing or ambiguous", demo.LicensePlateRaw, StringComparison.Ordinal);
+        Assert.Equal(before, demo.PreviewText);
+    }
+    [Fact]
     public void TrailerAssignmentUsesSharedHistoryAndLeavesTruckAssignmentIntact()
     {
         var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));

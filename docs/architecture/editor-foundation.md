@@ -245,6 +245,12 @@ undo/redo and preservation of an unknown field in the displayed preview.
 
 ## Experimental vehicle mapping
 
+The legacy vehicle and trailer models declare `license_plate` as `SCS_String`.
+The synthetic preview exposes its original raw field value read-only, without
+decoding, validating, or editing a plate. Missing or duplicated fields are
+reported as unavailable. The legacy encoding and actual save compatibility
+are not verified; there is no production profile access or write path.
+
 `LegacyAccessoryInspector` inspects the legacy-shaped `accessories` array of
 an explicitly named synthetic block. It preserves ordering and duplicate
 references and reports missing, ambiguous, empty, known-type and unknown-type

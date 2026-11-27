@@ -1,5 +1,8 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "vehicleDemo.licensePlateHeading": "Synthetic license plate field (raw)",
+  "vehicleDemo.licensePlateDetail": "Read-only raw SII value; encoding and game compatibility are unverified.",
+  "vehicleDemo.licensePlateUnavailable": "Field missing or ambiguous.",
   "jobDemo.applyBothReviewed": "Apply both after reviewing current values",
   "profileDemo.discardBalance": "Discard balance draft",
   "profileDemo.discardExperience": "Discard experience draft",

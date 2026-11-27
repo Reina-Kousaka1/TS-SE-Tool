@@ -47,6 +47,18 @@ public sealed class LegacyVehiclePreview
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;
 
+    /// <summary>Returns the uninterpreted legacy-shaped field; does not decode or validate a plate.</summary>
+    public string LicensePlateRaw
+    {
+        get
+        {
+            SiiField[] fields = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText)).Fields
+                .Where(item => item.Name == "license_plate").ToArray();
+            return fields.Length == 1 ? fields[0].Value
+                : throw new InvalidOperationException("The license plate field is missing or ambiguous.");
+        }
+    }
+
     /// <summary>Legacy integer odometer only; no unit or fractional-part interpretation is implied.</summary>
     public uint Odometer
     {

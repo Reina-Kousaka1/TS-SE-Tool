@@ -1,5 +1,8 @@
 {
   "fixture.heading": "Synthetische Formatdiagnose",
+  "vehicleDemo.licensePlateHeading": "Synthetisches Kennzeichenfeld (Rohwert)",
+  "vehicleDemo.licensePlateDetail": "Nur lesender SII-Rohwert; Kodierung und Spielkompatibilität sind ungeprüft.",
+  "vehicleDemo.licensePlateUnavailable": "Feld fehlt oder ist mehrdeutig.",
   "jobDemo.applyBothReviewed": "Beide nach Prüfung der aktuellen Werte übernehmen",
   "profileDemo.discardBalance": "Guthabenentwurf verwerfen",
   "profileDemo.discardExperience": "Erfahrungsentwurf verwerfen",

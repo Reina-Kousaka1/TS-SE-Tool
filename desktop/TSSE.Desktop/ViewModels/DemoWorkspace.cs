@@ -14,9 +14,9 @@ public sealed class DemoWorkspace
         .Replace("  current_job: demo.job\n", "  current_job: demo.job\n  assigned_truck: demo.truck\n  assigned_trailer: demo.trailer\n  trucks: 2\n  trucks[0]: demo.truck\n  trucks[1]: demo.truck2\n  trailers: 2\n  trailers[0]: demo.trailer\n  trailers[1]: demo.trailer2\n", StringComparison.Ordinal)
         .Replace("  experience_points: 0\n", "  experience_points: 0\n  adr: 0\n  long_dist: 0\n  heavy: 0\n  fragile: 0\n  urgent: 0\n  mechanical: 0\n", StringComparison.Ordinal)
         .Replace("  fuel_relative: 0.5\n",
-            "  accessories: 3\n  accessories[0]: demo.accessory\n  accessories[1]: demo.mod\n  accessories[2]: demo.missing\n  odometer: 12345\n  odometer_float_part: &3f000000\n  fuel_relative: 0.5\n", StringComparison.Ordinal)
+            "  accessories: 3\n  accessories[0]: demo.accessory\n  accessories[1]: demo.mod\n  accessories[2]: demo.missing\n  license_plate: \"DEMO|synthetic\"\n  odometer: 12345\n  odometer_float_part: &3f000000\n  fuel_relative: 0.5\n", StringComparison.Ordinal)
         .Replace("  cargo_damage: 0.1\n",
-            "  accessories: 1\n  accessories[0]: demo.accessory\n  odometer: 500\n  odometer_float_part: &3f000000\n  cargo_damage: 0.1\n", StringComparison.Ordinal)
+            "  accessories: 1\n  accessories[0]: demo.accessory\n  license_plate: \"TRAILER|synthetic\"\n  odometer: 500\n  odometer_float_part: &3f000000\n  cargo_damage: 0.1\n", StringComparison.Ordinal)
         .Replace(" trailer : demo.trailer2 {\n", " trailer : demo.trailer2 {\n  accessories: 0\n  odometer: 900\n  odometer_float_part: 0\n  cargo_damage: 0.25\n  wheels_wear: 1\n  wheels_wear[0]: 0.6\n", StringComparison.Ordinal)
         .Replace(" trailer : demo.trailer {\n", " vehicle : demo.truck2 {\n  accessories: 0\n  odometer: 700\n  odometer_float_part: 0\n  fuel_relative: 0.25\n  engine_wear: 0.4\n  transmission_wear: 0\n  cabin_wear: 0\n  chassis_wear: 0.2\n  wheels_wear: 1\n  wheels_wear[0]: 0.1\n  demo_unknown: \"second truck\"\n }\n trailer : demo.trailer {\n", StringComparison.Ordinal)
         .Replace("\n}\n",
