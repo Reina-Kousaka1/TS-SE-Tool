@@ -1,5 +1,8 @@
 {
   "fixture.heading": "Synthetische Formatdiagnose",
+  "profileDemo.discardBalance": "Guthabenentwurf verwerfen",
+  "profileDemo.discardExperience": "Erfahrungsentwurf verwerfen",
+  "profileDemo.draftDiscarded": "Entwurf verworfen; die Vorschau wurde nicht geändert.",
   "fixture.description": "Nur feste Beispiele. Syntax oder Präfix belegen keine Spielkompatibilität; es wird kein Spielstand geöffnet.",
   "fixture.selection": "Synthetisches Beispiel",
   "fixture.example.text": "Klartextbeispiel",

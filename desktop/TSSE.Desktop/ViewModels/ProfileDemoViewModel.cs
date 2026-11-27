@@ -38,6 +38,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string BalanceLabel => _text.Get("profileDemo.balance");
     public string ExperienceLabel => _text.Get("profileDemo.experience");
     public string ApplyLabel => _text.Get("profileDemo.apply");
+    public string DiscardBalanceLabel => _text.Get("profileDemo.discardBalance");
+    public string DiscardExperienceLabel => _text.Get("profileDemo.discardExperience");
     public string UndoLabel => _text.Get("profileDemo.undo");
     public string RedoLabel => _text.Get("profileDemo.redo");
     public string PreviewLabel => _text.Get("profileDemo.preview");
@@ -69,6 +71,22 @@ public sealed class ProfileDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
+        if (action == "discard-balance")
+        {
+            _baseBalance = _lastBalance;
+            SetProperty(ref _balanceInput, _lastBalance, nameof(BalanceInput));
+            NotifyDrafts();
+            Message = _text.Get("profileDemo.draftDiscarded");
+            return;
+        }
+        if (action == "discard-experience")
+        {
+            _baseExperience = _lastExperience;
+            SetProperty(ref _experienceInput, _lastExperience, nameof(ExperienceInput));
+            NotifyDrafts();
+            Message = _text.Get("profileDemo.draftDiscarded");
+            return;
+        }
         if (action is "ets2" or "ats")
         {
             _levelTable = action == "ets2" ? LegacyLevelTable.Ets2 : LegacyLevelTable.Ats;

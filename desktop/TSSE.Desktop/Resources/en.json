@@ -1,5 +1,8 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "profileDemo.discardBalance": "Discard balance draft",
+  "profileDemo.discardExperience": "Discard experience draft",
+  "profileDemo.draftDiscarded": "Draft discarded; the preview was not changed.",
   "fixture.description": "Fixed examples only. A syntax result or prefix does not establish game compatibility; no save file is opened.",
   "fixture.selection": "Synthetic example",
   "fixture.example.text": "Plain text example",

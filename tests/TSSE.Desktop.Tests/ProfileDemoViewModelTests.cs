@@ -8,6 +8,36 @@ namespace TSSE.Desktop.Tests;
 public sealed class ProfileDemoViewModelTests
 {
     [Fact]
+    public void DiscardingOneStaleDraftPreservesTheOtherAndUndoRedo()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.BalanceInput = "10";
+        demo.ActionCommand.Execute("balance");
+        demo.ExperienceInput = "20";
+        demo.ActionCommand.Execute("experience");
+        demo.BalanceInput = "11";
+        demo.ExperienceInput = "21";
+        demo.ActionCommand.Execute("undo");
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsBalanceStale);
+        Assert.True(demo.IsExperienceStale);
+        string unchanged = demo.PreviewText;
+        demo.ActionCommand.Execute("discard-balance");
+        Assert.Equal("0", demo.BalanceInput);
+        Assert.Equal("21", demo.ExperienceInput);
+        Assert.False(demo.IsBalanceStale);
+        Assert.True(demo.IsExperienceStale);
+        Assert.Equal(unchanged, demo.PreviewText);
+        demo.ActionCommand.Execute("discard-experience");
+        Assert.Equal("0", demo.ExperienceInput);
+        Assert.False(demo.IsExperienceStale);
+        demo.ActionCommand.Execute("redo");
+        Assert.Equal("10", demo.BalanceInput);
+        demo.ActionCommand.Execute("redo");
+        Assert.Equal("20", demo.ExperienceInput);
+    }
+
+    [Fact]
     public void ScratchEditsValidateAndUndoWithoutLoadingASave()
     {
         var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

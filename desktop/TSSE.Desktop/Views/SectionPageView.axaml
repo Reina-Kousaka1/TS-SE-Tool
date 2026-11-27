@@ -55,6 +55,7 @@
           </Grid>
           <TextBlock Text="{Binding BalanceDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsBalanceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="balance-reviewed" />
+          <Button Content="{Binding DiscardBalanceLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-balance" />
           <TextBlock Text="{Binding ExperienceLabel}" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <TextBox Text="{Binding ExperienceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding ExperienceLabel}" />
@@ -62,6 +63,7 @@
           </Grid>
           <TextBlock Text="{Binding ExperienceDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsExperienceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="experience-reviewed" />
+          <Button Content="{Binding DiscardExperienceLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-experience" />
           <StackPanel DataContext="{Binding Skills}" Spacing="8">
             <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
