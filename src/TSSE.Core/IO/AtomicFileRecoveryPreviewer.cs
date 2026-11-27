@@ -200,7 +200,8 @@ public sealed class AtomicFileRecoveryPreviewer
             }
             catch
             {
-                return Invalid(fullPath, kind, bytes, "payload_validation_failed");
+                // A failed validator provides no evidence that the payload is invalid.
+                return Unavailable(fullPath, kind, "payload_validation_failed", bytes.Length);
             }
 
             if (!string.Equals(originalHash, Hash(bytes.Span), StringComparison.Ordinal))

@@ -89,9 +89,12 @@ public sealed class AtomicFileRecoveryPreviewerTests
             TestContext.Current.CancellationToken);
 
         RecoveryPayloadPreview candidate = Assert.Single(result.Candidates);
-        Assert.Equal(RecoveryPayloadState.Invalid, candidate.State);
+        Assert.Equal(RecoveryPayloadState.Unavailable, candidate.State);
         Assert.Equal("payload_validation_failed", candidate.ErrorCode);
         Assert.Equal(RecoveryPreviewAction.None, candidate.ProposedAction);
+        Assert.False(result.IsComplete);
+        Assert.Equal("payload_analysis_incomplete", result.ErrorCode);
+        Assert.Equal("candidate"u8.ToArray(), await File.ReadAllBytesAsync(candidatePath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
