@@ -42,4 +42,18 @@ The preview uses a caller-supplied validator. No game-specific validator is curr
 
 ## Verification remaining
 
+`SiiFixtureInspector` prepares a read-only, in-memory report for explicitly
+supplied bytes: bounded size, SHA-256, detected supported text encoding,
+syntax diagnostics, unclassified-line count and exact byte roundtrip. The
+report never asserts game compatibility, cannot open files, and does not return
+the contents or a file path. Unsupported encodings and containers are reported
+without attempting decompression or decryption. Real test copies require
+explicit authorization; profile scanning and production writes stay disabled.
+
+Fixture-inspection self-review (not independent): the byte limit is checked
+before hashing, strict decoding precedes parsing, syntax errors are structured,
+and an unchanged byte comparison is reported separately from parsing. A clean
+report is not a complete SII grammar check, a game-version assessment or an
+in-game load test. Fixture provenance, privacy and licensing remain necessary.
+
 Before claiming ETS2, ATS, mods, a save version, or Coaches DLC compatibility, add safely sourced genuine fixtures with provenance and licensing, implement the relevant container decoding and version-aware validation, and demonstrate unchanged roundtrips plus in-game or authoritative format checks. Keep profile scanning and writes disabled until those checks exist and the security gates are separately reviewed.

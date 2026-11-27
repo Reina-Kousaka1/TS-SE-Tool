@@ -20,6 +20,13 @@ public sealed class SiiEncodedText
     }
 
     public SiiSyntaxDocument Syntax { get; }
+    public SiiTextEncoding EncodingKind => _encoding.CodePage switch
+    {
+        65001 => _preamble.Length == 0 ? SiiTextEncoding.Utf8 : SiiTextEncoding.Utf8Bom,
+        1200 => SiiTextEncoding.Utf16LittleEndianBom,
+        1201 => SiiTextEncoding.Utf16BigEndianBom,
+        _ => throw new InvalidOperationException("Unsupported encoding state.")
+    };
 
     public static SiiEncodedText Parse(ReadOnlySpan<byte> bytes)
     {
@@ -103,3 +110,5 @@ public sealed class SiiEncodedText
         return result;
     }
 }
+
+public enum SiiTextEncoding { Utf8, Utf8Bom, Utf16LittleEndianBom, Utf16BigEndianBom }
