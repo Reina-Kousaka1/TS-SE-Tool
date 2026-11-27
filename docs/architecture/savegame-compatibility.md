@@ -299,6 +299,14 @@ therefore has managed synthetic tests only and remains unconfirmed against the
 native decoder or game data. All numeric arrays are bounded to 4,096 entries
 and reject truncation before allocating their result.
 
+The upstream [change from 1.5.2 to 1.5.3](https://github.com/TheLazyTomcat/SII_Decrypt/commit/d1cd7921d4667de895288c7227c58df43b63bd21)
+moved type `0x32` into the standard supported set; the predecessor's default
+set excludes it. The bundled DLL identifies itself as 1.5.2.56, so that source
+history is a plausible explanation for the observed `-1`, not proof of the
+exact binary's source or build configuration. The fixed synthetic native probe
+now asserts this rejection with default options. It does not enable the native
+experimental unsupported-type option, decode a game save, or write output.
+
 Array investigation self-review (not independent): isolated fixture variants
 separated each array type while retaining the same existing synthetic fields;
 only the Int64-array variant produced this observed error. No conclusion is

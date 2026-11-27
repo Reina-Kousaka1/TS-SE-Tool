@@ -27,7 +27,7 @@ public static class SyntheticNativeDecodeProbe {
         writer.Write((uint)bytes.Length);
         writer.Write(bytes);
     }
-    private static byte[] Fixture() {
+    private static byte[] Fixture(bool includeExperimentalInt64Array) {
         using (var stream = new MemoryStream())
         using (var writer = new BinaryWriter(stream)) {
             writer.Write(Encoding.ASCII.GetBytes("BSII"));
@@ -52,6 +52,7 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0x06); WriteString(writer, "wear");
             writer.Write((uint)0x26); WriteString(writer, "signed_values");
             writer.Write((uint)0x28); WriteString(writer, "unsigned_values");
+            if (includeExperimentalInt64Array) { writer.Write((uint)0x32); WriteString(writer, "long_values"); }
             writer.Write((uint)0x34); WriteString(writer, "wide_values");
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
@@ -77,6 +78,7 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)3); writer.Write(0x3f000000u); writer.Write(0x3fa00000u); writer.Write(0x80000000u);
             writer.Write((uint)2); writer.Write(int.MinValue); writer.Write(int.MaxValue);
             writer.Write((uint)3); writer.Write(0u); writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1);
+            if (includeExperimentalInt64Array) { writer.Write((uint)2); writer.Write(-6L); writer.Write(8L); }
             writer.Write((uint)3); writer.Write(0ul); writer.Write(0xffffffff00000001ul); writer.Write(9876543210ul);
             writer.Write((uint)0); writer.Write((byte)0); // end marker
             return stream.ToArray();
@@ -89,7 +91,14 @@ public static class SyntheticNativeDecodeProbe {
             IntPtr address = GetProcAddress(module, "DecodeMemory");
             if (address == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
             var decode = (DecodeMemory)Marshal.GetDelegateForFunctionPointer(address, typeof(DecodeMemory));
-            byte[] input = Fixture();
+            byte[] unsupported = Fixture(true);
+            var unsupportedHandle = GCHandle.Alloc(unsupported, GCHandleType.Pinned);
+            try {
+                UIntPtr unavailableSize = UIntPtr.Zero;
+                int rejected = decode(unsupportedHandle.AddrOfPinnedObject(), (UIntPtr)(uint)unsupported.Length, IntPtr.Zero, ref unavailableSize);
+                if (rejected != -1) throw new InvalidDataException("Unexpected Int64-array query result: " + rejected + ".");
+            } finally { unsupportedHandle.Free(); }
+            byte[] input = Fixture(false);
             var inputHandle = GCHandle.Alloc(input, GCHandleType.Pinned);
             try {
                 UIntPtr announced = UIntPtr.Zero;
@@ -142,4 +151,4 @@ if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synth
     $decoded -notmatch '(?m)^\s*wide_values\[2\]:\s*9876543210\s*$') {
     throw ('The fixed synthetic decoded text did not contain the expected structure and value: ' + $decoded)
 }
-Write-Output 'Synthetic x86 DecodeMemory: success with 0/1 reported bytes for undersized capacities; bounded decode contained expected values; no save file used.'
+Write-Output 'Synthetic x86 DecodeMemory: Int64 array query rejected; undersized calls reported success; bounded decode contained expected values; no save file used.'
