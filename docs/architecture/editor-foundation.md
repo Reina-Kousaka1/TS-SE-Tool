@@ -155,6 +155,9 @@ Accessory self-review (not independent): the inspector is read-only and keeps
 unknown block types and raw references visible. Its generic selector enables
 future schema work without asserting that a coach has any particular field.
 Real reference formats, ownership and DLC compatibility remain unverified.
+Vehicle Studio presents this inspection for embedded truck and trailer
+examples, including a missing and an unknown target. The display is read-only
+and is labelled as synthetic; selecting Coaches does not infer accessory data.
 
 `LegacyVehiclePreview` edits selected fuel and wear ratios in explicitly
 selected synthetic `vehicle` and `trailer` blocks. Field names are based on

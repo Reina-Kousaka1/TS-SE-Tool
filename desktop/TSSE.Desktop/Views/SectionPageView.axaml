@@ -99,6 +99,9 @@
             <Button IsVisible="{Binding CanRefuel}" Content="{Binding RefuelLabel}" Command="{Binding ActionCommand}" CommandParameter="refuel" />
           </StackPanel>
           <Button IsVisible="{Binding CanRepairChain}" Content="{Binding ChainRepairLabel}" Command="{Binding ActionCommand}" CommandParameter="chain" />
+          <TextBlock Text="{Binding AccessoryHeading}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding AccessoryDescription}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding AccessorySummary}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding FieldLabel}" />
           <ComboBox ItemsSource="{Binding Fields}" SelectedItem="{Binding SelectedField, Mode=TwoWay}" AutomationProperties.Name="{Binding FieldLabel}">
             <ComboBox.ItemTemplate>

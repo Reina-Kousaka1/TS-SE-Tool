@@ -8,6 +8,20 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void AccessoryInspectionReportsSyntheticStatusesWithoutChangingTheWorkspace()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string before = demo.PreviewText;
+        Assert.Contains("demo.accessory — known legacy type", demo.AccessorySummary, StringComparison.Ordinal);
+        Assert.Contains("demo.mod — unknown type", demo.AccessorySummary, StringComparison.Ordinal);
+        Assert.Contains("demo.missing — missing target", demo.AccessorySummary, StringComparison.Ordinal);
+        Assert.Equal(before, demo.PreviewText);
+        demo.SelectCategory("Trailers");
+        Assert.Contains("demo.accessory — known legacy type", demo.AccessorySummary, StringComparison.Ordinal);
+        Assert.DoesNotContain("demo.missing", demo.AccessorySummary, StringComparison.Ordinal);
+        Assert.Equal(before, demo.PreviewText);
+    }
+    [Fact]
     public void FieldAndCategorySwitchingPreservesDraftAndFlagsStaleBase()
     {
         var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));

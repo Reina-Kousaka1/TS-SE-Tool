@@ -2,6 +2,7 @@ using System.Globalization;
 using TSSE.Core.Editing;
 using TSSE.Desktop.Services;
 using TSSE.GameAdapters.Editing;
+using TSSE.Savegames.Syntax;
 
 namespace TSSE.Desktop.ViewModels;
 
@@ -56,6 +57,28 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string PreviewText => Session.PreviewText;
     public string ChangesLabel => _text.Get("editor.changes");
     public string SharedHistoryLabel => _text.Get("editor.sharedHistory");
+    public string AccessoryHeading => _text.Get("accessory.heading");
+    public string AccessoryDescription => _text.Get("accessory.description");
+    public string AccessorySummary
+    {
+        get
+        {
+            try
+            {
+                var document = SiiSyntaxDocument.Parse(Session.PreviewText);
+                var entries = LegacyAccessoryInspector.InspectDeclaredArray(document,
+                    _isTrailer ? "trailer" : "vehicle", _isTrailer ? "demo.trailer" : "demo.truck");
+                return entries.Count == 0 ? _text.Get("accessory.emptyList") :
+                    string.Join(Environment.NewLine, entries.Select(entry =>
+                        _text.Format("accessory.row", entry.Index, entry.RawReference,
+                            _text.Get("accessory.state." + entry.State), entry.TargetBlockType ?? "—")));
+            }
+            catch (InvalidOperationException)
+            {
+                return _text.Get("accessory.unavailable");
+            }
+        }
+    }
     public string ChangeSummary => DemoChangeSummary.Format(Session.Changes, _text.Get("editor.noChanges"));
     public string DraftNotice => IsStaleDraft ? _text.Format("vehicleDemo.staleDraft", _lastValue) : "";
     public string ApplyStaleLabel => _text.Get("vehicleDemo.applyStale");
@@ -97,6 +120,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedField));
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
+        OnPropertyChanged(nameof(AccessorySummary));
         Message = _text.Get("vehicleDemo.ready");
         LoadField();
     }
@@ -173,6 +197,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         else NotifyDraftStatus();
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
+        OnPropertyChanged(nameof(AccessorySummary));
     }
 
     private void SaveDraft()
