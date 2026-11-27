@@ -14,6 +14,8 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("parsed syntax only", demo.Status, StringComparison.Ordinal);
         Assert.Contains("text prefix", demo.Signature, StringComparison.Ordinal);
         Assert.Contains("yes", demo.RoundTrip, StringComparison.Ordinal);
+        demo.Selected = demo.Examples.Single(item => item.Key == "legacy-info");
+        Assert.Contains("55 (compatibility unverified)", demo.LegacyVersion, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "opaque");
         Assert.Contains("unclassified syntax", demo.Status, StringComparison.Ordinal);
         Assert.Contains("yes", demo.RoundTrip, StringComparison.Ordinal);

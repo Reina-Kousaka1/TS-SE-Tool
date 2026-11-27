@@ -1,6 +1,8 @@
 using System.Text;
 using TSSE.Desktop.Services;
+using TSSE.GameAdapters.Compatibility;
 using TSSE.Savegames.Diagnostics;
+using TSSE.Savegames.Syntax;
 
 namespace TSSE.Desktop.ViewModels;
 
@@ -14,7 +16,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     public FixtureDiagnosticsViewModel(IUiTextCatalog text)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
-        Examples = new[] { "text", "opaque", "unclosed", "encrypted", "binary", "threenk" }
+        Examples = new[] { "text", "legacy-info", "opaque", "unclosed", "encrypted", "binary", "threenk" }
             .Select(key => new FixtureDiagnosticsExample(key, _text.Get("fixture.example." + key))).ToArray();
         _selected = Examples[0];
         _report = Inspect(_selected.Key);
@@ -37,6 +39,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             OnPropertyChanged(nameof(Signature));
             OnPropertyChanged(nameof(RoundTrip));
             OnPropertyChanged(nameof(Error));
+            OnPropertyChanged(nameof(LegacyVersion));
         }
     }
 
@@ -48,17 +51,30 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     }));
     public string Error => _report.SyntaxError is null ? _text.Get("fixture.noError") :
         _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine ?? 0);
+    public string LegacyVersion
+    {
+        get
+        {
+            if (Selected.Key != "legacy-info") return _text.Get("fixture.versionUnavailable");
+            var result = LegacySaveVersionInspector.Inspect(SiiSyntaxDocument.Parse(ExampleText(Selected.Key)));
+            return result.Status == LegacySaveVersionStatus.LegacyFieldFound
+                ? _text.Format("fixture.versionValue", result.Version!)
+                : _text.Get("fixture.versionUnavailable");
+        }
+    }
 
-    private static SiiFixtureReport Inspect(string key) => SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes(key switch
+    private static SiiFixtureReport Inspect(string key) => SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes(ExampleText(key)));
+    private static string ExampleText(string key) => key switch
     {
         "text" => "SiiNunit\n{\n demo : sample {\n  unknown_field: \"synthetic\"\n }\n}\n",
+        "legacy-info" => "SiiNunit\n{\n save_container : demo {\n  version: 55\n  unknown_field: \"synthetic\"\n }\n}\n",
         "opaque" => "SiiNunit\n{\n demo : sample {\n  unknown syntax\n }\n}\n",
         "unclosed" => "SiiNunit\n{\n demo : sample {\n  value: 1\n",
         "encrypted" => "ScsC synthetic prefix only",
         "binary" => "BSII synthetic prefix only",
         "threenk" => "3nK\u0001synthetic prefix only",
         _ => throw new ArgumentOutOfRangeException(nameof(key))
-    }));
+    };
 }
 
 public sealed record FixtureDiagnosticsExample(string Key, string Label);

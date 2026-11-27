@@ -8,7 +8,7 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 | --- | --- | --- | --- |
 | Euro Truck Simulator 2 | No game adapter is registered; no container decoder, version schema, profile reader, or game-specific validator exists. | Generic syntax tests only; no real ETS2 fixture. | **Not tested; game compatibility unsupported.** |
 | American Truck Simulator | Same foundation as ETS2; shared SII syntax does not establish ATS compatibility. | Generic syntax tests only; no real ATS fixture. | **Not tested; game compatibility unsupported.** |
-| Savegame versions | No save-version detection or version-specific parser registration exists. | Synthetic test text contains no game version claim. | **Not tested; unsupported.** |
+| Savegame versions | A legacy-shaped synthetic `save_container` version field can be inspected; no game version or adapter is inferred or registered. | Legacy `SaveFileInfoData` uses UInt16; synthetic structural and bounds tests only. | **Synthetic field inspection only; real versions unsupported.** |
 | Modified / modded saves | Raw field values and unclassified source lines are retained by the syntax document. The parser does not load mods, resolve mod schemas, or validate mod-specific meaning. | Synthetic unknown fields and trailer syntax are covered. | **Synthetic preservation confirmed; real mod saves not tested.** |
 | Unknown SII attributes | Colon-delimited fields retain their original raw line and value. Unclassified lines are exposed as opaque source lines and block field editing. | Synthetic tests cover unknown field values and unclassified lines. | **Synthetic source preservation confirmed; semantic meaning unknown.** |
 | Unknown object types | Block type and identifier text are retained without interpreting the object schema. | Synthetic unknown block type and nested block tests. | **Synthetic syntax preservation confirmed; real object layouts not tested.** |
@@ -57,10 +57,17 @@ The latter three prefixes are rejected as unsupported before text parsing. A
 prefix is only a hint: it establishes neither validity nor game compatibility,
 and BOM-prefixed or other forms can remain unknown. Tests use synthetic bytes;
 there is no decoder, decryption, profile discovery or real fixture evidence.
-The Avalonia Compatibility Lab now exposes this report through six fixed
+The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
 The display is a demonstration of diagnostics, not a compatibility verdict.
+
+For an additional synthetic legacy metadata example, a scoped inspector reads
+only a unique direct `save_container` under a unique `SiiNunit` wrapper and
+its unique positive UInt16 `version` field. Unclassified syntax, duplicate or
+misplaced containers, missing fields and invalid values return explicit statuses.
+The legacy `SaveFileInfoData` class is the source for the field and type; this
+does not identify a game, register an adapter, or establish compatibility.
 
 The inspector also accepts a caller-owned stream and reads no more than the
 byte limit plus one detection byte; an oversized stream's reported length is
