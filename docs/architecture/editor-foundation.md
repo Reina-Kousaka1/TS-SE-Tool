@@ -53,6 +53,9 @@ and is not recalculated. The editor rejects missing, duplicated, malformed and
 out-of-range integer values; undo/redo and stale-draft protection apply. The
 unit, the relationship to the fractional part, and current game compatibility
 are not verified. This is an in-memory preview, not a game-save operation.
+The legacy trailer model also declares these two fields; the same isolated
+integer operation now supports explicitly selected synthetic trailers. Trailer
+UI integration and validation against genuine trailer saves remain open.
 
 Odometer self-review (not independent): only the explicitly selected vehicle
 integer is changed, the syntax session preserves all other source lines, and a

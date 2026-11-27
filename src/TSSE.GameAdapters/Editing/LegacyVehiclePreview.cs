@@ -52,8 +52,6 @@ public sealed class LegacyVehiclePreview
     {
         get
         {
-            if (_blockType != "vehicle")
-                throw new InvalidOperationException("The odometer preview requires a vehicle block.");
             SiiField[] fields = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText)).Fields
                 .Where(item => item.Name == "odometer").ToArray();
             if (fields.Length != 1 || !uint.TryParse(fields[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out uint value))

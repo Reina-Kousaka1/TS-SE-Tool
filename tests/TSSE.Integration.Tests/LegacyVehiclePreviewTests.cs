@@ -158,12 +158,34 @@ public sealed class LegacyVehiclePreviewTests
     }
 
     [Fact]
-    public void TrailerCannotUseTruckOdometerMapping()
+    public void TrailerOdometerPreservesFractionAndUnknownFieldsWithUndo()
     {
-        const string input = "trailer : t {\n odometer: 5\n}\n";
+        const string input = "trailer : t {\n odometer: 0005\n odometer_float_part: &3f000000\n mod: \"保持\"\n}\n";
         var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "t");
-        Assert.Throws<InvalidOperationException>(() => preview.SetOdometer(6));
+        preview.SetOdometer(5);
         Assert.Equal(input, preview.PreviewText);
+        preview.SetOdometer(uint.MaxValue);
+        Assert.Contains("odometer: 4294967295", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("odometer_float_part: &3f000000", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod: \"保持\"", preview.PreviewText, StringComparison.Ordinal);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.True(preview.Redo());
+        Assert.Equal(uint.MaxValue, preview.Odometer);
+    }
+
+    [Theory]
+    [InlineData("odometer: -1")]
+    [InlineData("odometer: 4294967296")]
+    [InlineData("odometer: 1\n odometer: 2")]
+    [InlineData("other: 1")]
+    public void InvalidTrailerOdometerCannotBeOverwritten(string field)
+    {
+        string input = "trailer : t {\n " + field + "\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.SetOdometer(0));
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
     }
     [Fact]
     public void TrailerChainRepairIsAtomicAndPreservesCargoAndUnknownFields()
