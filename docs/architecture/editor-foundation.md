@@ -96,6 +96,24 @@ session and history, input is restricted to invariant ratios, and no path or
 save command is introduced. Users can change cargo damage in the trailer demo;
 this is not represented as automatic cargo repair.
 
+## Experimental active job mapping
+
+`LegacyJobPreview` follows an explicitly selected synthetic player block's
+`current_job` reference to a unique `player_job` block. The legacy Player,
+Player_Job and SiiNunit classes provide the names and Int32 units field.
+The cargo reference is displayed as raw data, and `units_count` may be
+changed as a nonnegative integer in memory. A missing, invalid or ambiguous
+target fails closed. `null` and `nil` mean no active job in this preview.
+The operation does not update other job, cargo or trailer data, and therefore
+does not establish game-level consistency or compatibility. It is not connected
+to the UI or file operations; synthetic fixtures only.
+
+Architecture self-review (not independent): job selection is fixed to the
+original reference, editing only changes a single validated integer, and the
+existing syntax transaction preserves unknown fields and supports undo/redo.
+Actual relationships, counts, game versions and online jobs require real
+fixtures and in-game validation before any production use.
+
 ## Architecture self-review (not independent)
 
 Decision: keep the editor core detached from file transactions and SII until
