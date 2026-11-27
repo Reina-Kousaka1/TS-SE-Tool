@@ -42,6 +42,11 @@ public sealed class PageCatalog
                 T("page.vehicle.emptyMessage"),
                 [new StatusCardViewModel(T("vehicle.dataSource.label"), T("vehicle.dataSource.value"), T("vehicle.dataSource.detail"))], _text),
             new SectionViewModel(
+                "jobs", T("page.jobs.title"), T("page.jobs.eyebrow"),
+                T("page.jobs.subtitle"), T("page.jobs.status"), T("page.jobs.emptyTitle"),
+                T("page.jobs.emptyMessage"),
+                [], _text),
+            new SectionViewModel(
                 "economy-intelligence", T("page.economy.title"), T("page.economy.eyebrow"),
                 T("page.economy.subtitle"), T("page.economy.status"), T("page.economy.emptyTitle"),
                 T("page.economy.emptyMessage"),

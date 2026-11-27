@@ -21,6 +21,26 @@ namespace TSSE.Desktop.Tests;
 public sealed class AvaloniaWindowTests
 {
     [AvaloniaFact]
+    public void Job_demo_is_accessible_from_navigation_and_shows_synthetic_data()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            NavigationItemViewModel job = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "jobs");
+            viewModel.NavigateCommand.Execute(job);
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "Active job — synthetic demo" && block.IsEffectivelyVisible);
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "cargo.synthetic" && block.IsEffectivelyVisible);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void Vehicle_demo_is_visible_for_trucks_and_hidden_for_coaches()
     {
         var (viewModel, window, _) = CreateMainWindow();
@@ -63,7 +83,7 @@ public sealed class AvaloniaWindowTests
 
             string[] screenshotPageKeys =
             [
-                "command-center", "savegame-explorer", "vehicle-studio", "economy-intelligence",
+                "command-center", "savegame-explorer", "vehicle-studio", "jobs", "economy-intelligence",
                 "time-machine", "compatibility-lab", "diagnostics-center", "settings"
             ];
             foreach (string pageKey in screenshotPageKeys)
@@ -85,7 +105,7 @@ public sealed class AvaloniaWindowTests
                 .OfType<Button>()
                 .Where(button => button.Classes.Contains("nav-item"))
                 .ToArray();
-            Assert.Equal(8, navigationButtons.Length);
+            Assert.Equal(9, navigationButtons.Length);
             Assert.Single(navigationButtons, button => button.Classes.Contains("selected"));
         }
         finally
@@ -131,7 +151,7 @@ public sealed class AvaloniaWindowTests
             window.Show();
             string[] pageTitles =
             [
-                "Command Center", "Savegame Explorer", "Vehicle Studio", "Economy Intelligence",
+                "Command Center", "Savegame Explorer", "Vehicle Studio", "Jobs", "Economy Intelligence",
                 "Savegame Time Machine", "Compatibility Lab", "Diagnostics Center", "Settings"
             ];
 

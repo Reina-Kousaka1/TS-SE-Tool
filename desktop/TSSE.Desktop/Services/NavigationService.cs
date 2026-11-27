@@ -8,7 +8,7 @@ public sealed class NavigationService : INavigationService
 
     public NavigationService(PageCatalog catalog)
     {
-        string[] glyphs = ["⌂", "▤", "◈", "◷", "↶", "✓", "⌁", "⚙"];
+        string[] glyphs = ["⌂", "▤", "◈", "▣", "◷", "↶", "✓", "⌁", "⚙"];
         _items = catalog.Sections.Select((page, index) =>
             new NavigationItemViewModel(page.PageKey, page.Title, glyphs[index], page)).ToArray();
         CurrentPage = catalog.Sections[0];

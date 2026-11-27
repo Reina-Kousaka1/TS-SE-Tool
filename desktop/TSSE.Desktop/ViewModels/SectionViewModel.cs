@@ -42,6 +42,7 @@ public sealed class SectionViewModel : ObservableObject
         SelectAnalyticsWindowCommand = new RelayCommand<string>(SelectAnalyticsWindow);
         ProfileDemo = new ProfileDemoViewModel(_text);
         VehicleDemo = new VehicleDemoViewModel(_text);
+        JobDemo = new JobDemoViewModel(_text);
     }
 
     public string PageKey { get; }
@@ -58,6 +59,8 @@ public sealed class SectionViewModel : ObservableObject
     public bool IsSavegameExplorer => PageKey == "savegame-explorer";
     public ProfileDemoViewModel ProfileDemo { get; }
     public VehicleDemoViewModel VehicleDemo { get; }
+    public JobDemoViewModel JobDemo { get; }
+    public bool IsJobs => PageKey == "jobs";
     public bool IsVehicleDemoVisible => IsVehicleStudio && !IsCoachesSelected;
     public string SettingsStorageHeading { get; }
     public string SettingsStorageMessage { get; }

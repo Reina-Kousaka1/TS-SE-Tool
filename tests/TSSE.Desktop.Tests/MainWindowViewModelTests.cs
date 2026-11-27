@@ -12,7 +12,7 @@ public sealed class MainWindowViewModelTests
     {
         MainWindowViewModel viewModel = CreateViewModel();
 
-        string[] expected = ["Command Center", "Savegame Explorer", "Vehicle Studio", "Economy Intelligence", "Savegame Time Machine", "Compatibility Lab", "Diagnostics Center", "Settings"];
+        string[] expected = ["Command Center", "Savegame Explorer", "Vehicle Studio", "Jobs", "Economy Intelligence", "Savegame Time Machine", "Compatibility Lab", "Diagnostics Center", "Settings"];
         Assert.Equal(expected, viewModel.FilteredNavigationItems.Select(item => item.Title));
         Assert.All(viewModel.FilteredNavigationItems.Skip(1), item =>
             Assert.Contains(item.Page.StatusLabel, new[] { "PREVIEW", "UNVERIFIED", "FOUNDATION ONLY", "AVAILABLE" }));
@@ -48,7 +48,7 @@ public sealed class MainWindowViewModelTests
         Assert.Contains(viewModel.FilteredNavigationItems, item => item.Title == "Compatibility Lab");
 
         viewModel.SearchQuery = "";
-        Assert.Equal(8, viewModel.FilteredNavigationItems.Count);
+        Assert.Equal(9, viewModel.FilteredNavigationItems.Count);
     }
 
     [Fact]
