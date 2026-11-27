@@ -37,7 +37,8 @@ public static class ExperimentalBinarySiiReader
                     if (blocks.Count == 0) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
                     return blocks.AsReadOnly();
                 }
-                if (valid != 1 || structures.Count >= MaximumStructures) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
+                if (valid != 1) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
+                if (structures.Count >= MaximumStructures) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                 uint id = cursor.UInt32();
                 if (id == 0 || structures.ContainsKey(id)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
                 string name = cursor.Name();

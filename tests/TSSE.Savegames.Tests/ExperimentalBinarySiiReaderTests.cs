@@ -7,6 +7,33 @@ namespace TSSE.Savegames.Tests;
 public sealed class ExperimentalBinarySiiReaderTests
 {
     [Fact]
+    public void ExcessiveStructureCountReportsLimitExceeded()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write("BSII"u8);
+            writer.Write(2u);
+            for (uint id = 1; id <= 1025; id++)
+            {
+                writer.Write(0u);
+                writer.Write((byte)1);
+                writer.Write(id);
+                byte[] name = Encoding.ASCII.GetBytes("synthetic");
+                writer.Write((uint)name.Length);
+                writer.Write(name);
+                writer.Write(0u);
+            }
+            writer.Write(0u);
+            writer.Write((byte)0);
+        }
+
+        var exception = Assert.Throws<ExperimentalBinarySiiException>(() =>
+            ExperimentalBinarySiiReader.Read(stream.ToArray()));
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, exception.Error);
+    }
+
+    [Fact]
     public void ReadsOnlyTheSupportedSyntheticStructureWithoutChangingInput()
     {
         byte[] input = Fixture();
