@@ -288,6 +288,9 @@ public sealed class SiiSyntaxDocument
         if (OpaqueLines.Count > 0)
             throw new InvalidOperationException("The document contains unclassified syntax and cannot be edited safely.");
 
+        if (blockId is not null && Blocks.Count(block => block.Id == blockId) != 1)
+            throw new InvalidOperationException("The requested block identifier is missing or ambiguous across block types.");
+
         List<SiiBlock> matchingBlocks = Blocks
             .Where(block => block.Type == blockType && block.Id == blockId)
             .ToList();

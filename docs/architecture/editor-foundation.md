@@ -47,6 +47,10 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+An edit with a non-null target ID fails closed when the ID is repeated across
+block types. Batch failure preserves the original preview and redo history.
+This conservative synthetic syntax rule does not establish game semantics.
+
 The synthetic truck demo exposes the `odometer` UInt32 field declared by the
 legacy `Vehicle` model. Its separate `odometer_float_part` is retained exactly
 and is not recalculated. The editor rejects missing, duplicated, malformed and

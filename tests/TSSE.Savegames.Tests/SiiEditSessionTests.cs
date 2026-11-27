@@ -7,6 +7,24 @@ namespace TSSE.Savegames.Tests;
 public sealed class SiiEditSessionTests
 {
     [Fact]
+    public void CrossTypeDuplicateTargetRejectsWholeBatchAndPreservesRedo()
+    {
+        const string original = "root {\n safe : a {\n  value: 1\n }\n vehicle : b {\n  value: 2\n }\n mod : b {\n  unknown: preserved\n }\n}\n";
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(original));
+        session.Apply([new("safe", "a", "value", "3")]);
+        Assert.True(session.Undo());
+        Assert.Throws<InvalidOperationException>(() => session.Apply([
+            new("safe", "a", "value", "4"), new("vehicle", "b", "value", "5")
+        ]));
+        Assert.Equal(original, session.PreviewText);
+        Assert.Empty(session.Changes);
+        Assert.True(session.CanRedo);
+        Assert.True(session.Redo());
+        Assert.Contains("value: 3", session.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("unknown: preserved", session.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NetChangesFollowUndoRedoAndReturnToOriginalValue()
     {
         var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
