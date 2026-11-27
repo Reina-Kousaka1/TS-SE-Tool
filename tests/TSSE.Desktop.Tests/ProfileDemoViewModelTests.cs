@@ -22,7 +22,7 @@ public sealed class ProfileDemoViewModelTests
         demo.ActionCommand.Execute("undo");
         Assert.Contains("money_account: 0", demo.PreviewText, StringComparison.Ordinal);
         Assert.Equal("0", demo.BalanceInput);
-        Assert.Equal("0", demo.ExperienceInput);
+        Assert.Equal("not a number", demo.ExperienceInput);
         demo.ActionCommand.Execute("redo");
         Assert.Contains("money_account: -123", demo.PreviewText, StringComparison.Ordinal);
         Assert.Equal("-123", demo.BalanceInput);

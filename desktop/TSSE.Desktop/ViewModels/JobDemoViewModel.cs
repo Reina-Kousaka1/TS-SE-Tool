@@ -2,23 +2,27 @@ using System.Globalization;
 using TSSE.Core.Editing;
 using TSSE.Desktop.Services;
 using TSSE.GameAdapters.Editing;
-using TSSE.Savegames.Syntax;
 
 namespace TSSE.Desktop.ViewModels;
 
 /// <summary>In-memory synthetic example; never opens or saves a file.</summary>
 public sealed class JobDemoViewModel : ObservableObject
 {
-    private const string Fixture = "SiiNunit\n{\n player : demo.player {\n  current_job: demo.job\n }\n player_job : demo.job {\n  cargo: cargo.synthetic\n  units_count: 3\n  planned_distance_km: 120\n  demo_unknown: \"preserved\"\n }\n}\n";
+    private readonly DemoWorkspace _workspace;
     private readonly IUiTextCatalog _text;
-    private readonly LegacyJobPreview _session = new(SiiSyntaxDocument.Parse(Fixture), "demo.player");
+    private readonly LegacyJobPreview _session;
     private string _unitsInput = "3";
     private string _distanceInput = "120";
     private string _message;
+    private string _lastUnits = "3";
+    private string _lastDistance = "120";
 
-    public JobDemoViewModel(IUiTextCatalog text)
+    public JobDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
+        _workspace = workspace ?? new DemoWorkspace();
+        _session = _workspace.Workspace.Job;
+        _workspace.Changed += (_, _) => RefreshFromWorkspace();
         _message = _text.Get("jobDemo.ready");
         ActionCommand = new RelayCommand<string>(Execute);
     }
@@ -35,6 +39,7 @@ public sealed class JobDemoViewModel : ObservableObject
     public string PreviewLabel => _text.Get("jobDemo.preview");
     public string PreviewText => _session.PreviewText;
     public string ChangesLabel => _text.Get("editor.changes");
+    public string SharedHistoryLabel => _text.Get("editor.sharedHistory");
     public string ChangeSummary => DemoChangeSummary.Format(_session.Changes, _text.Get("editor.noChanges"));
     public string UnitsInput { get => _unitsInput; set => SetProperty(ref _unitsInput, value ?? ""); }
     public string DistanceInput { get => _distanceInput; set => SetProperty(ref _distanceInput, value ?? ""); }
@@ -69,12 +74,21 @@ public sealed class JobDemoViewModel : ObservableObject
         Message = _text.Get(success ? "jobDemo.applied" : "jobDemo.invalid");
         if (success)
         {
-            OnPropertyChanged(nameof(PreviewText));
-            OnPropertyChanged(nameof(ChangeSummary));
-            if (action is "apply" or "undo" or "redo")
-                UnitsInput = _session.UnitsCount.ToString(CultureInfo.InvariantCulture);
-            if (action is "distance" or "undo" or "redo")
-                DistanceInput = _session.PlannedDistanceKm.ToString(CultureInfo.InvariantCulture);
+            _workspace.NotifyChanged();
+            if (action == "apply") UnitsInput = _lastUnits;
+            if (action == "distance") DistanceInput = _lastDistance;
         }
+    }
+
+    private void RefreshFromWorkspace()
+    {
+        string units = _session.UnitsCount.ToString(CultureInfo.InvariantCulture);
+        string distance = _session.PlannedDistanceKm.ToString(CultureInfo.InvariantCulture);
+        if (UnitsInput == _lastUnits) UnitsInput = units;
+        if (DistanceInput == _lastDistance) DistanceInput = distance;
+        _lastUnits = units;
+        _lastDistance = distance;
+        OnPropertyChanged(nameof(PreviewText));
+        OnPropertyChanged(nameof(ChangeSummary));
     }
 }

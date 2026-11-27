@@ -1,4 +1,5 @@
 {
+  "editor.sharedHistory": "Rückgängig und Wiederholen gelten für den gesamten synthetischen Arbeitsbereich über alle Editorbereiche hinweg.",
   "editor.changes": "Änderungen an synthetischen Daten",
   "editor.noChanges": "Keine Änderungen.",
   "jobDemo.distance": "Geplante Strecke in km (nichtnegative Ganzzahl)",

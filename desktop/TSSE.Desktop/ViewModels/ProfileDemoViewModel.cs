@@ -2,26 +2,29 @@ using System.Globalization;
 using TSSE.Core.Editing;
 using TSSE.Desktop.Services;
 using TSSE.GameAdapters.Editing;
-using TSSE.Savegames.Syntax;
 
 namespace TSSE.Desktop.ViewModels;
 
 /// <summary>Scratch values only; this view model never opens or writes a game save.</summary>
 public sealed class ProfileDemoViewModel : ObservableObject
 {
-    private const string SyntheticDocument =
-        "SiiNunit\n{\n economy : demo.economy {\n  bank: demo.bank\n  experience_points: 0\n  demo_unknown: \"preserved\"\n }\n bank : demo.bank {\n  money_account: 0\n }\n}\n";
-    private readonly LegacyProfilePreview _session = new(SiiSyntaxDocument.Parse(SyntheticDocument), "demo.economy");
+    private readonly DemoWorkspace _workspace;
+    private readonly LegacyProfilePreview _session;
     private readonly IUiTextCatalog _text;
     private string _balanceInput = "0";
     private string _experienceInput = "0";
     private string _levelInput = "0";
     private LegacyLevelTable _levelTable = LegacyLevelTable.Ets2;
     private string _message;
+    private string _lastBalance = "0";
+    private string _lastExperience = "0";
 
-    public ProfileDemoViewModel(IUiTextCatalog text)
+    public ProfileDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
+        _workspace = workspace ?? new DemoWorkspace();
+        _session = _workspace.Workspace.Profile;
+        _workspace.Changed += (_, _) => RefreshFromWorkspace();
         _message = _text.Get("profileDemo.ready");
         ActionCommand = new RelayCommand<string>(Execute);
     }
@@ -36,6 +39,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string PreviewLabel => _text.Get("profileDemo.preview");
     public string PreviewText => _session.PreviewText;
     public string ChangesLabel => _text.Get("editor.changes");
+    public string SharedHistoryLabel => _text.Get("editor.sharedHistory");
     public string ChangeSummary => DemoChangeSummary.Format(_session.Changes, _text.Get("editor.noChanges"));
     public string LevelHeading => _text.Get("profileDemo.levelHeading");
     public string LevelDescription => _text.Get("profileDemo.levelDescription");
@@ -91,17 +95,24 @@ public sealed class ProfileDemoViewModel : ObservableObject
         Message = _text.Get(success ? "profileDemo.applied" : "profileDemo.invalid");
         if (success)
         {
-            OnPropertyChanged(nameof(PreviewText));
-            OnPropertyChanged(nameof(ChangeSummary));
-            OnPropertyChanged(nameof(LevelProgress));
+            _workspace.NotifyChanged();
             if (action == "level")
                 ExperienceInput = _session.Current.Experience.ToString(CultureInfo.InvariantCulture);
         }
-        if (success && action is "undo" or "redo")
-        {
-            BalanceInput = _session.Current.Balance.ToString(CultureInfo.InvariantCulture);
-            ExperienceInput = _session.Current.Experience.ToString(CultureInfo.InvariantCulture);
-        }
+    }
+
+    private void RefreshFromWorkspace()
+    {
+        ProfileValues values = _session.Current;
+        string balance = values.Balance.ToString(CultureInfo.InvariantCulture);
+        string experience = values.Experience.ToString(CultureInfo.InvariantCulture);
+        if (BalanceInput == _lastBalance) BalanceInput = balance;
+        if (ExperienceInput == _lastExperience) ExperienceInput = experience;
+        _lastBalance = balance;
+        _lastExperience = experience;
+        OnPropertyChanged(nameof(PreviewText));
+        OnPropertyChanged(nameof(ChangeSummary));
+        OnPropertyChanged(nameof(LevelProgress));
     }
 
     private bool Apply(ProfileValues values)

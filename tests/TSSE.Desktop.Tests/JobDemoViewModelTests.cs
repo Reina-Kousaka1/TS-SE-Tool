@@ -23,7 +23,7 @@ public sealed class JobDemoViewModelTests
         demo.ActionCommand.Execute("undo");
         Assert.Equal(before, demo.PreviewText);
         Assert.Equal("No changes.", demo.ChangeSummary);
-        Assert.Equal("120", demo.DistanceInput);
+        Assert.Equal("-1", demo.DistanceInput);
     }
     [Fact]
     public void HistoryLimitIsExplainedAndLastPreviewRemainsIntact()
@@ -62,9 +62,9 @@ public sealed class JobDemoViewModelTests
         Assert.Contains("Invalid", demo.Message, StringComparison.Ordinal);
         demo.ActionCommand.Execute("undo");
         Assert.Equal(original, demo.PreviewText);
-        Assert.Equal("3", demo.UnitsInput);
+        Assert.Equal("-1", demo.UnitsInput);
         demo.ActionCommand.Execute("redo");
         Assert.Equal(changed, demo.PreviewText);
-        Assert.Equal("42", demo.UnitsInput);
+        Assert.Equal("-1", demo.UnitsInput);
     }
 }

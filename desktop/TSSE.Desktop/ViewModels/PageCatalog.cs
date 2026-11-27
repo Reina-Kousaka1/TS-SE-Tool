@@ -12,6 +12,7 @@ public sealed class PageCatalog
         _text = text ?? throw new ArgumentNullException(nameof(text));
         FoundationStatus status = statusService.GetCurrent();
         string adapters = status.VerifiedAdapterCount.ToString(_text.Culture);
+        var demoWorkspace = new DemoWorkspace();
 
         Sections =
         [
@@ -35,17 +36,17 @@ public sealed class PageCatalog
                 [
                     new StatusCardViewModel(T("save.discovery.label"), T("save.discovery.value"), T("save.discovery.detail")),
                     new StatusCardViewModel(T("save.parser.label"), T("save.parser.value"), T("save.parser.detail"))
-                ], _text),
+                ], _text, demoWorkspace),
             new SectionViewModel(
                 "vehicle-studio", T("page.vehicle.title"), T("page.vehicle.eyebrow"),
                 T("page.vehicle.subtitle"), T("page.vehicle.status"), T("page.vehicle.emptyTitle"),
                 T("page.vehicle.emptyMessage"),
-                [new StatusCardViewModel(T("vehicle.dataSource.label"), T("vehicle.dataSource.value"), T("vehicle.dataSource.detail"))], _text),
+                [new StatusCardViewModel(T("vehicle.dataSource.label"), T("vehicle.dataSource.value"), T("vehicle.dataSource.detail"))], _text, demoWorkspace),
             new SectionViewModel(
                 "jobs", T("page.jobs.title"), T("page.jobs.eyebrow"),
                 T("page.jobs.subtitle"), T("page.jobs.status"), T("page.jobs.emptyTitle"),
                 T("page.jobs.emptyMessage"),
-                [], _text),
+                [], _text, demoWorkspace),
             new SectionViewModel(
                 "economy-intelligence", T("page.economy.title"), T("page.economy.eyebrow"),
                 T("page.economy.subtitle"), T("page.economy.status"), T("page.economy.emptyTitle"),

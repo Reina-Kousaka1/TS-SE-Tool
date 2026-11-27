@@ -44,7 +44,15 @@ trailer and job blocks in one in-memory syntax session. Changes in different
 domains share a single ordered undo/redo history and change list. It does not
 discover profiles, resolve ownership automatically, or access files. Its
 constructor requires the relevant synthetic block identifiers; no game
-compatibility is implied. Existing UI demos still use separate sessions.
+compatibility is implied. The profile, vehicle and job demos share one
+workspace and label undo/redo as cross-section operations. Draft input is
+preserved when another section changes the underlying synthetic document.
+UI workspace self-review (not independent): the catalog owns the shared demo
+and its view models for the same lifetime. Notifications refresh previews,
+change lists and committed values; a text box that differs from its last
+committed value keeps its draft. Undo and redo are global, and are labelled as
+such in the UI. Switching a vehicle field still replaces that field's current
+text input and is a remaining usability limitation.
 
 Workspace self-review (not independent): only typed preview operations can
 modify the shared session; those operations do not change the profile or job
@@ -135,8 +143,8 @@ Changed values are emitted as invariant round-trip decimals. Unchanged values
 retain their original text. Only an explicitly selected field is edited; wheel
 arrays, references and unknown fields are preserved, not interpreted.
 This does not claim full repair, game compatibility, or Coaches support.
-The Vehicle Studio exposes a labelled demo using two independent embedded
-synthetic sessions with field selection and undo/redo. It has no file access.
+The Vehicle Studio exposes a labelled demo using a shared embedded synthetic
+session with field selection and undo/redo. It has no file access.
 Selecting Coaches hides the demo; no Coach model is inferred from truck fields.
 The demo can reset listed truck mechanical/body wear or trailer body/chassis
 wear in one undoable batch, and can refill the demo truck's fuel separately.
@@ -154,8 +162,8 @@ ambiguous replacements; existing syntax session safeguards remain active.
 Valid decimal encoding and the ratio range for real game versions remain
 unverified until genuine fixture and in-game tests are performed.
 
-UI self-review (not independent): each category has a separate synthetic
-session and history, input is restricted to invariant ratios, and no path or
+UI self-review (not independent): both categories share synthetic
+session history, input is restricted to invariant ratios, and no path or
 save command is introduced. Users can change cargo damage in the trailer demo;
 this is not represented as automatic cargo repair.
 

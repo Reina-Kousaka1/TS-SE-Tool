@@ -18,7 +18,8 @@ public sealed class SectionViewModel : ObservableObject
         string emptyStateTitle,
         string emptyStateMessage,
         IEnumerable<StatusCardViewModel> statusCards,
-        IUiTextCatalog text)
+        IUiTextCatalog text,
+        DemoWorkspace? demoWorkspace = null)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
         PageKey = pageKey;
@@ -40,9 +41,10 @@ public sealed class SectionViewModel : ObservableObject
         ThirtyDaysLabel = _text.Get("analytics.window.thirtyDays");
         SelectVehicleCategoryCommand = new RelayCommand<string>(SelectVehicleCategory);
         SelectAnalyticsWindowCommand = new RelayCommand<string>(SelectAnalyticsWindow);
-        ProfileDemo = new ProfileDemoViewModel(_text);
-        VehicleDemo = new VehicleDemoViewModel(_text);
-        JobDemo = new JobDemoViewModel(_text);
+        DemoWorkspace workspace = demoWorkspace ?? new DemoWorkspace();
+        ProfileDemo = new ProfileDemoViewModel(_text, workspace);
+        VehicleDemo = new VehicleDemoViewModel(_text, workspace);
+        JobDemo = new JobDemoViewModel(_text, workspace);
     }
 
     public string PageKey { get; }

@@ -1,4 +1,5 @@
 {
+  "editor.sharedHistory": "Undo and redo apply to the entire synthetic workspace, across all editor sections.",
   "editor.changes": "Changes to synthetic data",
   "editor.noChanges": "No changes.",
   "jobDemo.distance": "Planned distance in km (nonnegative integer)",
