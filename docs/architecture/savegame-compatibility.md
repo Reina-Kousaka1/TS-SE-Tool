@@ -50,6 +50,14 @@ the contents or a file path. Unsupported encodings and containers are reported
 without attempting decompression or decryption. Real test copies require
 explicit authorization; profile scanning and production writes stay disabled.
 
+The report includes a four-byte signature hint for `SiiN`, `ScsC`, `BSII` and
+`3nK` followed by byte `01`, as documented in the original SII Decrypt
+[format constants](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Source/SII_Decrypt_Decryptor.pas).
+The latter three prefixes are rejected as unsupported before text parsing. A
+prefix is only a hint: it establishes neither validity nor game compatibility,
+and BOM-prefixed or other forms can remain unknown. Tests use synthetic bytes;
+there is no decoder, decryption, profile discovery or real fixture evidence.
+
 The inspector also accepts a caller-owned stream and reads no more than the
 byte limit plus one detection byte; an oversized stream's reported length is
 marked as a lower bound. Read errors propagate rather than becoming success

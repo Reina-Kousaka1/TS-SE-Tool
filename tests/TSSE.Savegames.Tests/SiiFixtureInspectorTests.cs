@@ -8,6 +8,39 @@ namespace TSSE.Savegames.Tests;
 
 public sealed class SiiFixtureInspectorTests
 {
+    [Theory]
+    [InlineData("ScsC", SiiSignatureHint.EncryptedPrefix)]
+    [InlineData("BSII", SiiSignatureHint.BinaryPrefix)]
+    [InlineData("3nK\u0001", SiiSignatureHint.ThreeNkPrefix)]
+    public void KnownNonTextPrefixesAreHintsAndNeverDecoded(string prefix, SiiSignatureHint hint)
+    {
+        byte[] input = Encoding.UTF8.GetBytes(prefix + "\nroot {\n value: 1\n}\n");
+        SiiFixtureReport report = SiiFixtureInspector.Inspect(input);
+        Assert.Equal(hint, report.SignatureHint);
+        Assert.Equal(SiiFixtureStatus.UnsupportedTextOrContainer, report.Status);
+        Assert.Null(report.ByteRoundTripEqual);
+        using var stream = new ShortReadStream(input, 2);
+        Assert.Equal(report, SiiFixtureInspector.Inspect(stream));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Scs")]
+    [InlineData("BSI")]
+    [InlineData("3nK")]
+    [InlineData("scsc")]
+    public void IncompleteOrDifferentPrefixesAreNotClassified(string input)
+    {
+        Assert.Equal(SiiSignatureHint.Unknown, SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes(input)).SignatureHint);
+    }
+
+    [Fact]
+    public void TextPrefixIsOnlyAHintAndDoesNotProveValidSyntax()
+    {
+        SiiFixtureReport report = SiiFixtureInspector.Inspect("SiiN"u8);
+        Assert.Equal(SiiSignatureHint.TextPrefix, report.SignatureHint);
+        Assert.Equal(SiiFixtureStatus.InvalidSyntax, report.Status);
+    }
     [Fact]
     public void ShortReadsProduceTheSameReportAndLeaveTheStreamOpen()
     {

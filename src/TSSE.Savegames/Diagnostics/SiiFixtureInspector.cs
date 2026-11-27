@@ -32,14 +32,22 @@ public static class SiiFixtureInspector
         }
 
         return new SiiFixtureReport(SiiFixtureStatus.TooLarge, (int)buffer.Length, null, null,
-            null, null, null, null, null) { ByteLengthIsLowerBound = true };
+            null, null, null, null, null)
+        {
+            ByteLengthIsLowerBound = true,
+            SignatureHint = DetectSignature(buffer.GetBuffer().AsSpan(0, (int)buffer.Length))
+        };
     }
 
     public static SiiFixtureReport Inspect(ReadOnlySpan<byte> bytes)
     {
+        SiiSignatureHint hint = DetectSignature(bytes);
         if (bytes.Length > SiiEncodedText.MaximumBytes)
-            return new(SiiFixtureStatus.TooLarge, bytes.Length, null, null, null, null, null, null, null);
+            return new(SiiFixtureStatus.TooLarge, bytes.Length, null, null, null, null, null, null, null) { SignatureHint = hint };
         string hash = Convert.ToHexString(SHA256.HashData(bytes));
+        if (hint is SiiSignatureHint.EncryptedPrefix or SiiSignatureHint.BinaryPrefix or SiiSignatureHint.ThreeNkPrefix)
+            return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
+                null, null, null, null) { SignatureHint = hint };
         try
         {
             SiiEncodedText text = SiiEncodedText.Parse(bytes);
@@ -48,20 +56,32 @@ public static class SiiFixtureInspector
             SiiFixtureStatus status = !equal ? SiiFixtureStatus.ByteMismatch :
                 opaqueCount > 0 ? SiiFixtureStatus.UnclassifiedSyntax : SiiFixtureStatus.ParsedSyntaxOnly;
             return new(status, bytes.Length, hash, text.EncodingKind, equal,
-                text.Syntax.Blocks.Count, opaqueCount, null, null);
+                text.Syntax.Blocks.Count, opaqueCount, null, null) { SignatureHint = hint };
         }
         catch (SiiSyntaxException ex)
         {
             return new(SiiFixtureStatus.InvalidSyntax, bytes.Length, hash, null, null,
-                null, null, ex.ErrorCode, ex.LineNumber);
+                null, null, ex.ErrorCode, ex.LineNumber) { SignatureHint = hint };
         }
         catch (InvalidDataException)
         {
             return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
-                null, null, null, null);
+                null, null, null, null) { SignatureHint = hint };
         }
     }
+
+    private static SiiSignatureHint DetectSignature(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith("ScsC"u8)) return SiiSignatureHint.EncryptedPrefix;
+        if (bytes.StartsWith("BSII"u8)) return SiiSignatureHint.BinaryPrefix;
+        if (bytes.StartsWith("3nK\u0001"u8)) return SiiSignatureHint.ThreeNkPrefix;
+        if (bytes.StartsWith("SiiN"u8)) return SiiSignatureHint.TextPrefix;
+        return SiiSignatureHint.Unknown;
+    }
 }
+
+/// <summary>A four-byte hint only, never proof that a container is valid or decodable.</summary>
+public enum SiiSignatureHint { Unknown, TextPrefix, EncryptedPrefix, BinaryPrefix, ThreeNkPrefix }
 
 public enum SiiFixtureStatus
 {
@@ -87,4 +107,5 @@ public sealed record SiiFixtureReport(
 {
     /// <summary>True if a bounded stream was stopped before its full length was read.</summary>
     public bool ByteLengthIsLowerBound { get; init; }
+    public SiiSignatureHint SignatureHint { get; init; }
 }
