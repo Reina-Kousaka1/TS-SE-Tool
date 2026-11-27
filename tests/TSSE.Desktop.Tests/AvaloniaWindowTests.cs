@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -20,6 +21,51 @@ namespace TSSE.Desktop.Tests;
 [Collection("Avalonia UI")]
 public sealed class AvaloniaWindowTests
 {
+    [AvaloniaFact]
+    public void Job_editor_bindings_apply_validate_and_undo_synthetic_values()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "jobs");
+            viewModel.NavigateCommand.Execute(page);
+            window.UpdateLayout();
+            TextBox units = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == page.Page.JobDemo.UnitsLabel);
+            TextBox distance = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == page.Page.JobDemo.DistanceLabel);
+            Button apply = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, page.Page.JobDemo.ApplyBothLabel));
+            Button undo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, page.Page.JobDemo.UndoLabel));
+            Button redo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && Equals(button.Content, page.Page.JobDemo.RedoLabel));
+
+            string original = page.Page.JobDemo.PreviewText;
+            units.Text = "7";
+            distance.Text = "bad";
+            Press(apply);
+            Assert.Equal(original, page.Page.JobDemo.PreviewText);
+            distance.Text = "250";
+            Press(apply);
+            Assert.Contains("units_count: 7", page.Page.JobDemo.PreviewText, StringComparison.Ordinal);
+            Assert.Contains("planned_distance_km: 250", page.Page.JobDemo.PreviewText, StringComparison.Ordinal);
+            Assert.Contains("demo_unknown: \"preserved\"", page.Page.JobDemo.PreviewText, StringComparison.Ordinal);
+            Press(undo);
+            Assert.Equal(original, page.Page.JobDemo.PreviewText);
+            Press(redo);
+            Assert.Contains("planned_distance_km: 250", page.Page.JobDemo.PreviewText, StringComparison.Ordinal);
+
+            void Press(Button button)
+            {
+                Assert.True(button.Focus());
+                window.KeyPressQwerty(PhysicalKey.Space, RawInputModifiers.None);
+                window.KeyReleaseQwerty(PhysicalKey.Space, RawInputModifiers.None);
+            }
+        }
+        finally { window.Close(); }
+    }
     [AvaloniaFact]
     public void Compatibility_lab_shows_synthetic_format_diagnostics()
     {
