@@ -1,5 +1,7 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "profileDemo.applyBoth": "Apply balance and XP as one change",
+  "profileDemo.applyBothReviewed": "Apply both after reviewing current values",
   "vehicleDemo.licensePlateHeading": "Synthetic license plate field (raw)",
   "vehicleDemo.licensePlateDetail": "Read-only raw SII value; encoding and game compatibility are unverified.",
   "vehicleDemo.licensePlateUnavailable": "Field missing or ambiguous.",

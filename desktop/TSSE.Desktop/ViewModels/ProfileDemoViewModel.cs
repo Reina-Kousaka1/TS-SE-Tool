@@ -38,6 +38,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string BalanceLabel => _text.Get("profileDemo.balance");
     public string ExperienceLabel => _text.Get("profileDemo.experience");
     public string ApplyLabel => _text.Get("profileDemo.apply");
+    public string ApplyBothLabel => _text.Get("profileDemo.applyBoth");
+    public string ApplyBothReviewedLabel => _text.Get("profileDemo.applyBothReviewed");
     public string DiscardBalanceLabel => _text.Get("profileDemo.discardBalance");
     public string DiscardExperienceLabel => _text.Get("profileDemo.discardExperience");
     public string UndoLabel => _text.Get("profileDemo.undo");
@@ -63,6 +65,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string ExperienceInput { get => _experienceInput; set { if (_experienceInput == _lastExperience) _baseExperience = _lastExperience; if (SetProperty(ref _experienceInput, value ?? "")) NotifyDrafts(); } }
     public bool IsBalanceStale => BalanceInput != _lastBalance && _baseBalance != _lastBalance;
     public bool IsExperienceStale => ExperienceInput != _lastExperience && _baseExperience != _lastExperience;
+    public bool IsEitherStale => IsBalanceStale || IsExperienceStale;
     public string BalanceDraftNotice => IsBalanceStale ? _text.Format("editor.staleDraft", _lastBalance) : "";
     public string ExperienceDraftNotice => IsExperienceStale ? _text.Format("editor.staleDraft", _lastExperience) : "";
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
@@ -93,7 +96,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
             OnPropertyChanged(nameof(LevelProgress));
             return;
         }
-        if ((action == "balance" && IsBalanceStale) || (action == "experience" && IsExperienceStale))
+        if ((action == "balance" && IsBalanceStale) || (action == "experience" && IsExperienceStale) ||
+            (action == "both" && IsEitherStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -104,6 +108,9 @@ public sealed class ProfileDemoViewModel : ObservableObject
             ProfileValues current = _session.Current;
             success = action switch
             {
+                "both" or "both-reviewed" when long.TryParse(BalanceInput, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long bothBalance) &&
+                    uint.TryParse(ExperienceInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint bothExperience)
+                    => Apply(new ProfileValues(bothBalance, bothExperience)),
                 "balance" or "balance-reviewed" when long.TryParse(BalanceInput, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long balance)
                     => Apply(current with { Balance = balance }),
                 "experience" or "experience-reviewed" when uint.TryParse(ExperienceInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint experience)
@@ -128,8 +135,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action is "balance" or "balance-reviewed") { _baseBalance = _lastBalance; SetProperty(ref _balanceInput, _lastBalance, nameof(BalanceInput)); }
-            if (action is "experience" or "experience-reviewed") { _baseExperience = _lastExperience; SetProperty(ref _experienceInput, _lastExperience, nameof(ExperienceInput)); }
+            if (action is "balance" or "balance-reviewed" or "both" or "both-reviewed") { _baseBalance = _lastBalance; SetProperty(ref _balanceInput, _lastBalance, nameof(BalanceInput)); }
+            if (action is "experience" or "experience-reviewed" or "both" or "both-reviewed") { _baseExperience = _lastExperience; SetProperty(ref _experienceInput, _lastExperience, nameof(ExperienceInput)); }
             NotifyDrafts();
         }
     }
@@ -153,6 +160,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsBalanceStale));
         OnPropertyChanged(nameof(IsExperienceStale));
+        OnPropertyChanged(nameof(IsEitherStale));
         OnPropertyChanged(nameof(BalanceDraftNotice));
         OnPropertyChanged(nameof(ExperienceDraftNotice));
     }

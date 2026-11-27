@@ -8,6 +8,46 @@ namespace TSSE.Desktop.Tests;
 public sealed class ProfileDemoViewModelTests
 {
     [Fact]
+    public void CombinedEditValidatesBothValuesAndUsesOneUndoStep()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.BalanceInput = long.MinValue.ToString(CultureInfo.InvariantCulture);
+        demo.ExperienceInput = "4294967296";
+        demo.ActionCommand.Execute("both");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ExperienceInput = uint.MaxValue.ToString(CultureInfo.InvariantCulture);
+        demo.ActionCommand.Execute("both");
+        Assert.Contains("money_account: -9223372036854775808", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("experience_points: 4294967295", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("experience_points: 4294967295", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CombinedEditRequiresReviewWhenEitherDraftIsStale()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.BalanceInput = "10";
+        demo.ActionCommand.Execute("balance");
+        demo.BalanceInput = "20";
+        demo.ActionCommand.Execute("undo");
+        demo.ExperienceInput = "30";
+        string before = demo.PreviewText;
+        Assert.True(demo.IsEitherStale);
+        demo.ActionCommand.Execute("both");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("both-reviewed");
+        Assert.Contains("money_account: 20", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("experience_points: 30", demo.PreviewText, StringComparison.Ordinal);
+        Assert.False(demo.IsEitherStale);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(before, demo.PreviewText);
+    }
+
+    [Fact]
     public void DiscardingOneStaleDraftPreservesTheOtherAndUndoRedo()
     {
         var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

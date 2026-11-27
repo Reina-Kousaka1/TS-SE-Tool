@@ -65,6 +65,8 @@
           <TextBlock Text="{Binding ExperienceDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsExperienceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="experience-reviewed" />
           <Button Content="{Binding DiscardExperienceLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-experience" />
+          <Button Content="{Binding ApplyBothLabel}" Command="{Binding ActionCommand}" CommandParameter="both" />
+          <Button IsVisible="{Binding IsEitherStale}" Content="{Binding ApplyBothReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="both-reviewed" />
           <StackPanel DataContext="{Binding Skills}" Spacing="8">
             <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />

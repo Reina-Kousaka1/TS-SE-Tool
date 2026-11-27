@@ -5,6 +5,9 @@ open, serialize, or write a game save. ProfileValues holds only balance and
 experience as detached values; it is not a complete profile or a versioned SII
 mapping. A new session has an original baseline. Valid edits create snapshots,
 undo and redo move through them, and a different edit after undo drops redo.
+The synthetic profile UI can apply balance and XP together after validating
+both; stale drafts require an explicit reviewed action and the pair forms a
+single undo step. This remains an in-memory exercise, not save editing.
 Unchanged or invalid edits leave history intact. Callers of the generic history
 must supply immutable snapshots and a validator.
 The generic history compares the current snapshot to its original using the
