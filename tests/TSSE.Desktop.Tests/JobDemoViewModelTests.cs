@@ -54,6 +54,17 @@ public sealed class JobDemoViewModelTests
         demo.ActionCommand.Execute("apply-both");
         Assert.Equal(before, demo.PreviewText);
         Assert.True(demo.IsUnitsStale);
+        Assert.True(demo.IsEitherStale);
+        demo.DistanceInput = "invalid";
+        demo.ActionCommand.Execute("apply-both-reviewed");
+        Assert.Equal(before, demo.PreviewText);
+        demo.DistanceInput = "250";
+        demo.ActionCommand.Execute("apply-both-reviewed");
+        Assert.Contains("units_count: 8", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("planned_distance_km: 250", demo.PreviewText, StringComparison.Ordinal);
+        Assert.False(demo.IsEitherStale);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(before, demo.PreviewText);
     }
     [Fact]
     public void DistanceEditingUpdatesPreviewAndCanBeUndone()

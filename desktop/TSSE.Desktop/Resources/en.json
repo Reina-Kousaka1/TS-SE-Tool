@@ -1,5 +1,6 @@
 {
   "fixture.heading": "Synthetic format diagnostics",
+  "jobDemo.applyBothReviewed": "Apply both after reviewing current values",
   "profileDemo.discardBalance": "Discard balance draft",
   "profileDemo.discardExperience": "Discard experience draft",
   "profileDemo.draftDiscarded": "Draft discarded; the preview was not changed.",

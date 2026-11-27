@@ -41,6 +41,7 @@ public sealed class JobDemoViewModel : ObservableObject
     public string DistanceLabel => _text.Get("jobDemo.distance");
     public string ApplyLabel => _text.Get("jobDemo.apply");
     public string ApplyBothLabel => _text.Get("jobDemo.applyBoth");
+    public string ApplyBothReviewedLabel => _text.Get("jobDemo.applyBothReviewed");
     public string UndoLabel => _text.Get("jobDemo.undo");
     public string RedoLabel => _text.Get("jobDemo.redo");
     public string PreviewLabel => _text.Get("jobDemo.preview");
@@ -52,6 +53,7 @@ public sealed class JobDemoViewModel : ObservableObject
     public string DistanceInput { get => _distanceInput; set { if (_distanceInput == _lastDistance) _baseDistance = _lastDistance; if (SetProperty(ref _distanceInput, value ?? "")) NotifyDrafts(); } }
     public bool IsUnitsStale => UnitsInput != _lastUnits && _baseUnits != _lastUnits;
     public bool IsDistanceStale => DistanceInput != _lastDistance && _baseDistance != _lastDistance;
+    public bool IsEitherStale => IsUnitsStale || IsDistanceStale;
     public string UnitsDraftNotice => IsUnitsStale ? _text.Format("editor.staleDraft", _lastUnits) : "";
     public string DistanceDraftNotice => IsDistanceStale ? _text.Format("editor.staleDraft", _lastDistance) : "";
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
@@ -69,7 +71,7 @@ public sealed class JobDemoViewModel : ObservableObject
         bool success = false;
         try
         {
-            if (action == "apply-both" &&
+            if ((action is "apply-both" or "apply-both-reviewed") &&
                 int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int bothCount) &&
                 int.TryParse(DistanceInput, NumberStyles.None, CultureInfo.InvariantCulture, out int bothDistance))
             {
@@ -101,8 +103,8 @@ public sealed class JobDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action is "apply" or "apply-reviewed" or "apply-both") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
-            if (action is "distance" or "distance-reviewed" or "apply-both") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
+            if (action is "apply" or "apply-reviewed" or "apply-both" or "apply-both-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
+            if (action is "distance" or "distance-reviewed" or "apply-both" or "apply-both-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
             NotifyDrafts();
         }
     }
@@ -125,6 +127,7 @@ public sealed class JobDemoViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsUnitsStale));
         OnPropertyChanged(nameof(IsDistanceStale));
+        OnPropertyChanged(nameof(IsEitherStale));
         OnPropertyChanged(nameof(UnitsDraftNotice));
         OnPropertyChanged(nameof(DistanceDraftNotice));
     }

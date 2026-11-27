@@ -234,6 +234,7 @@
           <TextBlock Text="{Binding DistanceDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsDistanceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="distance-reviewed" />
           <Button Content="{Binding ApplyBothLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-both" />
+          <Button IsVisible="{Binding IsEitherStale}" Content="{Binding ApplyBothReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-both-reviewed" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="{Binding UndoLabel}" Command="{Binding ActionCommand}" CommandParameter="undo" />
             <Button Content="{Binding RedoLabel}" Command="{Binding ActionCommand}" CommandParameter="redo" />
