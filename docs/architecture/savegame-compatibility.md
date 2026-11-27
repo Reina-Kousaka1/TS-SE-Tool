@@ -263,6 +263,17 @@ halves, all bits set and an ordinary value, comparing the observable output of
 the bundled x86 binary with the managed raw interpretation. Strings are
 length-bounded, decoded as strict UTF-8 without normalization, and rejected
 on invalid byte sequences. No game semantics or compatibility is inferred.
+
+The experimental reader also retains individual ID reference fields of
+historical types `0x39`, `0x3b` and `0x3d`: the original type code, length or
+special marker, and every 64-bit part are preserved. Null, nameless and a
+two-part encoded reference are covered by an independently generated synthetic
+fixture and the x86 decoder probe. An optional legacy-text interpretation fails
+for unrepresentable components and never resolves ownership or target validity.
+It masks the historically ignored high bit only for display; the raw bit remains
+available, so identical display text must not be used as a unique identity.
+Binary data-block IDs themselves remain limited to nameless IDs. Reference
+arrays and real saves are not supported or verified.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.

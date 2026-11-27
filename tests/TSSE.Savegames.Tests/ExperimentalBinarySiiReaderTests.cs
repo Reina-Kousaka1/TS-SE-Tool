@@ -28,7 +28,26 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(0xffffffff00000001ul, block.UInt64Fields["wide_high"].Raw);
         Assert.Equal(0x00000001fffffffful, block.UInt64Fields["wide_low"].Raw);
         Assert.Equal(9876543210ul, block.UInt64Fields["wide_value"].LegacyValue);
+        Assert.True(block.ReferenceFields["empty_ref"].IsNullMarker);
+        Assert.Empty(block.ReferenceFields["empty_ref"].RawParts);
+        Assert.True(block.ReferenceFields["anon_ref"].IsNamelessMarker);
+        Assert.Equal(0x9876ul, Assert.Single(block.ReferenceFields["anon_ref"].RawParts));
+        var named = block.ReferenceFields["named_ref"];
+        Assert.Equal(0x3bu, named.TypeCode);
+        Assert.Equal(0x800000000000000bul, named.RawParts[0]);
+        Assert.True(named.TryGetLegacyText(out string? text));
+        Assert.Equal("a.b", text);
         Assert.Equal(before, input);
+    }
+
+    [Fact]
+    public void InvalidLegacyReferenceTextDoesNotDiscardOriginalBits()
+    {
+        var block = Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(referencePart: 38)));
+        var reference = block.ReferenceFields["named_ref"];
+        Assert.Equal(38ul, reference.RawParts[0]);
+        Assert.False(reference.TryGetLegacyText(out string? text));
+        Assert.Null(text);
     }
 
     [Fact]
@@ -72,7 +91,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -84,6 +103,9 @@ public sealed class ExperimentalBinarySiiReaderTests
             writer.Write(ulong.MaxValue); writer.Write(0xffffffff00000001ul); writer.Write(0x00000001fffffffful); writer.Write(9876543210ul);
             byte[] content = textBytes ?? Encoding.UTF8.GetBytes("route demo");
             writer.Write((uint)content.Length); writer.Write(content);
+            writer.Write((byte)0);
+            writer.Write((byte)0xff); writer.Write(0x9876ul);
+            writer.Write((byte)2); writer.Write(referencePart); writer.Write(12ul);
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -98,6 +120,9 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x33); Name("wide_low");
         writer.Write((uint)0x33); Name("wide_value");
         writer.Write((uint)0x01); Name("label");
+        writer.Write((uint)0x39); Name("empty_ref");
+        writer.Write((uint)0x3d); Name("anon_ref");
+        writer.Write((uint)0x3b); Name("named_ref");
         writer.Write((uint)0);
         Data();
         if (duplicateBlock) Data();
