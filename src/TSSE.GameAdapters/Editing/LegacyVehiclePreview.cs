@@ -55,7 +55,7 @@ public sealed class LegacyVehiclePreview
             if (_blockType != "vehicle")
                 throw new InvalidOperationException("The odometer preview requires a vehicle block.");
             SiiField[] fields = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText)).Fields
-                .Where(field => field.Name == "odometer").ToArray();
+                .Where(item => item.Name == "odometer").ToArray();
             if (fields.Length != 1 || !uint.TryParse(fields[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out uint value))
                 throw new InvalidOperationException("The odometer is missing, ambiguous, or unsupported.");
             return value;
