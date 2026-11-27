@@ -51,8 +51,14 @@ UI workspace self-review (not independent): the catalog owns the shared demo
 and its view models for the same lifetime. Notifications refresh previews,
 change lists and committed values; a text box that differs from its last
 committed value keeps its draft. Undo and redo are global, and are labelled as
-such in the UI. Switching a vehicle field still replaces that field's current
-text input and is a remaining usability limitation.
+such in the UI. Vehicle drafts persist across field and category selection;
+if the underlying value changes, the user sees the current value and must
+explicitly apply the reviewed stale draft.
+
+Draft self-review (not independent): drafts are keyed by vehicle category and
+field, stay in memory, and do not modify the document until explicitly applied.
+A stale draft cannot use the normal apply action; the separate reviewed action
+is intentional. Game-save editing and file access remain disabled.
 
 Workspace self-review (not independent): only typed preview operations can
 modify the shared session; those operations do not change the profile or job

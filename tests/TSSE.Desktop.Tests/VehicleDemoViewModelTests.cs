@@ -8,6 +8,38 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void FieldAndCategorySwitchingPreservesDraftAndFlagsStaleBase()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var vehicle = new VehicleDemoViewModel(text, workspace);
+        var job = new JobDemoViewModel(text, workspace);
+        vehicle.ValueInput = "1";
+        vehicle.ActionCommand.Execute("apply");
+        vehicle.ValueInput = "0.3";
+        vehicle.SelectedField = vehicle.Fields.Single(item => item.Name == "engine_wear");
+        vehicle.ValueInput = "not yet valid";
+        vehicle.SelectCategory("Trailers");
+        vehicle.ValueInput = "0.6";
+        vehicle.SelectCategory("Trucks");
+        Assert.Equal("0.3", vehicle.ValueInput);
+        vehicle.SelectedField = vehicle.Fields.Single(item => item.Name == "engine_wear");
+        Assert.Equal("not yet valid", vehicle.ValueInput);
+        job.ActionCommand.Execute("undo");
+        vehicle.SelectedField = vehicle.Fields.Single(item => item.Name == "fuel_relative");
+        Assert.Equal("0.3", vehicle.ValueInput);
+        Assert.True(vehicle.IsStaleDraft);
+        Assert.Contains("0.5", vehicle.DraftNotice, StringComparison.Ordinal);
+        string before = vehicle.PreviewText;
+        vehicle.ActionCommand.Execute("apply");
+        Assert.Equal(before, vehicle.PreviewText);
+        vehicle.ActionCommand.Execute("apply-stale");
+        Assert.Contains("fuel_relative: 0.3", vehicle.PreviewText, StringComparison.Ordinal);
+        Assert.False(vehicle.IsStaleDraft);
+        vehicle.SelectCategory("Trailers");
+        Assert.Equal("0.6", vehicle.ValueInput);
+    }
+    [Fact]
     public void TrailerChainDemoRepairsBothBodiesInOneUndo()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

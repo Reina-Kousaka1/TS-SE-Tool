@@ -1,4 +1,7 @@
 {
+  "vehicleDemo.staleDraft": "Der gespeicherte Demowert hat sich seit Beginn dieses Entwurfs auf {0} geändert. Vor dem Übernehmen prüfen.",
+  "vehicleDemo.staleBlocked": "Der gespeicherte Demowert hat sich geändert. Den Entwurf prüfen und die ausdrückliche Übernehmen-Schaltfläche verwenden.",
+  "vehicleDemo.applyStale": "Geprüften Entwurf übernehmen",
   "editor.sharedHistory": "Rückgängig und Wiederholen gelten für den gesamten synthetischen Arbeitsbereich über alle Editorbereiche hinweg.",
   "editor.changes": "Änderungen an synthetischen Daten",
   "editor.noChanges": "Keine Änderungen.",

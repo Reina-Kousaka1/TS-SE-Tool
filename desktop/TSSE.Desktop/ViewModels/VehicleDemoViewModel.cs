@@ -19,6 +19,8 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private string _valueInput = "";
     private string _message;
     private string _lastValue = "";
+    private string _inputBase = "";
+    private readonly Dictionary<(bool Trailer, string Field), (string Text, string Base)> _drafts = new();
 
     public VehicleDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -55,17 +57,29 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string ChangesLabel => _text.Get("editor.changes");
     public string SharedHistoryLabel => _text.Get("editor.sharedHistory");
     public string ChangeSummary => DemoChangeSummary.Format(Session.Changes, _text.Get("editor.noChanges"));
+    public string DraftNotice => IsStaleDraft ? _text.Format("vehicleDemo.staleDraft", _lastValue) : "";
+    public string ApplyStaleLabel => _text.Get("vehicleDemo.applyStale");
+    public bool IsStaleDraft => ValueInput != _lastValue && _inputBase != _lastValue;
     public IReadOnlyList<VehicleDemoField> Fields => _isTrailer ? _trailerFields : _truckFields;
     public RelayCommand<string> ActionCommand { get; }
-    public string ValueInput { get => _valueInput; set => SetProperty(ref _valueInput, value ?? ""); }
+    public string ValueInput
+    {
+        get => _valueInput;
+        set
+        {
+            if (_valueInput == _lastValue) _inputBase = _lastValue;
+            if (SetProperty(ref _valueInput, value ?? "")) NotifyDraftStatus();
+        }
+    }
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
     public VehicleDemoField SelectedField
     {
         get => _selectedField;
         set
         {
-            if (value is not null && Fields.Contains(value) && SetProperty(ref _selectedField, value))
-                RefreshValue();
+            if (value is null || !Fields.Contains(value) || value == _selectedField) return;
+            SaveDraft();
+            if (SetProperty(ref _selectedField, value)) LoadField();
         }
     }
 
@@ -74,16 +88,17 @@ public sealed class VehicleDemoViewModel : ObservableObject
         if (category is not ("Trucks" or "Trailers")) return;
         bool trailer = category == "Trailers";
         if (_isTrailer == trailer) return;
+        SaveDraft();
         _isTrailer = trailer;
+        _selectedField = Fields[0];
         OnPropertyChanged(nameof(Fields));
         OnPropertyChanged(nameof(CanRefuel));
         OnPropertyChanged(nameof(CanRepairChain));
-        _selectedField = Fields[0];
         OnPropertyChanged(nameof(SelectedField));
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         Message = _text.Get("vehicleDemo.ready");
-        RefreshValue();
+        LoadField();
     }
 
     private void Execute(string action)
@@ -91,7 +106,12 @@ public sealed class VehicleDemoViewModel : ObservableObject
         bool success = false;
         try
         {
-            if (action == "apply" && float.TryParse(ValueInput, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            if (action == "apply" && IsStaleDraft)
+            {
+                Message = _text.Get("vehicleDemo.staleBlocked");
+                return;
+            }
+            if ((action is "apply" or "apply-stale") && float.TryParse(ValueInput, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
             {
                 Session.SetValue(SelectedField.Name, value);
                 success = true;
@@ -130,23 +150,58 @@ public sealed class VehicleDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action == "apply") ValueInput = _lastValue;
+            if (action is "apply" or "apply-stale")
+            {
+                _drafts.Remove((_isTrailer, SelectedField.Name));
+                SetInput(_lastValue, _lastValue);
+            }
         }
     }
 
     private void RefreshValue()
     {
         _lastValue = Session.GetValue(SelectedField.Name).ToString("R", CultureInfo.InvariantCulture);
-        ValueInput = _lastValue;
+        SetInput(_lastValue, _lastValue);
     }
 
     private void RefreshFromWorkspace()
     {
         string current = Session.GetValue(SelectedField.Name).ToString("R", CultureInfo.InvariantCulture);
-        if (ValueInput == _lastValue) ValueInput = current;
+        bool clean = ValueInput == _lastValue;
         _lastValue = current;
+        if (clean || ValueInput == current) SetInput(current, current);
+        else NotifyDraftStatus();
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
+    }
+
+    private void SaveDraft()
+    {
+        var key = (_isTrailer, SelectedField.Name);
+        if (ValueInput == _lastValue) _drafts.Remove(key);
+        else _drafts[key] = (ValueInput, _inputBase);
+    }
+
+    private void LoadField()
+    {
+        _lastValue = Session.GetValue(SelectedField.Name).ToString("R", CultureInfo.InvariantCulture);
+        if (_drafts.TryGetValue((_isTrailer, SelectedField.Name), out var draft) && draft.Text != _lastValue)
+            SetInput(draft.Text, draft.Base);
+        else
+            SetInput(_lastValue, _lastValue);
+    }
+
+    private void SetInput(string value, string baseValue)
+    {
+        _inputBase = baseValue;
+        SetProperty(ref _valueInput, value, nameof(ValueInput));
+        NotifyDraftStatus();
+    }
+
+    private void NotifyDraftStatus()
+    {
+        OnPropertyChanged(nameof(IsStaleDraft));
+        OnPropertyChanged(nameof(DraftNotice));
     }
     private IReadOnlyList<VehicleDemoField> CreateFields(string[] names) =>
         names.Select(name => new VehicleDemoField(name, _text.Get("vehicleDemo.field." + name))).ToArray();

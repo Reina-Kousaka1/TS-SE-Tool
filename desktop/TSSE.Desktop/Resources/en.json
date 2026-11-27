@@ -1,4 +1,7 @@
 {
+  "vehicleDemo.staleDraft": "The saved demo value changed to {0} since this draft began. Review it before applying.",
+  "vehicleDemo.staleBlocked": "The saved demo value changed. Review the draft and use the explicit apply button.",
+  "vehicleDemo.applyStale": "Apply reviewed draft",
   "editor.sharedHistory": "Undo and redo apply to the entire synthetic workspace, across all editor sections.",
   "editor.changes": "Changes to synthetic data",
   "editor.noChanges": "No changes.",
