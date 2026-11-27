@@ -54,6 +54,8 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0x28); WriteString(writer, "unsigned_values");
             if (includeExperimentalInt64Array) { writer.Write((uint)0x32); WriteString(writer, "long_values"); }
             writer.Write((uint)0x34); WriteString(writer, "wide_values");
+            writer.Write((uint)0x35); WriteString(writer, "active");
+            writer.Write((uint)0x36); WriteString(writer, "flags");
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
             writer.Write((byte)2); writer.Write(0x800000000000000bul); writer.Write(12ul); // synthetic named ID
@@ -80,6 +82,8 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)3); writer.Write(0u); writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1);
             if (includeExperimentalInt64Array) { writer.Write((uint)2); writer.Write(-6L); writer.Write(8L); }
             writer.Write((uint)3); writer.Write(0ul); writer.Write(0xffffffff00000001ul); writer.Write(9876543210ul);
+            writer.Write((byte)255); writer.Write((uint)4);
+            writer.Write((byte)0); writer.Write((byte)1); writer.Write((byte)2); writer.Write((byte)255);
             writer.Write((uint)0); writer.Write((byte)0); // end marker
             return stream.ToArray();
         }
@@ -148,7 +152,10 @@ if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synth
     $decoded -notmatch '(?m)^\s*unsigned_values\[1\]:\s*nil\s*$' -or
     $decoded -notmatch '(?m)^\s*unsigned_values\[2\]:\s*4294967294\s*$' -or
     $decoded -notmatch '(?m)^\s*wide_values\[1\]:\s*nil\s*$' -or
-    $decoded -notmatch '(?m)^\s*wide_values\[2\]:\s*9876543210\s*$') {
+    $decoded -notmatch '(?m)^\s*wide_values\[2\]:\s*9876543210\s*$' -or
+    $decoded -notmatch '(?m)^\s*active:\s*true\s*$' -or $decoded -notmatch '(?m)^\s*flags:\s*4\s*$' -or
+    $decoded -notmatch '(?m)^\s*flags\[0\]:\s*false\s*$' -or $decoded -notmatch '(?m)^\s*flags\[1\]:\s*true\s*$' -or
+    $decoded -notmatch '(?m)^\s*flags\[2\]:\s*true\s*$' -or $decoded -notmatch '(?m)^\s*flags\[3\]:\s*true\s*$') {
     throw ('The fixed synthetic decoded text did not contain the expected structure and value: ' + $decoded)
 }
 Write-Output 'Synthetic x86 DecodeMemory: Int64 array query rejected; undersized calls reported success; bounded decode contained expected values; no save file used.'

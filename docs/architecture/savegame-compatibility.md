@@ -294,6 +294,14 @@ values and negative zero are compared with the bundled x86 decoder; NaN and
 infinity bit-preservation tests exercise only the managed reader. No semantic
 game validation, binary writing or real-save support follows from these tests.
 
+Historical byte-boolean scalar and array types `0x35` and `0x36` retain each
+original byte. The separate legacy interpretation reports zero as false and
+any nonzero byte as true; it does not replace the original byte with `1`.
+Synthetic tests cover `0`, `1`, `2`, `255`, empty and oversized arrays and
+truncated data. The known x86 binary confirms the corresponding legacy text for
+the synthetic values. This is format-level evidence, not confirmation of
+game-field meaning or permission to rewrite a save.
+
 The experimental reader also recognizes bounded arrays of historical Int32,
 UInt32, Int64 and UInt64 types. Unsigned array entries preserve raw bits and
 expose the same legacy nil-rendering distinction as the corresponding scalars.

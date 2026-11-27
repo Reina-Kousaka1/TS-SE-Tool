@@ -57,6 +57,10 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(new[] { long.MinValue, long.MaxValue }, block.Int64ArrayFields["long_values"]);
         Assert.True(block.UInt64ArrayFields["wide_values"][1].LegacyRendersNil);
         Assert.Equal(0xffffffff00000001ul, block.UInt64ArrayFields["wide_values"][1].Raw);
+        Assert.Equal((byte)255, block.BoolFields["active"].Raw);
+        Assert.True(block.BoolFields["active"].LegacyValue);
+        Assert.Equal(new byte[] { 0, 1, 2, 255 }, block.BoolArrayFields["flags"].Select(value => value.Raw));
+        Assert.Equal(new[] { false, true, true, true }, block.BoolArrayFields["flags"].Select(value => value.LegacyValue));
         Assert.Equal(before, input);
     }
 
@@ -128,6 +132,15 @@ public sealed class ExperimentalBinarySiiReaderTests
     }
 
     [Fact]
+    public void BooleanArraysRejectExcessiveOrTruncatedLengths()
+    {
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(boolArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(boolArrayCount: uint.MaxValue)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(boolArrayCount: 4096)).Error);
+        Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(boolArrayCount: 0))).BoolArrayFields["flags"]);
+    }
+
+    [Fact]
     public void InvalidLegacyReferenceTextDoesNotDiscardOriginalBits()
     {
         var block = Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(referencePart: 38)));
@@ -186,7 +199,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null, uint? boolArrayCount = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -221,6 +234,8 @@ public sealed class ExperimentalBinarySiiReaderTests
             writer.Write((uint)3); writer.Write(0u); writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1);
             writer.Write((uint)2); writer.Write(long.MinValue); writer.Write(long.MaxValue);
             writer.Write((uint)3); writer.Write(0ul); writer.Write(0xffffffff00000001ul); writer.Write(9876543210ul);
+            writer.Write((byte)255); writer.Write(boolArrayCount ?? 4);
+            if (boolArrayCount is null) { writer.Write((byte)0); writer.Write((byte)1); writer.Write((byte)2); writer.Write((byte)255); }
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -246,6 +261,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x28); Name("unsigned_values");
         writer.Write((uint)0x32); Name("long_values");
         writer.Write((uint)0x34); Name("wide_values");
+        writer.Write((uint)0x35); Name("active");
+        writer.Write((uint)0x36); Name("flags");
         writer.Write((uint)0);
         Data(namedBlockParts);
         if (duplicateBlock) Data(secondNamedBlockParts ?? namedBlockParts);
