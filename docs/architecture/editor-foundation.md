@@ -71,6 +71,24 @@ updated text as a visibly labelled preview. The adapter and syntax session stay
 in memory; no feature gate is changed. Test evidence must cover validation,
 undo/redo and preservation of an unknown field in the displayed preview.
 
+## Experimental vehicle mapping
+
+`LegacyVehiclePreview` edits selected fuel and wear ratios in explicitly
+selected synthetic `vehicle` and `trailer` blocks. Field names are based on
+legacy Vehicle.cs and Trailer.cs. Both decimal and `&` plus eight hexadecimal
+IEEE-754 bit patterns are read; non-finite or out-of-range values fail closed.
+Changed values are emitted as invariant round-trip decimals. Unchanged values
+retain their original text. Only an explicitly selected field is edited; wheel
+arrays, references and unknown fields are preserved, not interpreted.
+This does not claim full repair, game compatibility, or Coaches support.
+The preview is memory only and is not wired to file operations or the UI.
+
+Architecture self-review (not independent): field allowlists prevent applying
+trailer edits to trucks and vice versa. Unique block and field checks prevent
+ambiguous replacements; existing syntax session safeguards remain active.
+Valid decimal encoding and the ratio range for real game versions remain
+unverified until genuine fixture and in-game tests are performed.
+
 ## Architecture self-review (not independent)
 
 Decision: keep the editor core detached from file transactions and SII until
