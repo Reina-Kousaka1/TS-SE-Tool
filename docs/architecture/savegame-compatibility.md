@@ -75,6 +75,10 @@ writing as false. Unsupported containers are not decoded. The tool rejects
 links using best-effort path checks; these are non-atomic and cannot prevent
 concurrent path substitution. Run only on isolated, stationary copies. It is
 not connected to Avalonia or profile discovery, and no recovery is performed.
+For inputs within the byte limit, two bounded reads are compared by length and
+SHA-256; a mismatch aborts without a report. Oversized inputs do not receive a
+full-read consistency claim. Matching reads are evidence only, not an atomic
+snapshot or a substitute for keeping the test copy stationary.
 
 Fixture tool self-review (not independent): one explicit path, read-only open,
 bounded reads via `SiiFixtureInspector`, no content/path in output, and no

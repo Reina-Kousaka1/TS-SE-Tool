@@ -1,12 +1,43 @@
 using System.Text;
 using System.Text.Json;
 using TSSE.FixtureInspector;
+using TSSE.Savegames.Syntax;
 using Xunit;
 
 namespace TSSE.Savegames.Tests;
 
 public sealed class FixtureCopyInspectionTests
 {
+    [Fact]
+    public void ChangedStreamIsRejectedRatherThanReportedAsAStableRoundtrip()
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes("root {\n value: 1\n}\n");
+        using var stream = new ChangeOnRewindStream(bytes);
+        Assert.Throws<IOException>(() => FixtureCopyInspection.ObserveTwice(stream));
+    }
+
+    [Fact]
+    public void OversizedInputDoesNotClaimAStableFullRead()
+    {
+        using var stream = new MemoryStream(new byte[SiiEncodedText.MaximumBytes + 1]);
+        FixtureObservation result = FixtureCopyInspection.ObserveTwice(stream);
+        Assert.Null(result.ObservedSameBytesAcrossReads);
+        Assert.True(result.Report.ByteLengthIsLowerBound);
+    }
+
+    private sealed class ChangeOnRewindStream(byte[] bytes) : MemoryStream(bytes, writable: true)
+    {
+        public override long Position
+        {
+            get => base.Position;
+            set
+            {
+                if (value == 0 && base.Position > 0) bytes[15] = (byte)'2';
+                base.Position = value;
+            }
+        }
+    }
+
     [Fact]
     public void SymbolicLinkIsNotInspected()
     {
@@ -44,6 +75,7 @@ public sealed class FixtureCopyInspectionTests
             using JsonDocument json = JsonDocument.Parse(text);
             Assert.False(json.RootElement.GetProperty("GameCompatibilityEstablished").GetBoolean());
             Assert.False(json.RootElement.GetProperty("SaveWritingEnabled").GetBoolean());
+            Assert.True(json.RootElement.GetProperty("ObservedSameBytesAcrossReads").GetBoolean());
             Assert.True(json.RootElement.GetProperty("Report").GetProperty("ByteRoundTripEqual").GetBoolean());
             Assert.Equal(bytes, File.ReadAllBytes(path));
         }
