@@ -107,6 +107,13 @@ registered or enabled; these checks do not grant file-read or write permission.
 The separate size-query check can be called before allocation and returns a
 bounded integer only on a successful query with a nonzero size within the
 existing text limit. This does not invoke the native decoder.
+The referenced [native header](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Library/SII_Decrypt_Library_Header.pas)
+describes a pointer-sized `TMemSize`, a minimum buffer size from the first
+call, and the actual data size from the second. The check retains 64-bit sizes,
+accepts a bounded larger buffer, and inspects only the reported output bytes.
+This source is not proof that the repository's bundled DLL has the same ABI;
+the legacy C# `uint*` declaration must not be reused for a 64-bit native call
+without verifying that exact binary and its calling convention.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.

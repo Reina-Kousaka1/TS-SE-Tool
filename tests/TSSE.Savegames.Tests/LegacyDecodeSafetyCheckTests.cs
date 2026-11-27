@@ -18,8 +18,10 @@ public sealed class LegacyDecodeSafetyCheckTests
         Assert.Equal(SiiEncodedText.MaximumBytes, maximum);
         Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, 0, out int empty));
         Assert.Equal(0, empty);
-        Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, uint.MaxValue, out int large));
+        Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, ulong.MaxValue, out int large));
         Assert.Equal(0, large);
+        Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, 1UL << 32, out int above32Bit));
+        Assert.Equal(0, above32Bit);
         Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(12, 1, out int failed));
         Assert.Equal(0, failed);
     }
@@ -48,8 +50,25 @@ public sealed class LegacyDecodeSafetyCheckTests
         Assert.Equal(LegacyDecodeCheckStatus.SizeQueryFailed, LegacyDecodeSafetyCheck.Inspect(-1, 0, (uint)Valid.Length, (uint)Valid.Length, Valid).Status);
         Assert.Equal(LegacyDecodeCheckStatus.InvalidSize, LegacyDecodeSafetyCheck.Inspect(0, 0, 0, 0, []).Status);
         Assert.Equal(LegacyDecodeCheckStatus.InvalidSize, LegacyDecodeSafetyCheck.Inspect(0, 0, (uint)SiiEncodedText.MaximumBytes + 1, 1, Valid).Status);
-        Assert.Equal(LegacyDecodeCheckStatus.SizeMismatch, LegacyDecodeSafetyCheck.Inspect(0, 0, (uint)Valid.Length, (uint)Valid.Length - 1, Valid).Status);
+        Assert.Equal(LegacyDecodeCheckStatus.SizeMismatch, LegacyDecodeSafetyCheck.Inspect(0, 0, (uint)Valid.Length, 0, Valid).Status);
+        Assert.Equal(LegacyDecodeCheckStatus.SizeMismatch, LegacyDecodeSafetyCheck.Inspect(0, 0, (uint)Valid.Length, (uint)Valid.Length + 1, Valid).Status);
         Assert.Equal(LegacyDecodeCheckStatus.SizeMismatch, LegacyDecodeSafetyCheck.Inspect(0, 0, (uint)Valid.Length + 1, (uint)Valid.Length + 1, Valid).Status);
+    }
+
+    [Fact]
+    public void OutputMayBeShorterThanBufferAndUnusedTailIsNotParsed()
+    {
+        byte[] buffer = new byte[Valid.Length + 8];
+        Valid.CopyTo(buffer, 0);
+        Array.Fill(buffer, (byte)0xff, Valid.Length, 8);
+        var result = LegacyDecodeSafetyCheck.Inspect(0, 0, (ulong)buffer.Length, (ulong)Valid.Length, buffer);
+        Assert.Equal(LegacyDecodeCheckStatus.SyntaxOnly, result.Status);
+        Assert.Equal(Valid.Length, result.Report!.ByteLength);
+        Assert.False(result.GameCompatibilityEstablished);
+        Assert.False(result.SaveWritingEnabled);
+        var largerBuffer = LegacyDecodeSafetyCheck.Inspect(0, 0, (ulong)Valid.Length, (ulong)Valid.Length, buffer);
+        Assert.Equal(LegacyDecodeCheckStatus.SyntaxOnly, largerBuffer.Status);
+        Assert.Equal(Valid.Length, largerBuffer.Report!.ByteLength);
     }
 
     [Theory]
