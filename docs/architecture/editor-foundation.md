@@ -29,13 +29,16 @@ real profile mapping and game compatibility remain future work.
 The explorer also contains a separate synthetic `user_profile` metadata example.
 The legacy `SaveFileProfileData.cs` names `profile_name`, `cached_experience`,
 and `cached_distance`; this preview reads the two cached UInt32 values and can
-change the example name. It deliberately accepts only a conservative 1–64
-ASCII-letter/digit/underscore subset, not arbitrary SCS string encodings. Those
-limits are preview restrictions, not claims about the game. Its independent
+change the example name. It accepts a conservative subset of Unicode names and
+legacy-shaped UTF-8 `\xNN` escapes, with a 64 UTF-16-code-unit limit. It rejects
+invalid UTF-8, controls, unsupported punctuation and unknown escapes. The
+subset and limit are preview restrictions, not claims about the game. Its independent
 undo/redo history never renames a profile directory, updates game data, scans
 profiles, or writes files. It rejects unknown string formats, ambiguous fields
-and invalid numeric values, while preserving unknown syntax fields. Unicode
-profile names and current game compatibility are not supported or verified.
+and invalid numeric values, while preserving unknown syntax fields. Current
+game compatibility is not verified. In contrast to the legacy code's per-char
+encoding, supplementary Unicode characters are encoded as complete UTF-8;
+this is synthetic behavior and is not evidence of game acceptance.
 
 Metadata self-review (not independent): this is a separate in-memory document
 and history, rather than conflating profile metadata with the game save. Only

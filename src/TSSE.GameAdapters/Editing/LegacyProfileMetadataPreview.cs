@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using TSSE.Savegames.Editing;
 using TSSE.Savegames.Syntax;
 
@@ -26,10 +27,7 @@ public sealed class LegacyProfileMetadataPreview
     {
         get
         {
-            string raw = Value("profile_name");
-            string name = raw.Length >= 2 && raw[0] == '"' && raw[^1] == '"' ? raw[1..^1] : raw;
-            if (!IsSupportedName(name)) throw new InvalidOperationException("The profile name is unsupported.");
-            return name;
+            return DecodeName(Value("profile_name"));
         }
     }
     public uint CachedExperience => ReadUInt("cached_experience");
@@ -43,15 +41,69 @@ public sealed class LegacyProfileMetadataPreview
     public void SetName(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        if (!IsSupportedName(name)) throw new ArgumentException("Only 1–64 ASCII letters, digits or underscores are supported.", nameof(name));
-        if (Name != name) _session.Apply([new("user_profile", _id, "profile_name", name)]);
+        string encoded = EncodeName(name);
+        if (Name != name) _session.Apply([new("user_profile", _id, "profile_name", encoded)]);
     }
 
     public bool Undo() => _session.Undo();
     public bool Redo() => _session.Redo();
 
-    private static bool IsSupportedName(string name) => name.Length is >= 1 and <= 64 &&
-        name.All(character => character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_');
+    private static readonly UTF8Encoding StrictUtf8 = new(false, true);
+
+    private static bool IsSimpleAscii(char c) => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or >= '0' and <= '9' or '_';
+    private static bool IsAllowedAscii(char c) => IsSimpleAscii(c) || c is ' ' or '-' or '.';
+
+    private static string EncodeName(string name)
+    {
+        if (name.Length is < 1 or > 64 || string.IsNullOrWhiteSpace(name) ||
+            name.Any(c => char.IsControl(c) || c < 128 && !IsAllowedAscii(c)))
+            throw new ArgumentException("The name contains unsupported characters or exceeds the preview limit.", nameof(name));
+        byte[] bytes;
+        try { bytes = StrictUtf8.GetBytes(name); }
+        catch (EncoderFallbackException ex) { throw new ArgumentException("The name contains invalid Unicode.", nameof(name), ex); }
+        if (name.All(IsSimpleAscii)) return name;
+        var result = new StringBuilder("\"");
+        foreach (byte value in bytes)
+        {
+            if (value < 128) result.Append((char)value);
+            else result.Append("\\x").Append(value.ToString("x2", CultureInfo.InvariantCulture));
+        }
+        return result.Append('"').ToString();
+    }
+
+    private static string DecodeName(string raw)
+    {
+        if (raw.Length < 2 || raw[0] != '"' || raw[^1] != '"')
+        {
+            if (raw.Length is >= 1 and <= 64 && raw.All(IsSimpleAscii)) return raw;
+            throw new InvalidOperationException("The profile name encoding is unsupported.");
+        }
+        var bytes = new List<byte>();
+        for (int i = 1; i < raw.Length - 1; i++)
+        {
+            char c = raw[i];
+            if (c == '\\')
+            {
+                if (i + 3 >= raw.Length - 1 || raw[i + 1] != 'x' ||
+                    !byte.TryParse(raw.AsSpan(i + 2, 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out byte value) || value < 128)
+                    throw new InvalidOperationException("The profile name escape is unsupported.");
+                bytes.Add(value);
+                i += 3;
+            }
+            else if (c < 128 && IsAllowedAscii(c)) bytes.Add((byte)c);
+            else throw new InvalidOperationException("The profile name encoding is unsupported.");
+        }
+        try
+        {
+            string name = StrictUtf8.GetString(bytes.ToArray());
+            _ = EncodeName(name);
+            return name;
+        }
+        catch (ArgumentException ex)
+        {
+            throw new InvalidOperationException("The profile name encoding is invalid.", ex);
+        }
+    }
 
     private uint ReadUInt(string field) => uint.TryParse(Value(field), NumberStyles.None, CultureInfo.InvariantCulture, out uint value)
         ? value : throw new InvalidOperationException("The cached value is invalid or unsupported.");

@@ -107,7 +107,7 @@
   "vehicleDemo.applyStale": "Apply reviewed draft",
   "editor.sharedHistory": "Undo and redo apply to the entire synthetic workspace, across all editor sections.",
   "profileMetadata.heading": "Profile metadata — separate synthetic example",
-  "profileMetadata.description": "This example has its own history. It does not open profiles, rename folders, or update a save. Only 1–64 ASCII letters, digits and underscores are accepted; current game compatibility is unverified.",
+  "profileMetadata.description": "This example has its own history and does not open profiles, rename folders, or update a save. Unicode, spaces, dots and hyphens are supported within 64 UTF-16 code units; quotes, backslashes and controls are rejected. Game compatibility is unverified.",
   "profileMetadata.name": "Example profile name",
   "profileMetadata.apply": "Apply to example",
   "profileMetadata.cached": "Example cached XP: {0}; cached distance: {1}",

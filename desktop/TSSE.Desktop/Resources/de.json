@@ -107,7 +107,7 @@
   "vehicleDemo.applyStale": "Geprüften Entwurf übernehmen",
   "editor.sharedHistory": "Rückgängig und Wiederholen gelten für den gesamten synthetischen Arbeitsbereich über alle Editorbereiche hinweg.",
   "profileMetadata.heading": "Profilmetadaten – separates synthetisches Beispiel",
-  "profileMetadata.description": "Dieses Beispiel hat eine eigene Historie. Es öffnet keine Profile, benennt keine Ordner um und ändert keinen Spielstand. Zulässig sind 1–64 ASCII-Buchstaben, Ziffern und Unterstriche; die aktuelle Spielkompatibilität ist ungeprüft.",
+  "profileMetadata.description": "Dieses Beispiel hat eine eigene Historie und öffnet keine Profile, benennt keine Ordner um und ändert keinen Spielstand. Unicode, Leerzeichen, Punkte und Bindestriche sind bis 64 UTF-16-Codeeinheiten erlaubt; Anführungszeichen, Backslashes und Steuerzeichen werden abgelehnt. Spielkompatibilität ist ungeprüft.",
   "profileMetadata.name": "Beispiel-Profilname",
   "profileMetadata.apply": "Auf Beispiel anwenden",
   "profileMetadata.cached": "Beispiel-Zwischenspeicher: XP {0}; Distanz {1}",

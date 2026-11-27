@@ -26,9 +26,9 @@ public sealed class LegacyProfileMetadataPreviewTests
 
     [Theory]
     [InlineData("")]
-    [InlineData("bad name")]
-    [InlineData("名前")]
     [InlineData("quote\"name")]
+    [InlineData("bad\\name")]
+    [InlineData("line\nbreak")]
     public void UnsupportedNamesDoNotChangeHistory(string name)
     {
         var preview = new LegacyProfileMetadataPreview(SiiSyntaxDocument.Parse(Fixture), "demo");
@@ -37,6 +37,33 @@ public sealed class LegacyProfileMetadataPreviewTests
         Assert.Throws<ArgumentException>(() => preview.SetName(name));
         Assert.Equal(Fixture, preview.PreviewText);
         Assert.True(preview.CanRedo);
+    }
+
+    [Theory]
+    [InlineData("名前", "\\xe5\\x90\\x8d\\xe5\\x89\\x8d")]
+    [InlineData("Test 😀", "Test \\xf0\\x9f\\x98\\x80")]
+    public void UnicodeNamesRoundTripThroughStrictUtf8Escapes(string name, string encoded)
+    {
+        var preview = new LegacyProfileMetadataPreview(SiiSyntaxDocument.Parse(Fixture), "demo");
+        preview.SetName(name);
+        Assert.Contains("profile_name: \"" + encoded + "\"", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Equal(name, preview.Name);
+        string edited = preview.PreviewText;
+        Assert.True(preview.Undo());
+        Assert.Equal(Fixture, preview.PreviewText);
+        Assert.True(preview.Redo());
+        Assert.Equal(edited, preview.PreviewText);
+    }
+
+    [Theory]
+    [InlineData("\\xff")]
+    [InlineData("\\xc3")]
+    [InlineData("\\x41")]
+    [InlineData("\\q")]
+    public void UnsupportedOrMalformedEscapesAreRejected(string encoded)
+    {
+        string input = Fixture.Replace("\"Example_1\"", "\"" + encoded + "\"", StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => new LegacyProfileMetadataPreview(SiiSyntaxDocument.Parse(input), "demo"));
     }
 
     [Theory]

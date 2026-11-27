@@ -19,9 +19,12 @@ public sealed class ProfileMetadataDemoViewModelTests
         Assert.Equal("Example_1", viewModel.Input);
         viewModel.ActionCommand.Execute("redo");
         Assert.Equal("New_Profile", viewModel.Input);
-        viewModel.Input = "unsupported name";
+        viewModel.Input = "unsupported\"name";
         viewModel.ActionCommand.Execute("apply");
         Assert.Contains("New_Profile", viewModel.CurrentName, StringComparison.Ordinal);
         Assert.Contains("No change", viewModel.Message, StringComparison.Ordinal);
+        viewModel.Input = "名前 😀";
+        viewModel.ActionCommand.Execute("apply");
+        Assert.Contains("名前 😀", viewModel.CurrentName, StringComparison.Ordinal);
     }
 }
