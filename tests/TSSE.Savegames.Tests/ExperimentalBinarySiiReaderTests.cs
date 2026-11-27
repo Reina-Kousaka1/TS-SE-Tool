@@ -61,6 +61,16 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.True(block.BoolFields["active"].LegacyValue);
         Assert.Equal(new byte[] { 0, 1, 2, 255 }, block.BoolArrayFields["flags"].Select(value => value.Raw));
         Assert.Equal(new[] { false, true, true, true }, block.BoolArrayFields["flags"].Select(value => value.LegacyValue));
+        Assert.Equal(new[] { "", "road demo", "abc" }, block.StringArrayFields["labels"]);
+        var encoded = block.EncodedStringFields["encoded"];
+        Assert.Equal(0x800000000000000bul, encoded.Raw);
+        Assert.True(encoded.LegacyTextMasksHighBit);
+        Assert.True(encoded.TryGetLegacyText(out string? encodedText));
+        Assert.Equal("a", encodedText);
+        var encodedArray = block.EncodedStringArrayFields["encoded_list"];
+        Assert.Equal(new ulong[] { 0, 12, 0x800000000000000bul, 12 }, encodedArray.Select(value => value.Raw));
+        Assert.True(encodedArray[0].TryGetLegacyText(out string? empty));
+        Assert.Equal("", empty);
         Assert.Equal(before, input);
     }
 
@@ -161,6 +171,25 @@ public sealed class ExperimentalBinarySiiReaderTests
     }
 
     [Fact]
+    public void StringArraysRejectExcessiveCountsAndInvalidUtf8()
+    {
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(stringArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(stringArrayCount: 4096)).Error);
+        Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(stringArrayCount: 0))).StringArrayFields["labels"]);
+        Assert.Equal(ExperimentalBinarySiiError.InvalidStringEncoding, Reject(Fixture(arrayStringBytes: [0xc3, 0x28])).Error);
+        Assert.Equal("世界 😀", Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(arrayStringBytes: Encoding.UTF8.GetBytes("世界 😀")))).StringArrayFields["labels"][1]);
+        var invalid = new ExperimentalBinaryEncodedString(38);
+        Assert.False(invalid.TryGetLegacyText(out string? text));
+        Assert.Null(text);
+        Assert.Equal(38ul, invalid.Raw);
+        var highOnly = new ExperimentalBinaryEncodedString(0x8000000000000000ul);
+        Assert.True(highOnly.LegacyTextMasksHighBit);
+        Assert.True(highOnly.TryGetLegacyText(out string? empty));
+        Assert.Equal("", empty);
+        Assert.Equal(0x8000000000000000ul, highOnly.Raw);
+    }
+
+    [Fact]
     public void EveryTruncatedPrefixIsRejectedWithoutPartialResult()
     {
         byte[] input = Fixture();
@@ -199,7 +228,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null, uint? boolArrayCount = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null, uint? boolArrayCount = null, uint? stringArrayCount = null, byte[]? arrayStringBytes = null)
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -236,6 +265,16 @@ public sealed class ExperimentalBinarySiiReaderTests
             writer.Write((uint)3); writer.Write(0ul); writer.Write(0xffffffff00000001ul); writer.Write(9876543210ul);
             writer.Write((byte)255); writer.Write(boolArrayCount ?? 4);
             if (boolArrayCount is null) { writer.Write((byte)0); writer.Write((byte)1); writer.Write((byte)2); writer.Write((byte)255); }
+            writer.Write(stringArrayCount ?? 3);
+            if (stringArrayCount is null)
+            {
+                writer.Write(0u);
+                byte[] arrayText = arrayStringBytes ?? Encoding.UTF8.GetBytes("road demo");
+                writer.Write((uint)arrayText.Length); writer.Write(arrayText);
+                Name("abc");
+            }
+            writer.Write(0x800000000000000bul);
+            writer.Write(4u); writer.Write(0ul); writer.Write(12ul); writer.Write(0x800000000000000bul); writer.Write(12ul);
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -263,6 +302,9 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x34); Name("wide_values");
         writer.Write((uint)0x35); Name("active");
         writer.Write((uint)0x36); Name("flags");
+        writer.Write((uint)0x02); Name("labels");
+        writer.Write((uint)0x03); Name("encoded");
+        writer.Write((uint)0x04); Name("encoded_list");
         writer.Write((uint)0);
         Data(namedBlockParts);
         if (duplicateBlock) Data(secondNamedBlockParts ?? namedBlockParts);

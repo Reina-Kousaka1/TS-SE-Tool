@@ -47,7 +47,7 @@ public static class ExperimentalBinarySiiReader
                 {
                     uint type = cursor.UInt32();
                     if (type == 0) break;
-                    if (type is not (0x01 or 0x05 or 0x06 or 0x25 or 0x26 or 0x27 or 0x28 or 0x31 or 0x32 or 0x33 or 0x34 or 0x35 or 0x36 or 0x39 or 0x3a or 0x3b or 0x3c or 0x3d)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    if (type is not (0x01 or 0x02 or 0x03 or 0x04 or 0x05 or 0x06 or 0x25 or 0x26 or 0x27 or 0x28 or 0x31 or 0x32 or 0x33 or 0x34 or 0x35 or 0x36 or 0x39 or 0x3a or 0x3b or 0x3c or 0x3d)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     if (fields.Count >= MaximumFieldsPerStructure) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                     string field = cursor.Name();
                     if (!fieldNames.Add(field)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
@@ -86,6 +86,9 @@ public static class ExperimentalBinarySiiReader
                 var ulongArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(StringComparer.Ordinal);
                 var booleans = new Dictionary<string, ExperimentalBinaryBool>(StringComparer.Ordinal);
                 var booleanArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryBool>>(StringComparer.Ordinal);
+                var stringArrays = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+                var encodedStrings = new Dictionary<string, ExperimentalBinaryEncodedString>(StringComparer.Ordinal);
+                var encodedStringArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>(StringComparer.Ordinal);
                 foreach (Field field in structure.Fields)
                 {
                     switch (field.Type)
@@ -95,6 +98,9 @@ public static class ExperimentalBinarySiiReader
                         case 0x31: longValues.Add(field.Name, cursor.Int64()); break;
                         case 0x33: unsignedLongValues.Add(field.Name, new ExperimentalBinaryUInt64(cursor.UInt64())); break;
                         case 0x01: stringValues.Add(field.Name, cursor.Text()); break;
+                        case 0x02: stringArrays.Add(field.Name, cursor.TextArray()); break;
+                        case 0x03: encodedStrings.Add(field.Name, new ExperimentalBinaryEncodedString(cursor.UInt64())); break;
+                        case 0x04: encodedStringArrays.Add(field.Name, cursor.EncodedStringArray()); break;
                         case 0x05: floats.Add(field.Name, new ExperimentalBinaryFloat32(cursor.UInt32())); break;
                         case 0x06: floatArrays.Add(field.Name, cursor.FloatArray()); break;
                         case 0x26: intArrays.Add(field.Name, cursor.Int32Array()); break;
@@ -124,7 +130,10 @@ public static class ExperimentalBinarySiiReader
                     Int64ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<long>>(longArrays),
                     UInt64ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(ulongArrays),
                     BoolFields = new ReadOnlyDictionary<string, ExperimentalBinaryBool>(booleans),
-                    BoolArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryBool>>(booleanArrays)
+                    BoolArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryBool>>(booleanArrays),
+                    StringArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<string>>(stringArrays),
+                    EncodedStringFields = new ReadOnlyDictionary<string, ExperimentalBinaryEncodedString>(encodedStrings),
+                    EncodedStringArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>(encodedStringArrays)
                 });
             }
         }
@@ -216,6 +225,18 @@ public static class ExperimentalBinarySiiReader
             for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryBool(Byte()));
             return result.AsReadOnly();
         }
+        public IReadOnlyList<string> TextArray()
+        {
+            int count = FixedArrayCount(4); var result = new List<string>(count);
+            for (int i = 0; i < count; i++) result.Add(Text());
+            return result.AsReadOnly();
+        }
+        public IReadOnlyList<ExperimentalBinaryEncodedString> EncodedStringArray()
+        {
+            int count = FixedArrayCount(8); var result = new List<ExperimentalBinaryEncodedString>(count);
+            for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryEncodedString(UInt64()));
+            return result.AsReadOnly();
+        }
         private int FixedArrayCount(int elementSize)
         {
             uint count = UInt32();
@@ -261,6 +282,19 @@ public sealed record ExperimentalBinaryBlock(string Type, ulong? NamelessId, IRe
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>> UInt64ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt64>>());
     public IReadOnlyDictionary<string, ExperimentalBinaryBool> BoolFields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryBool>(new Dictionary<string, ExperimentalBinaryBool>());
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryBool>> BoolArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryBool>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryBool>>());
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> StringArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<string>>(new Dictionary<string, IReadOnlyList<string>>());
+    public IReadOnlyDictionary<string, ExperimentalBinaryEncodedString> EncodedStringFields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryEncodedString>(new Dictionary<string, ExperimentalBinaryEncodedString>());
+    public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>> EncodedStringArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>());
+}
+/// <summary>A packed value with its high bit intact; text is a legacy interpretation only.</summary>
+public readonly record struct ExperimentalBinaryEncodedString(ulong Raw)
+{
+    public bool LegacyTextMasksHighBit => (Raw & 0x8000000000000000ul) != 0;
+    public bool TryGetLegacyText(out string? text)
+    {
+        if ((Raw & 0x7ffffffffffffffful) == 0) { text = string.Empty; return true; }
+        return new ExperimentalBinaryReference(0, 1, Array.AsReadOnly(new[] { Raw })).TryGetLegacyText(out text);
+    }
 }
 /// <summary>Original byte and the historical zero/nonzero interpretation.</summary>
 public readonly record struct ExperimentalBinaryBool(byte Raw)

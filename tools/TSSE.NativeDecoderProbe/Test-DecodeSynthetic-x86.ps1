@@ -56,6 +56,9 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0x34); WriteString(writer, "wide_values");
             writer.Write((uint)0x35); WriteString(writer, "active");
             writer.Write((uint)0x36); WriteString(writer, "flags");
+            writer.Write((uint)0x02); WriteString(writer, "labels");
+            writer.Write((uint)0x03); WriteString(writer, "encoded");
+            writer.Write((uint)0x04); WriteString(writer, "encoded_list");
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
             writer.Write((byte)2); writer.Write(0x800000000000000bul); writer.Write(12ul); // synthetic named ID
@@ -84,6 +87,9 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)3); writer.Write(0ul); writer.Write(0xffffffff00000001ul); writer.Write(9876543210ul);
             writer.Write((byte)255); writer.Write((uint)4);
             writer.Write((byte)0); writer.Write((byte)1); writer.Write((byte)2); writer.Write((byte)255);
+            writer.Write((uint)3); WriteString(writer, ""); WriteString(writer, "road demo"); WriteString(writer, "abc");
+            writer.Write(0x800000000000000bul);
+            writer.Write((uint)4); writer.Write(0ul); writer.Write(12ul); writer.Write(0x800000000000000bul); writer.Write(12ul);
             writer.Write((uint)0); writer.Write((byte)0); // end marker
             return stream.ToArray();
         }
@@ -155,7 +161,12 @@ if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synth
     $decoded -notmatch '(?m)^\s*wide_values\[2\]:\s*9876543210\s*$' -or
     $decoded -notmatch '(?m)^\s*active:\s*true\s*$' -or $decoded -notmatch '(?m)^\s*flags:\s*4\s*$' -or
     $decoded -notmatch '(?m)^\s*flags\[0\]:\s*false\s*$' -or $decoded -notmatch '(?m)^\s*flags\[1\]:\s*true\s*$' -or
-    $decoded -notmatch '(?m)^\s*flags\[2\]:\s*true\s*$' -or $decoded -notmatch '(?m)^\s*flags\[3\]:\s*true\s*$') {
+    $decoded -notmatch '(?m)^\s*flags\[2\]:\s*true\s*$' -or $decoded -notmatch '(?m)^\s*flags\[3\]:\s*true\s*$' -or
+    $decoded -notmatch '(?m)^\s*labels:\s*3\s*$' -or $decoded -notmatch '(?m)^\s*labels\[0\]:\s*""\s*$' -or
+    $decoded -notmatch '(?m)^\s*labels\[1\]:\s*"road demo"\s*$' -or $decoded -notmatch '(?m)^\s*labels\[2\]:\s*abc\s*$' -or
+    $decoded -notmatch '(?m)^\s*encoded:\s*a\s*$' -or $decoded -notmatch '(?m)^\s*encoded_list:\s*4\s*$' -or
+    $decoded -notmatch '(?m)^\s*encoded_list\[0\]:\s*""\s*$' -or $decoded -notmatch '(?m)^\s*encoded_list\[1\]:\s*b\s*$' -or
+    $decoded -notmatch '(?m)^\s*encoded_list\[2\]:\s*a\s*$' -or $decoded -notmatch '(?m)^\s*encoded_list\[3\]:\s*b\s*$') {
     throw ('The fixed synthetic decoded text did not contain the expected structure and value: ' + $decoded)
 }
 Write-Output 'Synthetic x86 DecodeMemory: Int64 array query rejected; undersized calls reported success; bounded decode contained expected values; no save file used.'

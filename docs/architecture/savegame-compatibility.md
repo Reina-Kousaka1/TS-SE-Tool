@@ -263,6 +263,15 @@ halves, all bits set and an ordinary value, comparing the observable output of
 the bundled x86 binary with the managed raw interpretation. Strings are
 length-bounded, decoded as strict UTF-8 without normalization, and rejected
 on invalid byte sequences. No game semantics or compatibility is inferred.
+The experimental reader additionally supports historical string arrays
+(`0x02`) and packed strings and arrays (`0x03`/`0x04`). It bounds array sizes,
+checks every length and decodes each ordinary string as strict UTF-8. Packed
+strings retain the complete 64-bit value, including the historically masked
+high bit; an optional text interpretation can fail for unsupported digits and
+must not be used as a unique identity. Empty, repeated and high-bit synthetic
+values are exercised against the bundled x86 decoder; Unicode and malformed
+UTF-8 cases are tested in the managed reader only. This is not a serializer or
+evidence that current games use these fields identically.
 
 The experimental reader also retains individual ID reference fields of
 historical types `0x39`, `0x3b` and `0x3d`: the original type code, length or
