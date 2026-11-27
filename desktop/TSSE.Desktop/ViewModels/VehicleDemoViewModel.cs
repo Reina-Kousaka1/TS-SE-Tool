@@ -148,7 +148,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 Message = _text.Get("vehicleDemo.staleBlocked");
                 return;
             }
-            if ((action is "apply" or "apply-stale") && float.TryParse(ValueInput, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            if ((action is "apply" or "apply-stale") && LegacyVehiclePreview.TryParseDecimalRatio(ValueInput, out float value))
             {
                 Session.SetValue(SelectedField.Name, value);
                 success = true;

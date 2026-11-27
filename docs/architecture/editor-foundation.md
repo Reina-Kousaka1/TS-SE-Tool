@@ -54,6 +54,12 @@ Odometer self-review (not independent): only the explicitly selected vehicle
 integer is changed, the syntax session preserves all other source lines, and a
 trailer is rejected. No version or unit inference and no write gate are added.
 
+For synthetic wear and fuel ratios, decimal input is checked in double
+precision before conversion to the legacy single-precision value. Values that
+underflow from a nonzero decimal to zero are rejected; this avoids silently
+accepting a tiny negative value or erasing a tiny positive value. This remains
+floating-point validation, not an exact arbitrary-precision decimal grammar.
+
 `LegacySyntheticWorkspace` combines explicitly selected profile, truck,
 trailer and job blocks in one in-memory syntax session. Changes in different
 domains share a single ordered undo/redo history and change list. It does not

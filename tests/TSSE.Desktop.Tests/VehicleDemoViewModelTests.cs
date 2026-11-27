@@ -7,6 +7,19 @@ namespace TSSE.Desktop.Tests;
 
 public sealed class VehicleDemoViewModelTests
 {
+    [Theory]
+    [InlineData("1.00000001")]
+    [InlineData("-1e-99")]
+    [InlineData("1e-99")]
+    public void RoundedOrUnderflowedDraftCannotChangeVehicle(string input)
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.ValueInput = input;
+        demo.ActionCommand.Execute("apply");
+        Assert.Equal(original, demo.PreviewText);
+        Assert.Contains("Invalid", demo.Message, StringComparison.Ordinal);
+    }
     [Fact]
     public void OdometerDemoValidatesBoundsPreservesFractionAndSupportsHistory()
     {

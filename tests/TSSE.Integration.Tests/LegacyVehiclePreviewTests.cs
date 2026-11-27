@@ -6,6 +6,32 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyVehiclePreviewTests
 {
+    [Theory]
+    [InlineData("1.00000001")]
+    [InlineData("-1e-99")]
+    [InlineData("-1e-999")]
+    [InlineData("1e-999")]
+    [InlineData("1e-99")]
+    public void DecimalRoundingAndUnderflowCannotHideInvalidOrLostValues(string raw)
+    {
+        Assert.False(LegacyVehiclePreview.TryParseDecimalRatio(raw, out _));
+        string input = "vehicle : t {\n fuel_relative: " + raw + "\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.SetValue("fuel_relative", 0));
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
+
+    [Theory]
+    [InlineData("0", 0f)]
+    [InlineData("-0e-999", 0f)]
+    [InlineData("5e-1", 0.5f)]
+    [InlineData("1", 1f)]
+    public void SupportedDecimalRatiosRemainAvailable(string raw, float expected)
+    {
+        Assert.True(LegacyVehiclePreview.TryParseDecimalRatio(raw, out float actual));
+        Assert.Equal(expected, actual);
+    }
     [Fact]
     public void OdometerEditPreservesFractionAndUnknownDataAndCanBeUndone()
     {

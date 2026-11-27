@@ -191,9 +191,27 @@ public sealed class LegacyVehiclePreview
         }
         else
         {
-            parsed = float.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+            return TryParseDecimalRatio(input, out value);
         }
         return parsed && float.IsFinite(value) && value >= 0 && value <= 1;
+    }
+
+    /// <summary>Parses a decimal ratio before conversion to the legacy single-precision representation.</summary>
+    public static bool TryParseDecimalRatio(string? input, out float value)
+    {
+        value = default;
+        if (input is null || !double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ||
+            !double.IsFinite(parsed) || parsed < 0 || parsed > 1)
+            return false;
+
+        string significand = input.Trim();
+        int exponent = significand.IndexOfAny(['e', 'E']);
+        if (exponent >= 0) significand = significand[..exponent];
+        bool nonzero = significand.Any(c => c is >= '1' and <= '9');
+        // Underflow must not turn a nonzero (including negative) value into zero.
+        if (parsed == 0 && nonzero) return false;
+        value = (float)parsed;
+        return value != 0 || !nonzero;
     }
 }
 
