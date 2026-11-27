@@ -97,14 +97,35 @@ be sensitive. It rejects duplicate IDs, duplicate fields, ambiguous anonymous
 block identities and unclassified syntax. It compares trimmed raw values,
 ignores source ordering and formatting, and reports only the block for added or
 removed blocks. Therefore an empty result does not imply byte equality or game
-semantic equality. It performs no file access and is not wired to profile
-discovery, the desktop, or the fixture tool. Tests use synthetic input only.
+semantic equality. The comparison itself performs no file access and is not wired
+to profile discovery or the desktop. Tests use synthetic input only.
 
 Architecture self-review (not independent): comparison requires two already
 parsed bounded documents, matches globally unique IDs and unambiguous anonymous
 block identities, checks parent identity, and rejects ambiguous syntax rather
 than inferring matches. It is diagnostic evidence only; names and IDs must not
 be logged or published without review. Real fixture compatibility remains open.
+
+The developer-only fixture tool can compare two individually approved stationary
+test copies with `--compare-approved-test-copies <before> <after>`. It opens
+only those paths read-only, rejects linked paths, unsupported containers,
+oversized, ambiguous or unclassified input, and verifies bounded read hashes
+before comparing the captured bytes. Default output contains counts only; the
+optional `--include-field-names` flag outputs at most 1,000 distinct field
+names and a truncation indicator. Field names can be sensitive and require
+review before sharing. Neither mode outputs field values, block IDs or paths;
+paths passed on a command line can nevertheless be visible to the operating
+system. Matching repeated reads are not atomic snapshots, the two files are not
+read simultaneously, and the user must keep isolated copies stationary. The
+tool cannot verify that a path is actually an approved copy. It does not scan,
+decode containers, validate game semantics, or enable save writing.
+
+Comparison-tool self-review (not independent): every compared document is
+parsed from a third bounded read whose hash and length match the earlier two;
+reparse-point checks are best effort and do not defeat every path race.
+Synthetic tests cover privacy defaults, explicit name disclosure, unsupported
+and ambiguous input, and unchanged file bytes. Genuine compatibility remains
+unverified.
 
 The report includes a four-byte signature hint for `SiiN`, `ScsC`, `BSII` and
 `3nK` followed by byte `01`, as documented in the original SII Decrypt

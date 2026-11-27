@@ -9,6 +9,58 @@ namespace TSSE.Savegames.Tests;
 public sealed class FixtureCopyInspectionTests
 {
     [Fact]
+    public void ComparisonUsesOnlyExplicitCopiesAndHidesNamesUnlessRequested()
+    {
+        string before = Path.GetTempFileName();
+        string after = Path.GetTempFileName();
+        const string left = "root {\n item : private_id {\n  private_field: 1\n }\n}\n";
+        const string right = "root {\n item : private_id {\n  private_field: 2\n }\n}\n";
+        try
+        {
+            File.WriteAllText(before, left);
+            File.WriteAllText(after, right);
+            using var output = new StringWriter();
+            Assert.Equal(0, FixtureCopyInspection.Run(["--compare-approved-test-copies", before, after], output));
+            string text = output.ToString();
+            Assert.DoesNotContain(before, text, StringComparison.Ordinal);
+            Assert.DoesNotContain(after, text, StringComparison.Ordinal);
+            Assert.DoesNotContain("private_id", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("private_field", text, StringComparison.Ordinal);
+            using var json = JsonDocument.Parse(text);
+            Assert.Equal(1, json.RootElement.GetProperty("DifferenceCounts").GetProperty("FieldChanged").GetInt32());
+            Assert.False(json.RootElement.GetProperty("GameCompatibilityEstablished").GetBoolean());
+            Assert.False(json.RootElement.GetProperty("SaveWritingEnabled").GetBoolean());
+            using var detailed = new StringWriter();
+            Assert.Equal(0, FixtureCopyInspection.Run(["--compare-approved-test-copies", before, after, "--include-field-names"], detailed));
+            Assert.Contains("private_field", detailed.ToString(), StringComparison.Ordinal);
+            Assert.DoesNotContain("private_id", detailed.ToString(), StringComparison.Ordinal);
+            Assert.Equal(left, File.ReadAllText(before));
+            Assert.Equal(right, File.ReadAllText(after));
+        }
+        finally { File.Delete(before); File.Delete(after); }
+    }
+
+    [Theory]
+    [InlineData("ScsC synthetic")]
+    [InlineData("root {\n item : x {\n  v: 1\n  v: 2\n }\n}\n")]
+    public void ComparisonRejectsUnsupportedOrAmbiguousInputsWithoutDisclosingPaths(string content)
+    {
+        string before = Path.GetTempFileName();
+        string after = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(before, "root {\n value: 1\n}\n");
+            File.WriteAllText(after, content);
+            using var output = new StringWriter();
+            Assert.Equal(1, FixtureCopyInspection.Run(["--compare-approved-test-copies", before, after], output));
+            Assert.DoesNotContain(before, output.ToString(), StringComparison.Ordinal);
+            Assert.DoesNotContain(after, output.ToString(), StringComparison.Ordinal);
+            Assert.Equal(content, File.ReadAllText(after));
+        }
+        finally { File.Delete(before); File.Delete(after); }
+    }
+
+    [Fact]
     public void ChangedStreamIsRejectedRatherThanReportedAsAStableRoundtrip()
     {
         byte[] bytes = Encoding.UTF8.GetBytes("root {\n value: 1\n}\n");
@@ -54,6 +106,7 @@ public sealed class FixtureCopyInspectionTests
             linkCreated = true;
             using var output = new StringWriter();
             Assert.Equal(1, FixtureCopyInspection.Run(["--approved-test-copy", link], output));
+            Assert.Equal(1, FixtureCopyInspection.Run(["--compare-approved-test-copies", target, link], output));
             Assert.DoesNotContain(target, output.ToString(), StringComparison.Ordinal);
             Assert.DoesNotContain(link, output.ToString(), StringComparison.Ordinal);
             Assert.Equal("root {\n value: synthetic\n}\n", File.ReadAllText(target));
