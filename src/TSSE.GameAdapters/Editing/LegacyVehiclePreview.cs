@@ -75,6 +75,32 @@ public sealed class LegacyVehiclePreview
         _session.Apply(edits);
     }
 
+    /// <summary>Sets existing, strictly validated synthetic wheel values to zero without removing the array.</summary>
+    public void RepairWheelWear()
+    {
+        SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
+        SiiBlock block = FindBlock(document);
+        SiiField[] countFields = block.Fields.Where(field => field.Name == "wheels_wear").ToArray();
+        if (countFields.Length != 1 ||
+            !int.TryParse(countFields[0].Value, NumberStyles.None, CultureInfo.InvariantCulture, out int count) ||
+            count is < 0 or > 64)
+            throw new InvalidOperationException("The wheel array count is missing, ambiguous, or unsupported.");
+
+        SiiField[] elements = block.Fields.Where(field => field.Name.StartsWith("wheels_wear[", StringComparison.Ordinal)).ToArray();
+        if (elements.Length != count)
+            throw new InvalidOperationException("The wheel array is incomplete or ambiguous.");
+        var edits = new List<SiiFieldEdit>();
+        for (int i = 0; i < count; i++)
+        {
+            string name = "wheels_wear[" + i.ToString(CultureInfo.InvariantCulture) + "]";
+            SiiField[] matching = elements.Where(field => field.Name == name).ToArray();
+            if (matching.Length != 1 || !TryParseRatio(matching[0].Value, out float value))
+                throw new InvalidOperationException("A wheel value is missing, ambiguous, or unsupported.");
+            if (value != 0) edits.Add(new(_blockType, _blockId, name, "0"));
+        }
+        _session.Apply(edits);
+    }
+
     public bool Undo() => _session.Undo();
     public bool Redo() => _session.Redo();
 

@@ -8,6 +8,21 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void WheelRepairIsSeparateAndUndoableInBothCategories()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.ActionCommand.Execute("wheels");
+        Assert.Contains("wheels_wear[0]: 0", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("engine_wear: 0.2", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Contains("wheels_wear[0]: 0.2", demo.PreviewText, StringComparison.Ordinal);
+        demo.SelectCategory("Trailers");
+        demo.ActionCommand.Execute("wheels");
+        Assert.Contains("wheels_wear[0]: 0", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Contains("wheels_wear[0]: 0.4", demo.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void RepairAndRefuelAreIndependentUndoableSyntheticOperations()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

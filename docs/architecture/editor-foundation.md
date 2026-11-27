@@ -96,6 +96,11 @@ The demo can reset listed truck mechanical/body wear or trailer body/chassis
 wear in one undoable batch, and can refill the demo truck's fuel separately.
 These operations do not repair wheels, cargo, accessories or linked trailers.
 Any missing or invalid required wear field rejects the complete batch.
+An additional independent demo operation validates a wheel array's declared
+count and exact indices, then sets existing values to zero as one undoable
+batch, preserving the count and other fields. Arrays over 64 entries, malformed
+or duplicated indices and invalid values fail closed. This differs from the
+legacy application's array-clearing behavior and remains synthetic-only.
 
 Architecture self-review (not independent): field allowlists prevent applying
 trailer edits to trucks and vice versa. Unique block and field checks prevent
@@ -112,6 +117,9 @@ Repair self-review (not independent): all required scalar values are validated
 before the batch is submitted, the existing syntax session publishes it
 atomically, and the UI identifies the exclusions. This is not equivalent to the
 legacy tool's complete repair, which also handles wheels and linked trailers.
+Wheel self-review (not independent): all elements are validated before publishing
+the batch; the fixed entry limit bounds repeated syntax reparsing. No traversal
+of linked trailers or alteration of accessories is performed.
 
 ## Experimental active job mapping
 

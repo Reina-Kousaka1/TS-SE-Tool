@@ -1,4 +1,5 @@
 {
+  "vehicleDemo.repairWheels": "Radverschleiß zurücksetzen",
   "editor.historyLimit": "Der Verlauf der Demo ist voll. Einen Schritt rückgängig machen, bevor eine andere Änderung erfolgt; es wurden keine Daten geändert.",
   "vehicleDemo.repair": "Aufgeführten Verschleiß zurücksetzen",
   "vehicleDemo.refuel": "Demotank füllen",

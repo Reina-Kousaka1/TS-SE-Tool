@@ -88,6 +88,7 @@
           <TextBlock Text="{Binding RepairDetail}" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="{Binding RepairLabel}" Command="{Binding ActionCommand}" CommandParameter="repair" />
+            <Button Content="{Binding WheelRepairLabel}" Command="{Binding ActionCommand}" CommandParameter="wheels" />
             <Button IsVisible="{Binding CanRefuel}" Content="{Binding RefuelLabel}" Command="{Binding ActionCommand}" CommandParameter="refuel" />
           </StackPanel>
           <TextBlock Text="{Binding FieldLabel}" />

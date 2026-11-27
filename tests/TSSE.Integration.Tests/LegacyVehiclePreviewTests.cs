@@ -6,6 +6,37 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyVehiclePreviewTests
 {
+    [Theory]
+    [InlineData(LegacyVehicleKind.Truck, "vehicle")]
+    [InlineData(LegacyVehicleKind.Trailer, "trailer")]
+    public void WheelRepairPreservesCountAndUnknownFieldsAndIsOneUndo(LegacyVehicleKind kind, string type)
+    {
+        string input = type + " : t {\n wheels_wear: 2\n wheels_wear[0]: &3f000000\n wheels_wear[1]: 0.25\n mod_data: \"保留\"\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), kind, "t");
+        preview.RepairWheelWear();
+        string expected = input.Replace("&3f000000", "0", StringComparison.Ordinal)
+            .Replace("wheels_wear[1]: 0.25", "wheels_wear[1]: 0", StringComparison.Ordinal);
+        Assert.Equal(expected, preview.PreviewText);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.True(preview.Redo());
+        Assert.Equal(expected, preview.PreviewText);
+    }
+
+    [Theory]
+    [InlineData("wheels_wear: 2\n wheels_wear[0]: 0.2")]
+    [InlineData("wheels_wear: 1\n wheels_wear[1]: 0.2")]
+    [InlineData("wheels_wear: 2\n wheels_wear[0]: 0.2\n wheels_wear[0]: 0.3")]
+    [InlineData("wheels_wear: 1\n wheels_wear[0]: NaN")]
+    [InlineData("wheels_wear: 65")]
+    public void InvalidWheelArraysFailWithoutChanges(string fields)
+    {
+        string input = "vehicle : t {\n " + fields + "\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.RepairWheelWear());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
     private const string Synthetic = "SiiNunit\n{\n vehicle : truck {\n  fuel_relative: &3f000000\n  engine_wear: 0.25\n  mod_field: \"保持\"\n }\n trailer : trailer1 {\n  trailer_body_wear: 0.5\n  cargo_damage: 0.75\n  accessory: custom.ref\n }\n}\n";
 
     [Fact]
