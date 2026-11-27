@@ -7,6 +7,44 @@ namespace TSSE.Core.Tests;
 
 public sealed class AtomicFileTransactionTests
 {
+    [Fact]
+    public async Task DelayedValidatorBufferMutationCannotChangeCommittedSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        string path = Path.Combine(directory.Path, "synthetic.sii");
+        byte[] original = "original"u8.ToArray();
+        byte[] candidate = "candidate"u8.ToArray();
+        await File.WriteAllBytesAsync(path, original, TestContext.Current.CancellationToken);
+        byte[]? validatorBuffer = null;
+        int validatorOffset = 0;
+        var replacer = new LateMutationReplacer(() => validatorBuffer![validatorOffset] = (byte)'X');
+        FileCommitResult result = await new AtomicFileTransaction(replacer).CommitAsync(
+            path, candidate, Hash(original), bytes =>
+            {
+                Assert.True(MemoryMarshal.TryGetArray(bytes, out ArraySegment<byte> segment));
+                validatorBuffer = segment.Array;
+                validatorOffset = segment.Offset;
+                return bytes.Span.SequenceEqual(candidate);
+            }, TestContext.Current.CancellationToken);
+
+        Assert.True(replacer.DidMutate);
+        Assert.Equal(FileCommitStatus.Succeeded, result.Status);
+        Assert.Equal(candidate, await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken));
+        Assert.NotNull(result.BackupPath);
+        Assert.Equal(original, await File.ReadAllBytesAsync(result.BackupPath!, TestContext.Current.CancellationToken));
+    }
+
+    private sealed class LateMutationReplacer(Action mutate) : IAtomicFileReplacer
+    {
+        public bool DidMutate { get; private set; }
+        public void Replace(string stagedPath, string targetPath, string backupPath)
+        {
+            mutate();
+            DidMutate = true;
+            new PlatformAtomicFileReplacer().Replace(stagedPath, targetPath, backupPath);
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
