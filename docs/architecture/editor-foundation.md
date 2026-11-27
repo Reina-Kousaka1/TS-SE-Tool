@@ -92,6 +92,11 @@ closed; shared undo/redo includes the assignment.
 Assignment self-review (not independent): all syntactic reference checks run
 before the existing atomic edit. No profile discovery or game-save access is
 added, and the separate production-write gate remains closed.
+The synthetic assignment validator indexes only referenced block IDs in one
+document pass, still rejecting duplicate IDs across all block types. The shared
+bounded array reader indexes field names once and preserves numeric index order.
+Large synthetic inventory tests cover ordering and a late ambiguous reference;
+they are not a benchmark or evidence of real-save performance.
 For the selected synthetic truck, the full repair action validates engine,
 transmission, cabin, chassis and every declared wheel before a single undoable
 change. Fuel, wheel count and unknown fields remain intact. This mirrors the

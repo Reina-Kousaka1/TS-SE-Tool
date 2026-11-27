@@ -51,8 +51,16 @@ public sealed class LegacyPlayerTruckAssignment
         {
             if (truck is "nil" or "null" || !seen.Add(truck))
                 throw new InvalidOperationException("Vehicle references are empty or duplicated.");
-            SiiBlock[] targets = document.Blocks.Where(block => block.Id == truck).ToArray();
-            if (targets.Length != 1 || targets[0].Type != _targetType)
+        }
+        var targets = new Dictionary<string, SiiBlock>(StringComparer.Ordinal);
+        foreach (SiiBlock block in document.Blocks)
+        {
+            if (block.Id is not null && seen.Contains(block.Id) && !targets.TryAdd(block.Id, block))
+                throw new InvalidOperationException("A vehicle reference is missing, ambiguous, or has the wrong type.");
+        }
+        foreach (string truck in trucks)
+        {
+            if (!targets.TryGetValue(truck, out SiiBlock? target) || target.Type != _targetType)
                 throw new InvalidOperationException("A vehicle reference is missing, ambiguous, or has the wrong type.");
         }
         SiiBlock player = document.Blocks.Single(block => block.Type == "player" && block.Id == _playerId);

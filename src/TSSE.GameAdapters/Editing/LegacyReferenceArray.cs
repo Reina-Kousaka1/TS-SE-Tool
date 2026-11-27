@@ -19,14 +19,17 @@ internal static class LegacyReferenceArray
             throw new InvalidOperationException("The array count is missing, ambiguous, or unsupported.");
         SiiField[] entries = blocks[0].Fields.Where(item => item.Name.StartsWith(name + "[", StringComparison.Ordinal)).ToArray();
         if (entries.Length != count) throw new InvalidOperationException("The array is incomplete or ambiguous.");
+        var byName = new Dictionary<string, SiiField>(StringComparer.Ordinal);
+        foreach (SiiField entry in entries)
+            if (!byName.TryAdd(entry.Name, entry))
+                throw new InvalidOperationException("An array index is missing, ambiguous, or empty.");
         var result = new List<string>(count);
         for (int index = 0; index < count; index++)
         {
             string fieldName = name + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
-            SiiField[] matching = entries.Where(item => item.Name == fieldName).ToArray();
-            if (matching.Length != 1 || string.IsNullOrWhiteSpace(matching[0].Value))
+            if (!byName.TryGetValue(fieldName, out SiiField? entry) || string.IsNullOrWhiteSpace(entry.Value))
                 throw new InvalidOperationException("An array index is missing, ambiguous, or empty.");
-            result.Add(matching[0].Value);
+            result.Add(entry.Value);
         }
         return result.AsReadOnly();
     }

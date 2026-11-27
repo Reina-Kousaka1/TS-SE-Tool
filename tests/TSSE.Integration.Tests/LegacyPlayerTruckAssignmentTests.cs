@@ -6,6 +6,31 @@ namespace TSSE.Integration.Tests;
 
 public sealed class LegacyPlayerTruckAssignmentTests
 {
+    [Fact]
+    public void LargeSyntheticInventoryPreservesOrderAndRejectsLateAmbiguity()
+    {
+        var builder = new System.Text.StringBuilder("player : p {\n assigned_truck: t0\n trucks: 1024\n");
+        for (int index = 1023; index >= 0; index--)
+            builder.Append(" trucks[").Append(index).Append("]: t").Append(index).Append('\n');
+        builder.Append("}\n");
+        for (int index = 0; index < 1024; index++)
+            builder.Append("vehicle : t").Append(index).Append(" {\n}\n");
+        for (int index = 0; index < 3000; index++)
+            builder.Append("mod : m").Append(index).Append(" {\n}\n");
+        string input = builder.ToString();
+        var assignment = new LegacyPlayerTruckAssignment(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Equal(1024, assignment.EligibleTrucks.Count);
+        Assert.Equal("t1023", assignment.EligibleTrucks[^1]);
+        assignment.Assign("t1023");
+        Assert.Equal("t1023", assignment.AssignedTruck);
+        Assert.True(assignment.Undo());
+        Assert.Equal(input, assignment.PreviewText);
+
+        string ambiguous = input + "mod : t1023 {\n}\n";
+        var invalid = new LegacyPlayerTruckAssignment(SiiSyntaxDocument.Parse(ambiguous), "p");
+        Assert.Throws<InvalidOperationException>(() => invalid.Assign("t0"));
+        Assert.Equal(ambiguous, invalid.PreviewText);
+    }
     private const string Input = "player : p {\n assigned_truck: a\n trucks: 2\n trucks[0]: a\n trucks[1]: b\n mod: \"未知\"\n}\nvehicle : a {\n}\nvehicle : b {\n}\n";
 
     [Fact]
