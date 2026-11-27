@@ -41,6 +41,7 @@ public sealed class SkillDemoViewModel : ObservableObject
     public string ValueLabel => _text.Get(Selected.Name == "adr" ? "skillDemo.adrValue" : "skillDemo.levelValue");
     public string ApplyLabel => _text.Get("profileDemo.apply");
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
+    public string ResetSkillsLabel => _text.Get("skillDemo.resetAll");
     public string AdrBitsLabel => _text.Get("skillDemo.adrBits");
     public bool IsAdrSelected => Selected.Name == "adr";
     public bool CanEditAdrBits => IsAdrSelected && TryGetAdrMask(out _);
@@ -73,6 +74,24 @@ public sealed class SkillDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
+        if (action == "reset-all")
+        {
+            if (Input != _last || _drafts.Count != 0)
+            {
+                Message = _text.Get("skillDemo.resetDraftBlocked");
+                return;
+            }
+            try
+            {
+                string before = _profile.PreviewText;
+                _profile.ResetSkills();
+                _workspace.NotifyChanged();
+                Message = _text.Get(before == _profile.PreviewText ? "skillDemo.resetUnchanged" : "skillDemo.resetDone");
+            }
+            catch (EditHistoryLimitException) { Message = _text.Get("editor.historyLimit"); }
+            catch (InvalidOperationException) { Message = _text.Get("skillDemo.invalid"); }
+            return;
+        }
         if (action == "apply" && IsStale) { Message = _text.Get("editor.staleBlocked"); return; }
         if (action is not ("apply" or "reviewed") ||
             !byte.TryParse(Input, NumberStyles.None, CultureInfo.InvariantCulture, out byte value))

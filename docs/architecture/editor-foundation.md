@@ -195,6 +195,11 @@ before real profile editing.
 
 ## Experimental profile mapping
 
+The synthetic profile skills can be reset together as one undoable edit.
+All six existing values are validated before the batch; any missing, duplicate
+or unsupported value rejects it. The UI blocks this action while any skill
+draft is open. This is an in-memory demo, not a game-save operation.
+
 The synthetic profile demo exposes the legacy `adr`, `long_dist`, `heavy`,
 `fragile`, `urgent`, and `mechanical` fields. The original Economy model uses
 bytes, while the original skill controls expose six ADR bits and five six-step

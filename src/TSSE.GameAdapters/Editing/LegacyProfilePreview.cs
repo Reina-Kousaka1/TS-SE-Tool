@@ -79,6 +79,16 @@ public sealed class LegacyProfilePreview
 
     private static byte SkillMaximum(string name) => name == "adr" ? (byte)63 : (byte)6;
 
+    /// <summary>Resets all supported synthetic skill fields in one undoable edit.</summary>
+    public void ResetSkills()
+    {
+        var edits = new List<SiiFieldEdit>();
+        foreach (string name in SkillNames)
+            if (GetSkill(name) != 0)
+                edits.Add(new("economy", _economyId, name, "0"));
+        _session.Apply(edits);
+    }
+
     public void Apply(ProfileValues values)
     {
         ArgumentNullException.ThrowIfNull(values);

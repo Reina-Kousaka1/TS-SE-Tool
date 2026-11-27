@@ -8,6 +8,30 @@ namespace TSSE.Desktop.Tests;
 public sealed class SkillDemoViewModelTests
 {
     [Fact]
+    public void ResetSkillsRejectsDraftsAndIsOneSharedUndoStep()
+    {
+        var profile = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        var skills = profile.Skills;
+        skills.Input = "3";
+        skills.ActionCommand.Execute("apply");
+        skills.Selected = skills.Fields.Single(item => item.Name == "heavy");
+        skills.Input = "2";
+        skills.ActionCommand.Execute("apply");
+        string beforeReset = profile.PreviewText;
+        skills.Input = "4";
+        skills.ActionCommand.Execute("reset-all");
+        Assert.Equal(beforeReset, profile.PreviewText);
+        Assert.Contains("draft", skills.Message, StringComparison.Ordinal);
+        skills.Input = "2";
+        skills.ActionCommand.Execute("reset-all");
+        Assert.Contains("adr: 0", profile.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("heavy: 0", profile.PreviewText, StringComparison.Ordinal);
+        skills.ActionCommand.Execute("reset-all");
+        Assert.Contains("no change", skills.Message, StringComparison.Ordinal);
+        profile.ActionCommand.Execute("undo");
+        Assert.Equal(beforeReset, profile.PreviewText);
+    }
+    [Fact]
     public void AdrBitsEditDraftInLegacyOrderAndCommitOnlyOnApply()
     {
         var profile = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

@@ -84,6 +84,7 @@
             </Grid>
             <TextBlock Text="{Binding DraftNotice}" TextWrapping="Wrap" />
             <Button IsVisible="{Binding IsStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="reviewed" />
+            <Button Content="{Binding ResetSkillsLabel}" Command="{Binding ActionCommand}" CommandParameter="reset-all" />
             <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
           </StackPanel>
           <TextBlock Text="{Binding LevelHeading}" FontWeight="SemiBold" />

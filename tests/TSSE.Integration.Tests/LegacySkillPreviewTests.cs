@@ -9,6 +9,32 @@ public sealed class LegacySkillPreviewTests
     private const string Input = "economy : e {\n bank: b\n experience_points: 0\n adr: 000\n long_dist: 2\n heavy: 0\n fragile: 0\n urgent: 0\n mechanical: 0\n mod: \"未知\"\n}\nbank : b {\n money_account: 10\n}\n";
 
     [Fact]
+    public void ResetSkillsIsAtomicAndUndoRestoresExactSource()
+    {
+        string input = Input.Replace("adr: 000", "adr: 3", StringComparison.Ordinal);
+        var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(input), "e");
+        editor.ResetSkills();
+        Assert.Equal((byte)0, editor.GetSkill("adr"));
+        Assert.Equal((byte)0, editor.GetSkill("long_dist"));
+        Assert.Contains("mod: \"未知\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+        Assert.True(editor.Redo());
+        Assert.Equal((byte)0, editor.GetSkill("long_dist"));
+    }
+
+    [Fact]
+    public void InvalidLaterSkillRejectsEntireReset()
+    {
+        string input = Input.Replace("mechanical: 0", "mechanical: 7", StringComparison.Ordinal);
+        var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(input), "e");
+        Assert.Throws<InvalidOperationException>(() => editor.ResetSkills());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+    }
+
+    [Fact]
     public void SkillEditsPreserveOtherFieldsAndSupportUndoRedo()
     {
         var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(Input), "e");
