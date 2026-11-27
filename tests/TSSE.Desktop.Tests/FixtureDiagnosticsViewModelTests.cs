@@ -23,6 +23,8 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("invalid or incomplete", demo.Status, StringComparison.Ordinal);
         Assert.Contains("UnclosedBlock", demo.Error, StringComparison.Ordinal);
         Assert.Contains("not performed", demo.RoundTrip, StringComparison.Ordinal);
+        demo.Selected = demo.Examples.Single(item => item.Key == "unexpected-close");
+        Assert.Contains("line 1, column 1", demo.Error, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "encrypted");
         Assert.Contains("unsupported", demo.Status, StringComparison.Ordinal);
         Assert.Contains("encrypted prefix", demo.Signature, StringComparison.Ordinal);
@@ -36,6 +38,8 @@ public sealed class FixtureDiagnosticsViewModelTests
     {
         var demo = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));
         Assert.Contains("kein Spielstand", demo.Description, StringComparison.Ordinal);
+        demo.Selected = demo.Examples.Single(item => item.Key == "unexpected-close");
+        Assert.Contains("Zeile 1, Spalte 1", demo.Error, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "binary");
         Assert.Contains("Binärpräfix", demo.Signature, StringComparison.Ordinal);
         Assert.Contains("nicht durchgeführt", demo.RoundTrip, StringComparison.Ordinal);

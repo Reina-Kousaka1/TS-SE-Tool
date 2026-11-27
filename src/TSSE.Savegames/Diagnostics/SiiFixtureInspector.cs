@@ -61,7 +61,7 @@ public static class SiiFixtureInspector
         catch (SiiSyntaxException ex)
         {
             return new(SiiFixtureStatus.InvalidSyntax, bytes.Length, hash, null, null,
-                null, null, ex.ErrorCode, ex.LineNumber) { SignatureHint = hint };
+                null, null, ex.ErrorCode, ex.LineNumber) { SignatureHint = hint, ErrorColumn = ex.ColumnNumber };
         }
         catch (InvalidDataException)
         {
@@ -108,4 +108,6 @@ public sealed record SiiFixtureReport(
     /// <summary>True if a bounded stream was stopped before its full length was read.</summary>
     public bool ByteLengthIsLowerBound { get; init; }
     public SiiSignatureHint SignatureHint { get; init; }
+    /// <summary>One-based parser column when available; otherwise unknown.</summary>
+    public int? ErrorColumn { get; init; }
 }

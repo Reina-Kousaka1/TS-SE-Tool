@@ -16,7 +16,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     public FixtureDiagnosticsViewModel(IUiTextCatalog text)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
-        Examples = new[] { "text", "legacy-info", "opaque", "unclosed", "encrypted", "binary", "threenk" }
+        Examples = new[] { "text", "legacy-info", "opaque", "unclosed", "unexpected-close", "encrypted", "binary", "threenk" }
             .Select(key => new FixtureDiagnosticsExample(key, _text.Get("fixture.example." + key))).ToArray();
         _selected = Examples[0];
         _report = Inspect(_selected.Key);
@@ -50,7 +50,9 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         true => "fixture.yes", false => "fixture.no", _ => "fixture.notAvailable"
     }));
     public string Error => _report.SyntaxError is null ? _text.Get("fixture.noError") :
-        _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine ?? 0);
+        _report.ErrorColumn is int column
+            ? _text.Format("fixture.errorColumn", _report.SyntaxError, _report.ErrorLine, column)
+            : _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine);
     public string LegacyVersion
     {
         get
@@ -70,6 +72,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         "legacy-info" => "SiiNunit\n{\n save_container : demo {\n  version: 55\n  unknown_field: \"synthetic\"\n }\n}\n",
         "opaque" => "SiiNunit\n{\n demo : sample {\n  unknown syntax\n }\n}\n",
         "unclosed" => "SiiNunit\n{\n demo : sample {\n  value: 1\n",
+        "unexpected-close" => "}",
         "encrypted" => "ScsC synthetic prefix only",
         "binary" => "BSII synthetic prefix only",
         "threenk" => "3nK\u0001synthetic prefix only",

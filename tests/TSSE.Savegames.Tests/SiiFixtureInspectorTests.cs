@@ -120,6 +120,17 @@ public sealed class SiiFixtureInspectorTests
     }
 
     [Fact]
+    public void SyntaxDiagnosticPreservesParserColumnWhenAvailable()
+    {
+        SiiFixtureReport report = SiiFixtureInspector.Inspect("}"u8);
+        Assert.Equal(SiiFixtureStatus.InvalidSyntax, report.Status);
+        Assert.Equal(1, report.ErrorLine);
+        Assert.Equal(1, report.ErrorColumn);
+        using var stream = new MemoryStream("}"u8.ToArray());
+        Assert.Equal(report, SiiFixtureInspector.Inspect(stream));
+    }
+
+    [Fact]
     public void InvalidSyntaxAndUnsupportedBytesAreNotReportedAsParsed()
     {
         SiiFixtureReport unclosed = SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes("root {\n value: 1\n"));
