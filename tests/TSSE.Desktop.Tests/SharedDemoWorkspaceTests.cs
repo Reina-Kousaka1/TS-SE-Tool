@@ -9,6 +9,47 @@ namespace TSSE.Desktop.Tests;
 public sealed class SharedDemoWorkspaceTests
 {
     [Fact]
+    public void FullSyntheticEditingSequenceSharesHistoryAcrossAllFourSections()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var profile = new ProfileDemoViewModel(text, workspace);
+        var vehicle = new VehicleDemoViewModel(text, workspace);
+        var job = new JobDemoViewModel(text, workspace);
+        string original = profile.PreviewText;
+
+        profile.BalanceInput = "25";
+        profile.ExperienceInput = "99";
+        profile.ActionCommand.Execute("both");
+        vehicle.ValueInput = "0.75";
+        vehicle.ActionCommand.Execute("apply");
+        vehicle.SelectCategory("Trailers");
+        vehicle.OdometerInput = "777";
+        vehicle.ActionCommand.Execute("odometer");
+        job.ModelInput = "4";
+        job.ActionCommand.Execute("model");
+        string changed = profile.PreviewText;
+        Assert.Contains("money_account: 25", changed, StringComparison.Ordinal);
+        Assert.Contains("experience_points: 99", changed, StringComparison.Ordinal);
+        Assert.Contains("fuel_relative: 0.75", changed, StringComparison.Ordinal);
+        Assert.Contains("odometer: 777", changed, StringComparison.Ordinal);
+        Assert.Contains("cargo_model_index: 4", changed, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"preserved\"", changed, StringComparison.Ordinal);
+        Assert.Equal(5, workspace.Workspace.Changes.Count);
+
+        job.ActionCommand.Execute("undo");
+        vehicle.ActionCommand.Execute("undo");
+        profile.ActionCommand.Execute("undo");
+        job.ActionCommand.Execute("undo");
+        Assert.Equal(original, profile.PreviewText);
+        Assert.Empty(workspace.Workspace.Changes);
+        for (int i = 0; i < 4; i++) profile.ActionCommand.Execute("redo");
+        Assert.Equal(changed, job.PreviewText);
+        Assert.Equal("777", vehicle.OdometerInput);
+        Assert.Equal("4", job.ModelInput);
+    }
+
+    [Fact]
     public void StaleJobAndProfileDraftsRequireExplicitReview()
     {
         var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
