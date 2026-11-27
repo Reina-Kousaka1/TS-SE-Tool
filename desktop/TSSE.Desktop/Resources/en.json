@@ -45,6 +45,8 @@
   "playerTrailers.state.OtherBlock": "other block type",
   "skillDemo.heading": "Synthetic profile skills",
   "skillDemo.resetAll": "Reset all synthetic skills to zero",
+  "skillDemo.discardDraft": "Discard selected skill draft",
+  "skillDemo.draftDiscarded": "Selected skill draft discarded; the preview was not changed.",
   "skillDemo.resetDraftBlocked": "Apply or clear all skill drafts before resetting.",
   "skillDemo.resetDone": "Synthetic skills reset in one undoable change.",
   "skillDemo.resetUnchanged": "Synthetic skills are already zero; no change was made.",

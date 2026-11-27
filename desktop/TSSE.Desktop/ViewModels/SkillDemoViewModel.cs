@@ -42,6 +42,7 @@ public sealed class SkillDemoViewModel : ObservableObject
     public string ApplyLabel => _text.Get("profileDemo.apply");
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
     public string ResetSkillsLabel => _text.Get("skillDemo.resetAll");
+    public string DiscardDraftLabel => _text.Get("skillDemo.discardDraft");
     public string AdrBitsLabel => _text.Get("skillDemo.adrBits");
     public bool IsAdrSelected => Selected.Name == "adr";
     public bool CanEditAdrBits => IsAdrSelected && TryGetAdrMask(out _);
@@ -74,6 +75,13 @@ public sealed class SkillDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
+        if (action == "discard-draft")
+        {
+            _drafts.Remove(Selected.Name);
+            SetInput(_last, _last);
+            Message = _text.Get("skillDemo.draftDiscarded");
+            return;
+        }
         if (action == "reset-all")
         {
             if (Input != _last || _drafts.Count != 0)

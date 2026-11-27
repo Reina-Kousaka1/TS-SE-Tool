@@ -45,6 +45,8 @@
   "playerTrailers.state.OtherBlock": "anderer Blocktyp",
   "skillDemo.heading": "Synthetische Profilfähigkeiten",
   "skillDemo.resetAll": "Alle synthetischen Fähigkeiten auf null setzen",
+  "skillDemo.discardDraft": "Entwurf der ausgewählten Fähigkeit verwerfen",
+  "skillDemo.draftDiscarded": "Fähigkeitsentwurf verworfen; die Vorschau wurde nicht geändert.",
   "skillDemo.resetDraftBlocked": "Bitte zuerst alle Fähigkeitsentwürfe übernehmen oder zurücksetzen.",
   "skillDemo.resetDone": "Synthetische Fähigkeiten als eine Änderung zurückgesetzt.",
   "skillDemo.resetUnchanged": "Synthetische Fähigkeiten sind bereits null; keine Änderung vorgenommen.",

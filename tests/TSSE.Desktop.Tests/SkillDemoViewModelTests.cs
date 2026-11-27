@@ -8,6 +8,31 @@ namespace TSSE.Desktop.Tests;
 public sealed class SkillDemoViewModelTests
 {
     [Fact]
+    public void DiscardSelectedDraftKeepsOtherDraftsAndDoesNotChangeHistory()
+    {
+        var profile = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        var skills = profile.Skills;
+        string original = profile.PreviewText;
+        skills.Input = "3";
+        skills.Selected = skills.Fields.Single(item => item.Name == "heavy");
+        skills.Input = "4";
+        skills.ActionCommand.Execute("discard-draft");
+        Assert.Equal("0", skills.Input);
+        Assert.Equal(original, profile.PreviewText);
+        skills.ActionCommand.Execute("reset-all");
+        Assert.Contains("draft", skills.Message, StringComparison.Ordinal);
+        skills.Selected = skills.Fields.Single(item => item.Name == "adr");
+        Assert.Equal("3", skills.Input);
+        skills.ActionCommand.Execute("discard-draft");
+        Assert.Equal("0", skills.Input);
+        skills.ActionCommand.Execute("reset-all");
+        Assert.Equal(original, profile.PreviewText);
+        Assert.Contains("no change", skills.Message, StringComparison.Ordinal);
+        profile.ActionCommand.Execute("undo");
+        Assert.Equal(original, profile.PreviewText);
+    }
+
+    [Fact]
     public void ResetSkillsRejectsDraftsAndIsOneSharedUndoStep()
     {
         var profile = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
