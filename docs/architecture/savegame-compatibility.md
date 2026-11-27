@@ -57,6 +57,10 @@ The latter three prefixes are rejected as unsupported before text parsing. A
 prefix is only a hint: it establishes neither validity nor game compatibility,
 and BOM-prefixed or other forms can remain unknown. Tests use synthetic bytes;
 there is no decoder, decryption, profile discovery or real fixture evidence.
+The Avalonia Compatibility Lab now exposes this report through six fixed
+synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
+structured syntax errors. It accepts no paths, pasted saves or external data.
+The display is a demonstration of diagnostics, not a compatibility verdict.
 
 The inspector also accepts a caller-owned stream and reads no more than the
 byte limit plus one detection byte; an oversized stream's reported length is

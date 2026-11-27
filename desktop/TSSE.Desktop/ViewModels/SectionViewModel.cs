@@ -45,6 +45,7 @@ public sealed class SectionViewModel : ObservableObject
         ProfileDemo = new ProfileDemoViewModel(_text, workspace);
         VehicleDemo = new VehicleDemoViewModel(_text, workspace);
         JobDemo = new JobDemoViewModel(_text, workspace);
+        FixtureDiagnostics = new FixtureDiagnosticsViewModel(_text);
     }
 
     public string PageKey { get; }
@@ -59,6 +60,8 @@ public sealed class SectionViewModel : ObservableObject
     public bool IsEconomyIntelligence => PageKey == "economy-intelligence";
     public bool IsSettings => PageKey == "settings";
     public bool IsSavegameExplorer => PageKey == "savegame-explorer";
+    public bool IsCompatibilityLab => PageKey == "compatibility-lab";
+    public FixtureDiagnosticsViewModel FixtureDiagnostics { get; }
     public ProfileDemoViewModel ProfileDemo { get; }
     public VehicleDemoViewModel VehicleDemo { get; }
     public JobDemoViewModel JobDemo { get; }

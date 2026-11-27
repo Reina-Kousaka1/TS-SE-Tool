@@ -16,6 +16,21 @@
         <Border Grid.Row="2" Grid.ColumnSpan="2" Height="1" Background="{DynamicResource DividerBrush}" Margin="0,20,0,0" />
       </Grid>
 
+      <Border IsVisible="{Binding IsCompatibilityLab}" Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
+        <StackPanel DataContext="{Binding FixtureDiagnostics}" Spacing="8">
+          <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+          <ComboBox ItemsSource="{Binding Examples}" SelectedItem="{Binding Selected, Mode=TwoWay}" AutomationProperties.Name="{Binding SelectionLabel}">
+            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Signature}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding RoundTrip}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
         <Border IsVisible="{Binding IsSettings}" Background="{DynamicResource SurfaceBrush}"
                 BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" CornerRadius="16" Padding="16">
         <StackPanel Spacing="10">

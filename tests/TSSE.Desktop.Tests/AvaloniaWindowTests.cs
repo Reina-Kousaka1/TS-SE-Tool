@@ -21,6 +21,23 @@ namespace TSSE.Desktop.Tests;
 public sealed class AvaloniaWindowTests
 {
     [AvaloniaFact]
+    public void Compatibility_lab_shows_synthetic_format_diagnostics()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "compatibility-lab");
+            viewModel.NavigateCommand.Execute(page);
+            window.UpdateLayout();
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "Synthetic format diagnostics" && block.IsEffectivelyVisible);
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "Exact byte roundtrip: yes" && block.IsEffectivelyVisible);
+        }
+        finally { window.Close(); }
+    }
+    [AvaloniaFact]
     public void Synthetic_profile_skill_editor_is_visible_in_savegame_explorer()
     {
         var (viewModel, window, _) = CreateMainWindow();
