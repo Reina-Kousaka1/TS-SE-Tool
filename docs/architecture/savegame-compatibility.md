@@ -110,7 +110,10 @@ The developer-only fixture tool can compare two individually approved stationary
 test copies with `--compare-approved-test-copies <before> <after>`. It opens
 only those paths read-only, rejects linked paths, unsupported containers,
 oversized, ambiguous or unclassified input, and verifies bounded read hashes
-before comparing the captured bytes. Default output contains counts only; the
+before comparing the captured bytes. Default output contains aggregate counts,
+status flags, and `ByteIdentical` from exact comparison of the captured byte
+arrays. The syntax difference counts ignore formatting and whole-line comments;
+empty counts do not prove byte identity or game-semantic equivalence. The
 optional `--include-field-names` flag outputs at most 1,000 distinct field
 names and a truncation indicator. Field names can be sensitive and require
 review before sharing. Neither mode outputs field values, block IDs or paths;
@@ -124,7 +127,7 @@ Comparison-tool self-review (not independent): every compared document is
 parsed from a third bounded read whose hash and length match the earlier two;
 reparse-point checks are best effort and do not defeat every path race.
 Synthetic tests cover privacy defaults, explicit name disclosure, unsupported
-and ambiguous input, and unchanged file bytes. Genuine compatibility remains
+and ambiguous input, exact versus formatting-only byte differences, and unchanged file bytes. Genuine compatibility remains
 unverified.
 
 The Windows x64 CI smoke test also invokes the published standalone inspector

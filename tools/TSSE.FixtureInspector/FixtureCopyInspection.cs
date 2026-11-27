@@ -53,9 +53,9 @@ public static class FixtureCopyInspection
     {
         try
         {
-            SiiSyntaxDocument before = ReadStableSyntax(beforePath);
-            SiiSyntaxDocument after = ReadStableSyntax(afterPath);
-            IReadOnlyList<SiiSyntaxDifference> differences = SiiSyntaxComparison.Compare(before, after);
+            StableSyntax before = ReadStableSyntax(beforePath);
+            StableSyntax after = ReadStableSyntax(afterPath);
+            IReadOnlyList<SiiSyntaxDifference> differences = SiiSyntaxComparison.Compare(before.Syntax, after.Syntax);
             var counts = differences.GroupBy(item => item.Kind)
                 .ToDictionary(group => group.Key.ToString(), group => group.Count(), StringComparer.Ordinal);
             string[] names = includeNames ? differences.Where(item => item.FieldName is not null)
@@ -63,6 +63,8 @@ public static class FixtureCopyInspection
                 .Take(1001).ToArray() : [];
             output.WriteLine(JsonSerializer.Serialize(new {
                 DifferenceCounts = counts,
+                ByteIdentical = before.Bytes.AsSpan().SequenceEqual(after.Bytes),
+                SyntaxComparisonIgnoresFormattingAndComments = true,
                 FieldNames = includeNames ? names.Take(1000).ToArray() : null,
                 FieldNamesTruncated = includeNames && names.Length > 1000,
                 GameCompatibilityEstablished = false,
@@ -78,7 +80,7 @@ public static class FixtureCopyInspection
         }
     }
 
-    private static SiiSyntaxDocument ReadStableSyntax(string suppliedPath)
+    private static StableSyntax ReadStableSyntax(string suppliedPath)
     {
         string path = Path.GetFullPath(suppliedPath);
         if (FileSystemPathSafety.ContainsReparsePointInPath(path) ||
@@ -94,8 +96,10 @@ public static class FixtureCopyInspection
         if (stream.ReadByte() != -1 || !string.Equals(Convert.ToHexString(SHA256.HashData(bytes)), observation.Report.Sha256, StringComparison.Ordinal) ||
             FileSystemPathSafety.ContainsReparsePointInPath(path))
             throw new IOException("The supplied input changed during inspection.");
-        return SiiEncodedText.Parse(bytes).Syntax;
+        return new(SiiEncodedText.Parse(bytes).Syntax, bytes);
     }
+
+    private sealed record StableSyntax(SiiSyntaxDocument Syntax, byte[] Bytes);
 
     /// <summary>Compares two bounded reads of the same seekable stream; this is not an atomic filesystem snapshot.</summary>
     public static FixtureObservation ObserveTwice(Stream stream)

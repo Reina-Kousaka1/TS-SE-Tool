@@ -28,6 +28,8 @@ public sealed class FixtureCopyInspectionTests
             Assert.DoesNotContain("private_field", text, StringComparison.Ordinal);
             using var json = JsonDocument.Parse(text);
             Assert.Equal(1, json.RootElement.GetProperty("DifferenceCounts").GetProperty("FieldChanged").GetInt32());
+            Assert.False(json.RootElement.GetProperty("ByteIdentical").GetBoolean());
+            Assert.True(json.RootElement.GetProperty("SyntaxComparisonIgnoresFormattingAndComments").GetBoolean());
             Assert.False(json.RootElement.GetProperty("GameCompatibilityEstablished").GetBoolean());
             Assert.False(json.RootElement.GetProperty("SaveWritingEnabled").GetBoolean());
             using var detailed = new StringWriter();
@@ -36,6 +38,33 @@ public sealed class FixtureCopyInspectionTests
             Assert.DoesNotContain("private_id", detailed.ToString(), StringComparison.Ordinal);
             Assert.Equal(left, File.ReadAllText(before));
             Assert.Equal(right, File.ReadAllText(after));
+        }
+        finally { File.Delete(before); File.Delete(after); }
+    }
+
+    [Fact]
+    public void ComparisonDistinguishesExactBytesFromSyntaxOnlyAgreement()
+    {
+        string before = Path.GetTempFileName();
+        string after = Path.GetTempFileName();
+        const string original = "root {\n value: 1\n}\n";
+        try
+        {
+            File.WriteAllText(before, original);
+            File.WriteAllText(after, original);
+            using var identicalOutput = new StringWriter();
+            Assert.Equal(0, FixtureCopyInspection.Run(["--compare-approved-test-copies", before, after], identicalOutput));
+            using var identical = JsonDocument.Parse(identicalOutput.ToString());
+            Assert.True(identical.RootElement.GetProperty("ByteIdentical").GetBoolean());
+            Assert.Empty(identical.RootElement.GetProperty("DifferenceCounts").EnumerateObject());
+            File.WriteAllText(after, "# synthetic comment\nroot {\n value:  1  \n}\n");
+            using var formattedOutput = new StringWriter();
+            Assert.Equal(0, FixtureCopyInspection.Run(["--compare-approved-test-copies", before, after], formattedOutput));
+            using var formatted = JsonDocument.Parse(formattedOutput.ToString());
+            Assert.False(formatted.RootElement.GetProperty("ByteIdentical").GetBoolean());
+            Assert.Empty(formatted.RootElement.GetProperty("DifferenceCounts").EnumerateObject());
+            Assert.False(formatted.RootElement.GetProperty("GameCompatibilityEstablished").GetBoolean());
+            Assert.False(formatted.RootElement.GetProperty("SaveWritingEnabled").GetBoolean());
         }
         finally { File.Delete(before); File.Delete(after); }
     }
