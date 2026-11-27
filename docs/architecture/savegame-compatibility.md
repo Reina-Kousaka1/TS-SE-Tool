@@ -69,6 +69,19 @@ misplaced containers, missing fields and invalid values return explicit statuses
 The legacy `SaveFileInfoData` class is the source for the field and type; this
 does not identify a game, register an adapter, or establish compatibility.
 
+An in-memory diagnostic can match a successfully read legacy field against an
+explicitly supplied game ID and the exact decimal version key in the existing
+registry. A missing or invalid version skips the lookup. The result is not an
+authorization: its game-save read and write permissions remain false, including
+for a registry match. Tests register a fictitious game solely to exercise that
+boundary; no real adapter is registered. The probe opens and changes no files.
+
+Compatibility self-review (not independent): the game ID is caller-supplied,
+not inferred; numeric formatting is invariant; unknown versions remain unknown.
+A registry match does not prove that a file is complete, that its container was
+decoded correctly, or that a game would accept it. Additional validation and a
+separate explicit approval are still required before enabling writes.
+
 The inspector also accepts a caller-owned stream and reads no more than the
 byte limit plus one detection byte; an oversized stream's reported length is
 marked as a lower bound. Read errors propagate rather than becoming success
