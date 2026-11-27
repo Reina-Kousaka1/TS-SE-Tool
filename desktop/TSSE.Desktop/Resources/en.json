@@ -109,6 +109,8 @@
   "jobDemo.cargoSelection": "Observed synthetic cargo reference",
   "jobDemo.cargoSelectionDetail": "Select only an observed example reference. Trailer, cargo, route and job compatibility are not validated; no real save is changed.",
   "jobDemo.applyCargo": "Apply example cargo reference",
+  "jobDemo.applyCargoDetails": "Apply example cargo, quantity and model together",
+  "jobDemo.applyCargoDetailsReviewed": "Apply reviewed cargo, quantity and model",
   "profileMetadata.heading": "Profile metadata — separate synthetic example",
   "profileMetadata.description": "This example has its own history and does not open profiles, rename folders, or update a save. Unicode, spaces, dots and hyphens are supported within 64 UTF-16 code units; quotes, backslashes and controls are rejected. Game compatibility is unverified.",
   "profileMetadata.name": "Example profile name",

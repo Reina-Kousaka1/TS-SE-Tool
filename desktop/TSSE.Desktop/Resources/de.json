@@ -109,6 +109,8 @@
   "jobDemo.cargoSelection": "Beobachtete synthetische Frachtreferenz",
   "jobDemo.cargoSelectionDetail": "Nur eine beobachtete Beispielreferenz auswählen. Anhänger-, Fracht-, Routen- und Auftragskompatibilität werden nicht geprüft; kein echter Spielstand wird geändert.",
   "jobDemo.applyCargo": "Beispiel-Frachtreferenz anwenden",
+  "jobDemo.applyCargoDetails": "Beispiel-Fracht, Menge und Modell gemeinsam anwenden",
+  "jobDemo.applyCargoDetailsReviewed": "Geprüfte Fracht, Menge und Modell anwenden",
   "profileMetadata.heading": "Profilmetadaten – separates synthetisches Beispiel",
   "profileMetadata.description": "Dieses Beispiel hat eine eigene Historie und öffnet keine Profile, benennt keine Ordner um und ändert keinen Spielstand. Unicode, Leerzeichen, Punkte und Bindestriche sind bis 64 UTF-16-Codeeinheiten erlaubt; Anführungszeichen, Backslashes und Steuerzeichen werden abgelehnt. Spielkompatibilität ist ungeprüft.",
   "profileMetadata.name": "Beispiel-Profilname",

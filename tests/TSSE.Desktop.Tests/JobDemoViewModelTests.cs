@@ -8,6 +8,32 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void CargoDetailsApplyTogetherAndRejectInvalidOrStaleDrafts()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.SelectedCargo = "cargo.alternate";
+        demo.UnitsInput = "7";
+        demo.ModelInput = "invalid";
+        demo.ActionCommand.Execute("cargo-details");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ModelInput = "4";
+        demo.ActionCommand.Execute("cargo-details");
+        Assert.Equal("cargo.alternate", demo.Cargo);
+        Assert.Contains("units_count: 7", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("cargo_model_index: 4", demo.PreviewText, StringComparison.Ordinal);
+        demo.SelectedCargo = "cargo.third";
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        Assert.True(demo.IsCargoDetailsStale);
+        demo.ActionCommand.Execute("cargo-details");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("cargo-details-reviewed");
+        Assert.Equal("cargo.third", demo.Cargo);
+        Assert.False(demo.IsCargoDetailsStale);
+    }
+
+    [Fact]
     public void ObservedCargoSelectionUsesHistoryAndRequiresReviewWhenStale()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

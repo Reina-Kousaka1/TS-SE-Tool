@@ -43,6 +43,9 @@ public sealed class JobDemoViewModel : ObservableObject
     public string CargoSelectionLabel => _text.Get("jobDemo.cargoSelection");
     public string CargoSelectionDetail => _text.Get("jobDemo.cargoSelectionDetail");
     public string ApplyCargoLabel => _text.Get("jobDemo.applyCargo");
+    public string ApplyCargoDetailsLabel => _text.Get("jobDemo.applyCargoDetails");
+    public string ApplyCargoDetailsReviewedLabel => _text.Get("jobDemo.applyCargoDetailsReviewed");
+    public bool IsCargoDetailsStale => IsCargoStale || IsUnitsStale || IsModelStale;
     public string SelectedCargo { get => _selectedCargo; set { if (_selectedCargo == _lastCargo) _baseCargo = _lastCargo; if (SetProperty(ref _selectedCargo, value ?? "")) NotifyDrafts(); } }
     public bool IsCargoStale => SelectedCargo != _lastCargo && _baseCargo != _lastCargo;
     public string CargoDraftNotice => IsCargoStale ? _text.Format("editor.staleDraft", _lastCargo) : "";
@@ -94,7 +97,7 @@ public sealed class JobDemoViewModel : ObservableObject
         }
         if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
             (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale) ||
-            (action == "cargo" && IsCargoStale))
+            (action == "cargo" && IsCargoStale) || (action == "cargo-details" && IsCargoDetailsStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -102,7 +105,14 @@ public sealed class JobDemoViewModel : ObservableObject
         bool success = false;
         try
         {
-            if ((action is "apply-both" or "apply-both-reviewed") &&
+            if ((action is "cargo-details" or "cargo-details-reviewed") &&
+                int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int cargoCount) &&
+                int.TryParse(ModelInput, NumberStyles.None, CultureInfo.InvariantCulture, out int cargoModel))
+            {
+                _session.SetCargoDetails(SelectedCargo, cargoCount, cargoModel);
+                success = true;
+            }
+            else if ((action is "apply-both" or "apply-both-reviewed") &&
                 int.TryParse(UnitsInput, NumberStyles.None, CultureInfo.InvariantCulture, out int bothCount) &&
                 int.TryParse(DistanceInput, NumberStyles.None, CultureInfo.InvariantCulture, out int bothDistance))
             {
@@ -140,10 +150,10 @@ public sealed class JobDemoViewModel : ObservableObject
         if (success)
         {
             _workspace.NotifyChanged();
-            if (action is "apply" or "apply-reviewed" or "apply-both" or "apply-both-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
+            if (action is "apply" or "apply-reviewed" or "apply-both" or "apply-both-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
             if (action is "distance" or "distance-reviewed" or "apply-both" or "apply-both-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
-            if (action is "model" or "model-reviewed") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
-            if (action is "cargo" or "cargo-reviewed") { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
+            if (action is "model" or "model-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
+            if (action is "cargo" or "cargo-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
             NotifyDrafts();
         }
     }
@@ -181,5 +191,6 @@ public sealed class JobDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(ModelDraftNotice));
         OnPropertyChanged(nameof(IsCargoStale));
         OnPropertyChanged(nameof(CargoDraftNotice));
+        OnPropertyChanged(nameof(IsCargoDetailsStale));
     }
 }

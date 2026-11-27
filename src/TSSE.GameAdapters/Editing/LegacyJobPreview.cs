@@ -111,6 +111,24 @@ public sealed class LegacyJobPreview
         _session.Apply([new("player_job", _jobId, "cargo_model_index", index.ToString(CultureInfo.InvariantCulture))]);
     }
 
+    /// <summary>Applies three syntactic values together; game-level compatibility is not validated.</summary>
+    public void SetCargoDetails(string cargo, int count, int modelIndex)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cargo);
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (modelIndex < 0) throw new ArgumentOutOfRangeException(nameof(modelIndex));
+        string currentCargo = CargoReference;
+        int currentCount = UnitsCount;
+        int currentModel = CargoModelIndex;
+        if (!ObservedCargoReferences().Contains(cargo, StringComparer.Ordinal))
+            throw new InvalidOperationException("The cargo reference was not observed in the document.");
+        var edits = new List<SiiFieldEdit>();
+        if (cargo != currentCargo) edits.Add(new("player_job", _jobId, "cargo", cargo));
+        if (count != currentCount) edits.Add(new("player_job", _jobId, "units_count", count.ToString(CultureInfo.InvariantCulture)));
+        if (modelIndex != currentModel) edits.Add(new("player_job", _jobId, "cargo_model_index", modelIndex.ToString(CultureInfo.InvariantCulture)));
+        _session.Apply(edits);
+    }
+
     /// <summary>Updates both validated synthetic job values in a single undoable transaction.</summary>
     public void SetUnitsAndPlannedDistance(int count, int distance)
     {

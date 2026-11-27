@@ -363,6 +363,10 @@ duplicate fields. This is a syntax-only candidate list, not evidence that a
 cargo is available, belongs to the job, or fits a trailer. Only the one raw
 reference changes, with shared undo/redo and stale-selection review. No game
 file access or production cargo editing is enabled.
+An optional batch validates the selected reference, unit count and cargo-model
+index before applying all three as a single undoable in-memory edit. Stale
+drafts require explicit review. This atomicity does not validate any game or
+trailer relationship.
 
 Cargo self-review (not independent): candidates are reused from the current
 in-memory document and revalidated immediately before the edit; missing,

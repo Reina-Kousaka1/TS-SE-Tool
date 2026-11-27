@@ -266,6 +266,8 @@
           <TextBlock Text="{Binding UnitsDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsUnitsStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="apply-reviewed" />
           <Button Content="{Binding DiscardUnitsLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-units" />
+          <Button Content="{Binding ApplyCargoDetailsLabel}" Command="{Binding ActionCommand}" CommandParameter="cargo-details" />
+          <Button IsVisible="{Binding IsCargoDetailsStale}" Content="{Binding ApplyCargoDetailsReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="cargo-details-reviewed" />
           <TextBlock Text="{Binding DistanceLabel}" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <TextBox Text="{Binding DistanceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding DistanceLabel}" />

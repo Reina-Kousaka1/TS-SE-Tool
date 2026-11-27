@@ -7,6 +7,28 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyJobPreviewTests
 {
     [Fact]
+    public void CargoDetailsAreAtomicAndUndoAsOneStep()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  cargo_model_index: 0002", StringComparison.Ordinal)
+            .Replace("\n}\n", "\n job_offer_data : offer {\n  cargo: cargo.other\n }\n}\n", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetCargoDetails("cargo.other", 7, -1));
+        Assert.Throws<InvalidOperationException>(() => editor.SetCargoDetails("cargo.unknown", 7, 4));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+        editor.SetCargoDetails("cargo.other", 7, 4);
+        Assert.Equal("cargo.other", editor.CargoReference);
+        Assert.Equal(7, editor.UnitsCount);
+        Assert.Equal(4, editor.CargoModelIndex);
+        Assert.Equal(3, editor.Changes.Count);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal("cargo.other", editor.CargoReference);
+    }
+
+    [Fact]
     public void CargoSelectionRequiresObservedReferencesAndSupportsUndo()
     {
         string input = Synthetic.Replace("\n}\n", "\n job_offer_data : offer {\n  cargo: cargo.other\n }\n}\n", StringComparison.Ordinal);
