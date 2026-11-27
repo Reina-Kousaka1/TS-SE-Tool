@@ -104,6 +104,9 @@ codes and conservative size limits, then only reports syntax evidence after
 rejecting malformed, opaque or ambiguous output. The contract and size rules
 remain unverified against the native library and genuine saves. No decoder is
 registered or enabled; these checks do not grant file-read or write permission.
+The separate size-query check can be called before allocation and returns a
+bounded integer only on a successful query with a nonzero size within the
+existing text limit. This does not invoke the native decoder.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.

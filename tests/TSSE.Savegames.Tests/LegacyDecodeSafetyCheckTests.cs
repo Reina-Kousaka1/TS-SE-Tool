@@ -10,6 +10,21 @@ public sealed class LegacyDecodeSafetyCheckTests
     private static readonly byte[] Valid = Encoding.UTF8.GetBytes("root {\n unknown_mod_field: \"保持\"\n}\n");
 
     [Fact]
+    public void SizeQueryIsBoundedBeforeAnyOutputBufferIsAllocated()
+    {
+        Assert.True(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, 1, out int small));
+        Assert.Equal(1, small);
+        Assert.True(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, SiiEncodedText.MaximumBytes, out int maximum));
+        Assert.Equal(SiiEncodedText.MaximumBytes, maximum);
+        Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, 0, out int empty));
+        Assert.Equal(0, empty);
+        Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(0, uint.MaxValue, out int large));
+        Assert.Equal(0, large);
+        Assert.False(LegacyDecodeSafetyCheck.TryGetBoundedOutputSize(12, 1, out int failed));
+        Assert.Equal(0, failed);
+    }
+
+    [Fact]
     public void SuccessfulCallsYieldSyntaxEvidenceOnly()
     {
         var result = LegacyDecodeSafetyCheck.Inspect(0, 0, (uint)Valid.Length, (uint)Valid.Length, Valid);
