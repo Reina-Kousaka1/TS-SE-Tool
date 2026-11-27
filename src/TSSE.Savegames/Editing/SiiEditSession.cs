@@ -38,7 +38,8 @@ public sealed class SiiEditSession
         foreach (SiiFieldEdit edit in edits)
         {
             ArgumentNullException.ThrowIfNull(edit);
-            if (edit.RawValue is not null && edit.RawValue.Length > MaximumPreviewCharacters)
+            ArgumentNullException.ThrowIfNull(edit.RawValue);
+            if (edit.RawValue.Length > MaximumPreviewCharacters)
                 throw new InvalidOperationException("The replacement exceeds the in-memory preview limit.");
             if (!targets.Add((edit.BlockType, edit.BlockId, edit.FieldName)))
                 throw new ArgumentException("An edit batch cannot target the same field twice.", nameof(edits));
