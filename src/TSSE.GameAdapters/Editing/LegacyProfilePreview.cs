@@ -46,6 +46,7 @@ public sealed class LegacyProfilePreview
     }
 
     public string PreviewText => _session.PreviewText;
+    public IReadOnlyList<SiiFieldChange> Changes => _session.Changes;
     public bool IsDirty => _session.IsDirty;
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;

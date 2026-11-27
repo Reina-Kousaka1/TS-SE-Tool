@@ -48,6 +48,19 @@ validation, or mapping from profile models to real game files. The UI profile
 demo uses only embedded synthetic text. Unknown recognized fields and blocks remain in the
 original text; unclassified syntax blocks edits.
 
+The in-memory session reports net changes against its initial syntax document,
+including original and current field values (surrounding whitespace trimmed) in
+source order. The synthetic
+profile, vehicle and job views show this list and refresh it on undo/redo.
+Returning a field to its original value removes it from the list; undo history
+may still exist. This is a syntax diff, not game-semantic validation.
+
+Change tracking self-review (not independent): only targets from successfully
+applied batches enter the tracking set, and both versions are read from the
+immutable syntax snapshots. No logs or filesystem output are added. The views
+currently show only embedded synthetic data; any future real-data integration
+must consider visibility and privacy of displayed field values.
+
 Architecture self-review (not independent): existing `WithFieldValue` reparses
 each candidate and checks block layout and exact selected value. The new session
 only publishes a candidate after every replacement succeeds. It does not claim

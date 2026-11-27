@@ -1,4 +1,6 @@
 {
+  "editor.changes": "Änderungen an synthetischen Daten",
+  "editor.noChanges": "Keine Änderungen.",
   "jobDemo.distance": "Geplante Strecke in km (nichtnegative Ganzzahl)",
   "vehicleDemo.repairChain": "Aufbauverschleiß der Demo-Trailerkette zurücksetzen",
   "vehicleDemo.repairWheels": "Radverschleiß zurücksetzen",

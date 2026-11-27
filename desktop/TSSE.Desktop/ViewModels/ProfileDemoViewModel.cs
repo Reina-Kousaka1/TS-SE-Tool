@@ -35,6 +35,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string RedoLabel => _text.Get("profileDemo.redo");
     public string PreviewLabel => _text.Get("profileDemo.preview");
     public string PreviewText => _session.PreviewText;
+    public string ChangesLabel => _text.Get("editor.changes");
+    public string ChangeSummary => DemoChangeSummary.Format(_session.Changes, _text.Get("editor.noChanges"));
     public string LevelHeading => _text.Get("profileDemo.levelHeading");
     public string LevelDescription => _text.Get("profileDemo.levelDescription");
     public string LevelLabel => _text.Get("profileDemo.levelLabel");
@@ -90,6 +92,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
         if (success)
         {
             OnPropertyChanged(nameof(PreviewText));
+            OnPropertyChanged(nameof(ChangeSummary));
             OnPropertyChanged(nameof(LevelProgress));
             if (action == "level")
                 ExperienceInput = _session.Current.Experience.ToString(CultureInfo.InvariantCulture);

@@ -15,12 +15,14 @@ public sealed class JobDemoViewModelTests
         demo.DistanceInput = "500";
         demo.ActionCommand.Execute("distance");
         Assert.Contains("planned_distance_km: 500", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("planned_distance_km: 120 → 500", demo.ChangeSummary, StringComparison.Ordinal);
         Assert.Contains("units_count: 3", demo.PreviewText, StringComparison.Ordinal);
         demo.DistanceInput = "-1";
         demo.ActionCommand.Execute("distance");
         Assert.Contains("planned_distance_km: 500", demo.PreviewText, StringComparison.Ordinal);
         demo.ActionCommand.Execute("undo");
         Assert.Equal(before, demo.PreviewText);
+        Assert.Equal("No changes.", demo.ChangeSummary);
         Assert.Equal("120", demo.DistanceInput);
     }
     [Fact]

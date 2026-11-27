@@ -48,6 +48,8 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public bool CanRefuel => !_isTrailer;
     public string PreviewLabel => _text.Get("vehicleDemo.preview");
     public string PreviewText => Session.PreviewText;
+    public string ChangesLabel => _text.Get("editor.changes");
+    public string ChangeSummary => DemoChangeSummary.Format(Session.Changes, _text.Get("editor.noChanges"));
     public IReadOnlyList<VehicleDemoField> Fields => _isTrailer ? _trailerFields : _truckFields;
     public RelayCommand<string> ActionCommand { get; }
     public string ValueInput { get => _valueInput; set => SetProperty(ref _valueInput, value ?? ""); }
@@ -74,6 +76,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _selectedField = Fields[0];
         OnPropertyChanged(nameof(SelectedField));
         OnPropertyChanged(nameof(PreviewText));
+        OnPropertyChanged(nameof(ChangeSummary));
         Message = _text.Get("vehicleDemo.ready");
         RefreshValue();
     }
@@ -122,6 +125,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         if (success)
         {
             OnPropertyChanged(nameof(PreviewText));
+            OnPropertyChanged(nameof(ChangeSummary));
             RefreshValue();
         }
     }

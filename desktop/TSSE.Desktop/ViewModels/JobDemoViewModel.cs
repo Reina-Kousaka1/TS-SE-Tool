@@ -34,6 +34,8 @@ public sealed class JobDemoViewModel : ObservableObject
     public string RedoLabel => _text.Get("jobDemo.redo");
     public string PreviewLabel => _text.Get("jobDemo.preview");
     public string PreviewText => _session.PreviewText;
+    public string ChangesLabel => _text.Get("editor.changes");
+    public string ChangeSummary => DemoChangeSummary.Format(_session.Changes, _text.Get("editor.noChanges"));
     public string UnitsInput { get => _unitsInput; set => SetProperty(ref _unitsInput, value ?? ""); }
     public string DistanceInput { get => _distanceInput; set => SetProperty(ref _distanceInput, value ?? ""); }
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
@@ -68,6 +70,7 @@ public sealed class JobDemoViewModel : ObservableObject
         if (success)
         {
             OnPropertyChanged(nameof(PreviewText));
+            OnPropertyChanged(nameof(ChangeSummary));
             if (action is "apply" or "undo" or "redo")
                 UnitsInput = _session.UnitsCount.ToString(CultureInfo.InvariantCulture);
             if (action is "distance" or "undo" or "redo")

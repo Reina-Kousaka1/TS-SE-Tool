@@ -1,4 +1,6 @@
 {
+  "editor.changes": "Changes to synthetic data",
+  "editor.noChanges": "No changes.",
   "jobDemo.distance": "Planned distance in km (nonnegative integer)",
   "vehicleDemo.repairChain": "Reset body wear across demo trailer chain",
   "vehicleDemo.repairWheels": "Reset wheel wear",

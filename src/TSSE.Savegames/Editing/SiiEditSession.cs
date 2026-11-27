@@ -12,12 +12,15 @@ public sealed class SiiEditSession
     public const int MaximumPreviewCharacters = 2 * 1024 * 1024;
     public const int MaximumHistoryStates = 16;
     private readonly EditHistory<SiiSyntaxDocument> _history;
+    private readonly SiiSyntaxDocument _original;
+    private readonly HashSet<(string Type, string? Id, string Field)> _knownTargets = new();
 
     public SiiEditSession(SiiSyntaxDocument initial)
     {
         ArgumentNullException.ThrowIfNull(initial);
         if (initial.ToText().Length > MaximumPreviewCharacters)
             throw new ArgumentException("The document exceeds the in-memory preview limit.", nameof(initial));
+        _original = initial;
         _history = new EditHistory<SiiSyntaxDocument>(initial, static doc => doc.ToText().Length <= MaximumPreviewCharacters, MaximumHistoryStates);
     }
 
@@ -25,6 +28,25 @@ public sealed class SiiEditSession
     public bool IsDirty => _history.IsDirty;
     public bool CanUndo => _history.CanUndo;
     public bool CanRedo => _history.CanRedo;
+
+    /// <summary>Net field changes relative to the session's initial document, in source order.</summary>
+    public IReadOnlyList<SiiFieldChange> Changes
+    {
+        get
+        {
+            var changes = new List<SiiFieldChange>();
+            foreach ((string type, string? id, string field) in _knownTargets)
+            {
+                SiiBlock beforeBlock = _original.Blocks.Single(block => block.Type == type && block.Id == id);
+                SiiBlock afterBlock = _history.Current.Blocks.Single(block => block.Type == type && block.Id == id);
+                SiiField before = beforeBlock.Fields.Single(item => item.Name == field);
+                SiiField after = afterBlock.Fields.Single(item => item.Name == field);
+                if (!string.Equals(before.Value, after.Value, StringComparison.Ordinal))
+                    changes.Add(new(type, id, field, before.Value, after.Value, before.LineNumber));
+            }
+            return changes.OrderBy(change => change.LineNumber).ToList().AsReadOnly();
+        }
+    }
 
     /// <summary>
     /// Applies all requested syntax edits as one history entry, or none if any
@@ -52,6 +74,7 @@ public sealed class SiiEditSession
         {
             if (!_history.TryApply(candidate))
                 throw new InvalidOperationException("The document exceeds the in-memory preview limit.");
+            _knownTargets.UnionWith(targets);
         }
     }
 
@@ -61,3 +84,6 @@ public sealed class SiiEditSession
 
 /// <summary>An explicit syntax target, not a validated game-specific mapping.</summary>
 public sealed record SiiFieldEdit(string BlockType, string? BlockId, string FieldName, string RawValue);
+
+/// <summary>SII field values with surrounding whitespace trimmed, without interpreting game semantics.</summary>
+public sealed record SiiFieldChange(string BlockType, string? BlockId, string FieldName, string OriginalValue, string CurrentValue, int LineNumber);

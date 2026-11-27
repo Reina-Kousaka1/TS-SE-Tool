@@ -7,6 +7,36 @@ namespace TSSE.Savegames.Tests;
 public sealed class SiiEditSessionTests
 {
     [Fact]
+    public void NetChangesFollowUndoRedoAndReturnToOriginalValue()
+    {
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
+        session.Apply([new("economy", "b", "experience_points", "30"), new("bank", "a", "money_account", "-8")]);
+        Assert.Equal(new[] { "money_account", "experience_points" }, session.Changes.Select(change => change.FieldName));
+        SiiFieldChange money = session.Changes[0];
+        Assert.Equal("42", money.OriginalValue);
+        Assert.Equal("-8", money.CurrentValue);
+        Assert.True(session.Undo());
+        Assert.Empty(session.Changes);
+        Assert.True(session.Redo());
+        Assert.Equal(2, session.Changes.Count);
+        session.Apply([new("bank", "a", "money_account", "42")]);
+        Assert.Equal("experience_points", Assert.Single(session.Changes).FieldName);
+        session.Apply([new("economy", "b", "experience_points", "5")]);
+        Assert.Empty(session.Changes);
+        Assert.Equal(Original, session.PreviewText);
+    }
+
+    [Fact]
+    public void FailedBatchDoesNotReportUnappliedChanges()
+    {
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(Original));
+        Assert.Throws<InvalidOperationException>(() => session.Apply([
+            new("bank", "a", "money_account", "1"), new("economy", "b", "missing", "2")
+        ]));
+        Assert.Empty(session.Changes);
+        Assert.Equal(Original, session.PreviewText);
+    }
+    [Fact]
     public void HistoryLimitRejectsNewEditAndPreservesUndo()
     {
         var session = new SiiEditSession(SiiSyntaxDocument.Parse("root {\n value: 0\n}\n"));
