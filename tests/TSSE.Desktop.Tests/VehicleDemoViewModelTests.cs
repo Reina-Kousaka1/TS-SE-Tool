@@ -139,6 +139,31 @@ public sealed class VehicleDemoViewModelTests
         first.ActionCommand.Execute("odometer-reviewed");
         Assert.Contains("odometer: 900", first.PreviewText, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void TrailerOdometerDraftRequiresReviewAfterAnotherViewUndoesIt()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var first = new VehicleDemoViewModel(text, workspace);
+        var second = new VehicleDemoViewModel(text, workspace);
+        first.SelectCategory("Trailers");
+        first.OdometerInput = "600";
+        first.ActionCommand.Execute("odometer");
+        first.OdometerInput = "700";
+        first.SelectedTrailer = "demo.trailer2";
+        second.ActionCommand.Execute("undo");
+        first.SelectedTrailer = "demo.trailer";
+        Assert.Equal("700", first.OdometerInput);
+        Assert.True(first.IsOdometerStale);
+        string before = first.PreviewText;
+        first.ActionCommand.Execute("odometer");
+        Assert.Equal(before, first.PreviewText);
+        first.ActionCommand.Execute("odometer-reviewed");
+        Assert.Contains("odometer: 700", first.PreviewText, StringComparison.Ordinal);
+        first.ActionCommand.Execute("undo");
+        Assert.Equal("500", first.OdometerInput);
+    }
     [Fact]
     public void TrailerSelectionEditsOnlyChosenTrailerAndUsesSharedHistory()
     {
