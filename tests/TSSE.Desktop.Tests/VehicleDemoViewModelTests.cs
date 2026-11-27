@@ -12,6 +12,7 @@ public sealed class VehicleDemoViewModelTests
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
         demo.SelectCategory("Trailers");
+        Assert.Equal(new[] { "demo.trailer", "demo.trailer2" }, demo.TrailerChoices);
         string original = demo.PreviewText;
         demo.SelectedTrailer = "demo.trailer2";
         Assert.Equal("0.25", demo.ValueInput);

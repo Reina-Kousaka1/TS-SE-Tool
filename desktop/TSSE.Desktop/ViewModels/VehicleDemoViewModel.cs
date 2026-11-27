@@ -33,6 +33,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _workspace = workspace ?? new DemoWorkspace();
         _truck = _workspace.Workspace.Truck;
         _trailer = _workspace.Workspace.Trailer;
+        TrailerChoices = _workspace.Workspace.TrailerIds();
         _workspace.Changed += (_, _) => RefreshFromWorkspace();
         _truckFields = CreateFields(["fuel_relative", "engine_wear", "transmission_wear", "cabin_wear", "chassis_wear"]);
         _trailerFields = CreateFields(["cargo_damage", "trailer_body_wear", "chassis_wear"]);
@@ -61,7 +62,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string WheelRepairLabel => _text.Get("vehicleDemo.repairWheels");
     public string ChainRepairLabel => _text.Get("vehicleDemo.repairChain");
     public bool CanRepairChain => _isTrailer;
-    public IReadOnlyList<string> TrailerChoices { get; } = ["demo.trailer", "demo.trailer2"];
+    public IReadOnlyList<string> TrailerChoices { get; }
     public string TrailerSelectionLabel => _text.Get("vehicleDemo.trailerSelection");
     private string DraftTarget => _isTrailer ? _selectedTrailer : "demo.truck";
     public string SelectedTrailer

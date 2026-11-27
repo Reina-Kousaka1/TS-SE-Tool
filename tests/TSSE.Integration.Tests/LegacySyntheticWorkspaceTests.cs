@@ -8,6 +8,29 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacySyntheticWorkspaceTests
 {
     [Fact]
+    public void TrailerIdentifiersComeFromTheDocumentInSourceOrder()
+    {
+        string input = Fixture.Replace("\n}\n", "\n trailer : second {\n  trailer_body_wear: 0.1\n }\n trailer : third {\n  trailer_body_wear: 0.2\n }\n}\n", StringComparison.Ordinal);
+        var workspace = new LegacySyntheticWorkspace(SiiSyntaxDocument.Parse(input), "e", "p", "t", "r");
+        Assert.Equal(new[] { "r", "second", "third" }, workspace.TrailerIds());
+        workspace.SelectTrailer("third").SetValue("trailer_body_wear", 0);
+        Assert.Equal(0f, workspace.SelectTrailer("third").GetValue("trailer_body_wear"));
+        Assert.True(workspace.Undo());
+        Assert.Equal(input, workspace.PreviewText);
+    }
+
+    [Theory]
+    [InlineData("trailer : dup {\n }\n trailer : dup {\n }")]
+    [InlineData("trailer {\n }")]
+    public void AmbiguousOrAnonymousTrailerCannotBeSilentlyOmitted(string blocks)
+    {
+        string input = Fixture.Replace("\n}\n", "\n " + blocks + "\n}\n", StringComparison.Ordinal);
+        var workspace = new LegacySyntheticWorkspace(SiiSyntaxDocument.Parse(input), "e", "p", "t", "r");
+        Assert.Throws<InvalidOperationException>(() => workspace.TrailerIds());
+        Assert.Equal(input, workspace.PreviewText);
+        Assert.False(workspace.IsDirty);
+    }
+    [Fact]
     public void ExplicitTrailerSelectionSharesHistoryAndRejectsMissingTargets()
     {
         var workspace = Create();
