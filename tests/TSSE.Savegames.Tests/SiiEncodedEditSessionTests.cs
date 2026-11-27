@@ -35,6 +35,13 @@ public sealed class SiiEncodedEditSessionTests
         Assert.Empty(session.Changes);
         Assert.True(session.Redo());
         Assert.Equal(Bytes(encoding, changed), session.PreviewBytes);
+        session.Apply([new("economy", "demo", "amount", "1"), new("economy", "demo", "xp", "2")]);
+        Assert.Equal(initial, session.PreviewBytes);
+        Assert.False(session.IsDirty);
+        Assert.True(session.Undo());
+        Assert.True(session.IsDirty);
+        Assert.True(session.Redo());
+        Assert.False(session.IsDirty);
     }
 
     [Fact]

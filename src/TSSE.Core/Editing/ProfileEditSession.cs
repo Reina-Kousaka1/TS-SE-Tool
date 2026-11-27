@@ -9,15 +9,18 @@ namespace TSSE.Core.Editing;
 public sealed class ProfileEditSession
 {
     private readonly EditHistory<ProfileValues> history;
+    private readonly ProfileValues original;
 
     public ProfileEditSession(ProfileValues initial)
     {
         ArgumentNullException.ThrowIfNull(initial);
+        original = initial;
         history = new EditHistory<ProfileValues>(initial, static _ => true);
     }
 
     public ProfileValues Current => history.Current;
-    public bool IsDirty => history.IsDirty;
+    /// <summary>True when values differ from the original, independently of undo history.</summary>
+    public bool IsDirty => Current != original;
     public bool CanUndo => history.CanUndo;
     public bool CanRedo => history.CanRedo;
 

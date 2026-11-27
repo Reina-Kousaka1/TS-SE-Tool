@@ -7,6 +7,10 @@ mapping. A new session has an original baseline. Valid edits create snapshots,
 undo and redo move through them, and a different edit after undo drops redo.
 Unchanged or invalid edits leave history intact. Callers of the generic history
 must supply immutable snapshots and a validator.
+The profile and SII editing sessions report dirty state relative to the
+original values or exact original text respectively, even if a later edit
+returns to that baseline. This does not discard undo or redo history. Textual
+changes such as `001` to `1` remain dirty even when numerically equivalent.
 
 The Savegame Explorer offers a clearly labelled temporary profile demo for
 balance and experience, with per-field validation and undo/redo. Its initial

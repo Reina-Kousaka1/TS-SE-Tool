@@ -34,7 +34,8 @@ public sealed class SiiEditSession
 
     public string PreviewText => _history.Current.ToText();
     internal SiiSyntaxDocument CurrentSyntax => _history.Current;
-    public bool IsDirty => _history.IsDirty;
+    /// <summary>True when the preview differs exactly from the original text, regardless of history position.</summary>
+    public bool IsDirty => !string.Equals(_original.ToText(), _history.Current.ToText(), StringComparison.Ordinal);
     public bool CanUndo => _history.CanUndo;
     public bool CanRedo => _history.CanRedo;
 

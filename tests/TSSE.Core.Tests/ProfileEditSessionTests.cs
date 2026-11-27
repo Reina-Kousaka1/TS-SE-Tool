@@ -6,6 +6,20 @@ namespace TSSE.Core.Tests;
 public sealed class ProfileEditSessionTests
 {
     [Fact]
+    public void ReturningToOriginalValuesIsCleanWithoutLosingHistory()
+    {
+        var session = new ProfileEditSession(new ProfileValues(10, 20));
+        Assert.True(session.TrySetBalance("30"));
+        Assert.True(session.IsDirty);
+        Assert.True(session.TrySetBalance("10"));
+        Assert.False(session.IsDirty);
+        Assert.True(session.CanUndo);
+        Assert.True(session.Undo());
+        Assert.True(session.IsDirty);
+        Assert.True(session.Redo());
+        Assert.False(session.IsDirty);
+    }
+    [Fact]
     public void EditsAreValidatedAtomicallyAndCanBeUndoneAndRedone()
     {
         var session = new ProfileEditSession(new ProfileValues(-4, 12));

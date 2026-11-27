@@ -26,6 +26,25 @@ public sealed class SiiEditSessionTests
         session.Apply([new("economy", "b", "experience_points", "5")]);
         Assert.Empty(session.Changes);
         Assert.Equal(Original, session.PreviewText);
+        Assert.False(session.IsDirty);
+        Assert.True(session.CanUndo);
+        Assert.True(session.Undo());
+        Assert.True(session.IsDirty);
+        Assert.True(session.Redo());
+        Assert.False(session.IsDirty);
+    }
+
+    [Fact]
+    public void SemanticallyEqualButTextuallyDifferentValueRemainsDirty()
+    {
+        const string input = "root {\n value: 001\n}\n";
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(input));
+        session.Apply([new("root", null, "value", "1")]);
+        Assert.True(session.IsDirty);
+        Assert.Single(session.Changes);
+        session.Apply([new("root", null, "value", "001")]);
+        Assert.False(session.IsDirty);
+        Assert.Empty(session.Changes);
     }
 
     [Fact]
