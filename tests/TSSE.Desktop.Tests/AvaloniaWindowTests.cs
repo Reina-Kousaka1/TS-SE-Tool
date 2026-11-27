@@ -68,6 +68,9 @@ public sealed class AvaloniaWindowTests
             viewModel.NavigateCommand.Execute(vehicle);
             Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
                 block.Text == "Vehicle editor — synthetic demo" && block.IsEffectivelyVisible);
+            window.UpdateLayout();
+            Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(), box =>
+                box.IsEffectivelyVisible && Equals(box.SelectedItem, "demo.truck"));
             Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
                 block.Text != null && block.Text.Contains("demo.missing — missing target", StringComparison.Ordinal) && block.IsEffectivelyVisible);
             vehicle.Page.SelectVehicleCategoryCommand.Execute("Trailers");

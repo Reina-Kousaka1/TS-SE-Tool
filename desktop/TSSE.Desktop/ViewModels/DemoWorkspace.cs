@@ -17,6 +17,7 @@ public sealed class DemoWorkspace
         .Replace("  cargo_damage: 0.1\n",
             "  accessories: 1\n  accessories[0]: demo.accessory\n  cargo_damage: 0.1\n", StringComparison.Ordinal)
         .Replace(" trailer : demo.trailer2 {\n", " trailer : demo.trailer2 {\n  accessories: 0\n  cargo_damage: 0.25\n  wheels_wear: 1\n  wheels_wear[0]: 0.6\n", StringComparison.Ordinal)
+        .Replace(" trailer : demo.trailer {\n", " vehicle : demo.truck2 {\n  accessories: 0\n  odometer: 700\n  odometer_float_part: 0\n  fuel_relative: 0.25\n  engine_wear: 0.4\n  transmission_wear: 0\n  cabin_wear: 0\n  chassis_wear: 0.2\n  wheels_wear: 1\n  wheels_wear[0]: 0.1\n  demo_unknown: \"second truck\"\n }\n trailer : demo.trailer {\n", StringComparison.Ordinal)
         .Replace("\n}\n",
             "\n vehicle_accessory : demo.accessory {\n  data_path: \"synthetic\"\n }\n demo_mod_accessory : demo.mod {\n  data: \"unknown\"\n }\n}\n", StringComparison.Ordinal);
 

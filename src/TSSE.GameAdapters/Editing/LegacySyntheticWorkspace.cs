@@ -29,23 +29,28 @@ public sealed class LegacySyntheticWorkspace
     /// Lists explicit trailer block identifiers in source order, without
     /// interpreting ownership, links, or game-version compatibility.
     /// </summary>
-    public IReadOnlyList<string> TrailerIds()
+    public IReadOnlyList<string> TrailerIds() => VehicleIds("trailer");
+    public IReadOnlyList<string> TruckIds() => VehicleIds("vehicle");
+
+    private IReadOnlyList<string> VehicleIds(string type)
     {
         SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
         if (document.OpaqueLines.Count != 0)
             throw new InvalidOperationException("Unclassified syntax prevents safe trailer selection.");
         var ids = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (SiiBlock block in document.Blocks.Where(item => item.Type == "trailer"))
+        foreach (SiiBlock block in document.Blocks.Where(item => item.Type == type))
         {
             if (string.IsNullOrWhiteSpace(block.Id) || !seen.Add(block.Id))
-                throw new InvalidOperationException("A trailer identifier is missing or ambiguous.");
+                throw new InvalidOperationException("A vehicle identifier is missing or ambiguous.");
             ids.Add(block.Id);
         }
         return ids.AsReadOnly();
     }
     /// <summary>Selects an explicit synthetic trailer in the same in-memory history.</summary>
     public LegacyVehiclePreview SelectTrailer(string blockId) => new(_session, LegacyVehicleKind.Trailer, blockId);
+    /// <summary>Selects an explicit synthetic truck in the same in-memory history.</summary>
+    public LegacyVehiclePreview SelectTruck(string blockId) => new(_session, LegacyVehicleKind.Truck, blockId);
     public string PreviewText => _session.PreviewText;
     public IReadOnlyList<SiiFieldChange> Changes => _session.Changes;
     public bool IsDirty => _session.IsDirty;

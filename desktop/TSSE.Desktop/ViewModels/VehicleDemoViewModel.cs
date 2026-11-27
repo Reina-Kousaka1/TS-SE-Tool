@@ -11,7 +11,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
 {
     private readonly DemoWorkspace _workspace;
     private readonly IUiTextCatalog _text;
-    private readonly LegacyVehiclePreview _truck;
+    private LegacyVehiclePreview _truck;
     private LegacyVehiclePreview _trailer;
     private readonly IReadOnlyList<VehicleDemoField> _truckFields;
     private readonly IReadOnlyList<VehicleDemoField> _trailerFields;
@@ -25,7 +25,9 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private string _lastOdometer = "12345";
     private string _odometerBase = "12345";
     private string _selectedTrailer = "demo.trailer";
-    private readonly Dictionary<(string Target, string Field), (string Text, string Base)> _drafts = new();
+    private string _selectedTruck = "demo.truck";
+    private readonly Dictionary<(bool Trailer, string Target, string Field), (string Text, string Base)> _drafts = new();
+    private readonly Dictionary<string, (string Text, string Base)> _odometerDrafts = new(StringComparer.Ordinal);
 
     public VehicleDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -33,6 +35,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
         _workspace = workspace ?? new DemoWorkspace();
         _truck = _workspace.Workspace.Truck;
         _trailer = _workspace.Workspace.Trailer;
+        TruckChoices = _workspace.Workspace.TruckIds();
         TrailerChoices = _workspace.Workspace.TrailerIds();
         _workspace.Changed += (_, _) => RefreshFromWorkspace();
         _truckFields = CreateFields(["fuel_relative", "engine_wear", "transmission_wear", "cabin_wear", "chassis_wear"]);
@@ -62,6 +65,29 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string WheelRepairLabel => _text.Get("vehicleDemo.repairWheels");
     public string ChainRepairLabel => _text.Get("vehicleDemo.repairChain");
     public bool CanRepairChain => _isTrailer;
+    public IReadOnlyList<string> TruckChoices { get; }
+    public string TruckSelectionLabel => _text.Get("vehicleDemo.truckSelection");
+    public string SelectedTruck
+    {
+        get => _selectedTruck;
+        set
+        {
+            if (_isTrailer || value is null || !TruckChoices.Contains(value, StringComparer.Ordinal) || value == _selectedTruck) return;
+            LegacyVehiclePreview candidate = _workspace.Workspace.SelectTruck(value);
+            SaveDraft();
+            if (OdometerInput == _lastOdometer) _odometerDrafts.Remove(_selectedTruck);
+            else _odometerDrafts[_selectedTruck] = (OdometerInput, _odometerBase);
+            _truck = candidate;
+            _selectedTruck = value;
+            _lastOdometer = _truck.Odometer.ToString(CultureInfo.InvariantCulture);
+            if (_odometerDrafts.TryGetValue(value, out var draft) && draft.Text != _lastOdometer)
+                SetOdometerInput(draft.Text, draft.Base);
+            else SetOdometerInput(_lastOdometer, _lastOdometer);
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AccessorySummary));
+            LoadField();
+        }
+    }
     public IReadOnlyList<string> TrailerChoices { get; }
     public string TrailerSelectionLabel => _text.Get("vehicleDemo.trailerSelection");
     public string PlayerTrailerHeading => _text.Get("playerTrailers.heading");
@@ -82,7 +108,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
             catch (InvalidOperationException) { return _text.Get("playerTrailers.unavailable"); }
         }
     }
-    private string DraftTarget => _isTrailer ? _selectedTrailer : "demo.truck";
+    private string DraftTarget => _isTrailer ? _selectedTrailer : _selectedTruck;
     public string SelectedTrailer
     {
         get => _selectedTrailer;
@@ -234,11 +260,12 @@ public sealed class VehicleDemoViewModel : ObservableObject
             _workspace.NotifyChanged();
             if (action is "apply" or "apply-stale")
             {
-                _drafts.Remove((DraftTarget, SelectedField.Name));
+                _drafts.Remove((_isTrailer, DraftTarget, SelectedField.Name));
                 SetInput(_lastValue, _lastValue);
             }
             if (action is "odometer" or "odometer-reviewed")
             {
+                _odometerDrafts.Remove(_selectedTruck);
                 _odometerBase = _lastOdometer;
                 SetProperty(ref _odometerInput, _lastOdometer, nameof(OdometerInput));
                 NotifyOdometerDraft();
@@ -275,7 +302,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
 
     private void SaveDraft()
     {
-        var key = (DraftTarget, SelectedField.Name);
+        var key = (_isTrailer, DraftTarget, SelectedField.Name);
         if (ValueInput == _lastValue) _drafts.Remove(key);
         else _drafts[key] = (ValueInput, _inputBase);
     }
@@ -283,7 +310,7 @@ public sealed class VehicleDemoViewModel : ObservableObject
     private void LoadField()
     {
         _lastValue = Session.GetValue(SelectedField.Name).ToString("R", CultureInfo.InvariantCulture);
-        if (_drafts.TryGetValue((DraftTarget, SelectedField.Name), out var draft) && draft.Text != _lastValue)
+        if (_drafts.TryGetValue((_isTrailer, DraftTarget, SelectedField.Name), out var draft) && draft.Text != _lastValue)
             SetInput(draft.Text, draft.Base);
         else
             SetInput(_lastValue, _lastValue);
@@ -305,6 +332,12 @@ public sealed class VehicleDemoViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsOdometerStale));
         OnPropertyChanged(nameof(OdometerDraftNotice));
+    }
+    private void SetOdometerInput(string value, string baseValue)
+    {
+        _odometerBase = baseValue;
+        SetProperty(ref _odometerInput, value, nameof(OdometerInput));
+        NotifyOdometerDraft();
     }
     private IReadOnlyList<VehicleDemoField> CreateFields(string[] names) =>
         names.Select(name => new VehicleDemoField(name, _text.Get("vehicleDemo.field." + name))).ToArray();

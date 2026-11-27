@@ -8,6 +8,57 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void TruckSelectionIsolatesRatioAndOdometerDraftsAndSharesHistory()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        Assert.Equal(new[] { "demo.truck", "demo.truck2" }, demo.TruckChoices);
+        string original = demo.PreviewText;
+        demo.ValueInput = "0.8";
+        demo.OdometerInput = "200";
+        demo.SelectedTruck = "demo.truck2";
+        Assert.Equal("0.25", demo.ValueInput);
+        Assert.Equal("700", demo.OdometerInput);
+        Assert.Contains("No example accessories", demo.AccessorySummary, StringComparison.Ordinal);
+        demo.ValueInput = "0.9";
+        demo.ActionCommand.Execute("apply");
+        demo.OdometerInput = "800";
+        demo.ActionCommand.Execute("odometer");
+        Assert.Contains("odometer: 800", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"second truck\"", demo.PreviewText, StringComparison.Ordinal);
+        demo.SelectedTruck = "demo.truck";
+        Assert.Equal("0.8", demo.ValueInput);
+        Assert.Equal("200", demo.OdometerInput);
+        demo.ActionCommand.Execute("undo");
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(original, demo.PreviewText);
+        demo.SelectedTruck = "demo.truck2";
+        Assert.Equal("0.25", demo.ValueInput);
+        Assert.Equal("700", demo.OdometerInput);
+    }
+
+    [Fact]
+    public void TruckDraftBecomesStaleAfterAnotherViewUndoesThatTruck()
+    {
+        var text = new UiTextCatalog(CultureInfo.GetCultureInfo("en"));
+        var workspace = new DemoWorkspace();
+        var first = new VehicleDemoViewModel(text, workspace);
+        var second = new VehicleDemoViewModel(text, workspace);
+        first.SelectedTruck = "demo.truck2";
+        first.OdometerInput = "800";
+        first.ActionCommand.Execute("odometer");
+        first.OdometerInput = "900";
+        first.SelectedTruck = "demo.truck";
+        second.ActionCommand.Execute("undo");
+        first.SelectedTruck = "demo.truck2";
+        Assert.Equal("900", first.OdometerInput);
+        Assert.True(first.IsOdometerStale);
+        string before = first.PreviewText;
+        first.ActionCommand.Execute("odometer");
+        Assert.Equal(before, first.PreviewText);
+        first.ActionCommand.Execute("odometer-reviewed");
+        Assert.Contains("odometer: 900", first.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void TrailerSelectionEditsOnlyChosenTrailerAndUsesSharedHistory()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

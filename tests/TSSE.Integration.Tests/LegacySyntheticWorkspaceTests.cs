@@ -8,6 +8,19 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacySyntheticWorkspaceTests
 {
     [Fact]
+    public void ExplicitTruckSelectionUsesTheSameHistory()
+    {
+        string input = Fixture.Replace("\n}\n", "\n vehicle : t2 {\n  fuel_relative: 0.25\n }\n}\n", StringComparison.Ordinal);
+        var workspace = new LegacySyntheticWorkspace(SiiSyntaxDocument.Parse(input), "e", "p", "t", "r");
+        Assert.Equal(new[] { "t", "t2" }, workspace.TruckIds());
+        workspace.SelectTruck("t2").SetValue("fuel_relative", 1);
+        Assert.Equal(0.5f, workspace.Truck.GetValue("fuel_relative"));
+        Assert.True(workspace.Undo());
+        Assert.Equal(input, workspace.PreviewText);
+        Assert.Throws<InvalidOperationException>(() => workspace.SelectTruck("missing"));
+        Assert.Equal(input, workspace.PreviewText);
+    }
+    [Fact]
     public void TrailerIdentifiersComeFromTheDocumentInSourceOrder()
     {
         string input = Fixture.Replace("\n}\n", "\n trailer : second {\n  trailer_body_wear: 0.1\n }\n trailer : third {\n  trailer_body_wear: 0.2\n }\n}\n", StringComparison.Ordinal);

@@ -117,6 +117,10 @@
           <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding RepairDetail}" TextWrapping="Wrap" />
+          <StackPanel IsVisible="{Binding CanRefuel}" Spacing="4">
+            <TextBlock Text="{Binding TruckSelectionLabel}" />
+            <ComboBox ItemsSource="{Binding TruckChoices}" SelectedItem="{Binding SelectedTruck, Mode=TwoWay}" AutomationProperties.Name="{Binding TruckSelectionLabel}" />
+          </StackPanel>
           <StackPanel IsVisible="{Binding CanRepairChain}" Spacing="4">
             <TextBlock Text="{Binding TrailerSelectionLabel}" />
             <ComboBox ItemsSource="{Binding TrailerChoices}" SelectedItem="{Binding SelectedTrailer, Mode=TwoWay}" AutomationProperties.Name="{Binding TrailerSelectionLabel}" />

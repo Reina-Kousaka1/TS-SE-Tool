@@ -73,6 +73,10 @@ preserved when another section changes the underlying synthetic document.
 The demo's synthetic trailer block identifiers are listed from its in-memory
 document in source order. Missing or duplicate identifiers fail the listing;
 the list does not infer ownership or game semantics.
+Synthetic truck blocks are also selectable by identifier in document order.
+Fuel/wear drafts and integer odometer drafts are kept separately for each
+truck, retain their baseline across selection, and require review when stale.
+The shared history spans all selected trucks and trailers.
 The vehicle demo separately inspects the synthetic player's legacy-shaped
 `trailers` reference array. It reports missing, ambiguous, empty, differently
 typed, and duplicate references without changing the selection or document.
