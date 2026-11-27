@@ -203,7 +203,7 @@ design and real approved test-copy evidence remain required.
 
 `tools/TSSE.NativeDecoderProbe/Test-DecodeSynthetic-x86.ps1` constructs a fixed
 binary fixture in memory from the documented historical BSII v2 structure; it
-contains one synthetic Int32 field and no game data. It runs only the known-hash
+contains synthetic integer fields and no game data. It runs only the known-hash
 x86 DLL in a separate process, makes a bounded output-size query, caps allocation,
 and validates returned length, UTF-8, and the expected structure and field.
 Locally, the full-buffer call produced the expected text. Crucially, calls with
@@ -227,7 +227,7 @@ completeness checks, real approved fixtures and separate security review.
 Managed binary-reader design self-review (not independent): the Windows-only
 legacy DLL cannot serve the other target platforms. A separate, read-only
 in-memory experiment is limited to the documented historical v2 structure,
-nameless IDs and Int32 fields. It will enforce input, block, field and name
+nameless IDs and a small set of integer fields. It will enforce input, block, field and name
 limits, reject unknown versions/types and trailing or incomplete data, and
 return no partial result. It will not be registered with any adapter, wired to
 profile scanning or the desktop, or provide a binary serializer. This narrow
@@ -237,7 +237,7 @@ uses the format facts in the linked unofficial specification without importing
 its code or example bytes.
 
 `ExperimentalBinarySiiReader` implements that narrow plan for in-memory bytes.
-It returns typed Int32 values only when the entire supported document, including
+It returns typed Int32, UInt32 and Int64 values only when the entire supported document, including
 its end marker, is valid. Duplicate structures, field names and nameless IDs,
 unknown structure references, unsupported types or identifiers, trailing data,
 and every truncated prefix fail without a partial result. Its synthetic fixture
@@ -246,6 +246,15 @@ probe; each test validates its own result, without claiming complete decoder
 equivalence. Unsupported data is rejected rather than discarded. No binary
 reader is registered for real saves, no profile access is enabled, and no
 roundtrip or game compatibility is claimed.
+
+For historical type `0x27`, the original native decoder renders the raw value
+`0xffffffff` as `nil` rather than a number. The managed value retains those raw
+bits and separately exposes that legacy nil interpretation, avoiding a silent
+numeric conversion. The locally executed native synthetic fixture confirms
+`nil`, `0xfffffffe` and Int64 minimum output for the bundled x86 binary. This
+does not prove that all versions or game fields use the same semantics.
+The observation agrees with the original decoder's
+[type 0x27 implementation](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Source/ValueNodes/SII_Decode_ValueNode_00000027.pas).
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.

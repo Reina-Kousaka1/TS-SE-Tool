@@ -15,6 +15,12 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("synthetic", block.Type);
         Assert.Equal(0x1234ul, block.NamelessId);
         Assert.Equal(42, block.Int32Fields["value"]);
+        Assert.Equal(uint.MaxValue, block.UInt32Fields["xp"].Raw);
+        Assert.True(block.UInt32Fields["xp"].IsLegacyNil);
+        Assert.Null(block.UInt32Fields["xp"].LegacyValue);
+        Assert.Equal(uint.MaxValue - 1, block.UInt32Fields["xp_value"].LegacyValue);
+        Assert.False(block.UInt32Fields["xp_value"].IsLegacyNil);
+        Assert.Equal(long.MinValue, block.Int64Fields["balance"]);
         Assert.Equal(before, input);
     }
 
@@ -33,7 +39,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     public void UnsupportedVersionTypeIdentifierAndTrailingBytesFailClosed()
     {
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedVersion, Reject(Fixture(version: 3)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x27)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x3f)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(idKind: 1)).Error);
         Assert.Equal(ExperimentalBinarySiiError.TrailingData, Reject([.. Fixture(), 0]).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(new byte[ExperimentalBinarySiiReader.MaximumBytes + 1]).Error);
@@ -54,12 +60,15 @@ public sealed class ExperimentalBinarySiiReaderTests
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
         void Name(string value) { byte[] bytes = Encoding.ASCII.GetBytes(value); writer.Write((uint)bytes.Length); writer.Write(bytes); }
-        void Data() { writer.Write((uint)1); writer.Write(idKind); writer.Write(0x1234ul); writer.Write(42); }
+        void Data() { writer.Write((uint)1); writer.Write(idKind); writer.Write(0x1234ul); writer.Write(42); writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1); writer.Write(long.MinValue); }
         writer.Write("BSII"u8);
         writer.Write(version);
         writer.Write((uint)0); writer.Write((byte)1); writer.Write((uint)1); Name("synthetic");
         writer.Write(fieldType); Name("value");
         if (duplicateField) { writer.Write((uint)0x25); Name("value"); }
+        writer.Write((uint)0x27); Name("xp");
+        writer.Write((uint)0x27); Name("xp_value");
+        writer.Write((uint)0x31); Name("balance");
         writer.Write((uint)0);
         Data();
         if (duplicateBlock) Data();

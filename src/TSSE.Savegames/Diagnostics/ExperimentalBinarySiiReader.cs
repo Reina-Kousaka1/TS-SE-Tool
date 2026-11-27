@@ -39,17 +39,17 @@ public static class ExperimentalBinarySiiReader
                 uint id = cursor.UInt32();
                 if (id == 0 || structures.ContainsKey(id)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
                 string name = cursor.Name();
-                var fields = new List<string>();
+                var fields = new List<Field>();
                 var fieldNames = new HashSet<string>(StringComparer.Ordinal);
                 while (true)
                 {
                     uint type = cursor.UInt32();
                     if (type == 0) break;
-                    if (type != 0x25) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    if (type is not (0x25 or 0x27 or 0x31)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     if (fields.Count >= MaximumFieldsPerStructure) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                     string field = cursor.Name();
                     if (!fieldNames.Add(field)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
-                    fields.Add(field);
+                    fields.Add(new Field(field, type));
                 }
                 structures.Add(id, new Structure(name, fields.AsReadOnly()));
             }
@@ -61,14 +61,30 @@ public static class ExperimentalBinarySiiReader
                 ulong id = cursor.UInt64();
                 if (!ids.Add(id)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
                 var values = new Dictionary<string, int>(StringComparer.Ordinal);
-                foreach (string field in structure.Fields) values.Add(field, cursor.Int32());
-                blocks.Add(new ExperimentalBinaryBlock(structure.Name, id, new ReadOnlyDictionary<string, int>(values)));
+                var unsignedValues = new Dictionary<string, ExperimentalBinaryUInt32>(StringComparer.Ordinal);
+                var longValues = new Dictionary<string, long>(StringComparer.Ordinal);
+                foreach (Field field in structure.Fields)
+                {
+                    switch (field.Type)
+                    {
+                        case 0x25: values.Add(field.Name, cursor.Int32()); break;
+                        case 0x27: unsignedValues.Add(field.Name, new ExperimentalBinaryUInt32(cursor.UInt32())); break;
+                        case 0x31: longValues.Add(field.Name, cursor.Int64()); break;
+                        default: throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    }
+                }
+                blocks.Add(new ExperimentalBinaryBlock(structure.Name, id, new ReadOnlyDictionary<string, int>(values))
+                {
+                    UInt32Fields = new ReadOnlyDictionary<string, ExperimentalBinaryUInt32>(unsignedValues),
+                    Int64Fields = new ReadOnlyDictionary<string, long>(longValues)
+                });
             }
         }
         throw cursor.Error(ExperimentalBinarySiiError.Truncated);
     }
 
-    private sealed record Structure(string Name, IReadOnlyList<string> Fields);
+    private sealed record Field(string Name, uint Type);
+    private sealed record Structure(string Name, IReadOnlyList<Field> Fields);
 
     private ref struct Cursor(ReadOnlySpan<byte> input)
     {
@@ -86,6 +102,7 @@ public static class ExperimentalBinarySiiReader
         public byte Byte() => Take(1)[0];
         public uint UInt32() => BinaryPrimitives.ReadUInt32LittleEndian(Take(4));
         public int Int32() => BinaryPrimitives.ReadInt32LittleEndian(Take(4));
+        public long Int64() => BinaryPrimitives.ReadInt64LittleEndian(Take(8));
         public ulong UInt64() => BinaryPrimitives.ReadUInt64LittleEndian(Take(8));
         public string Name()
         {
@@ -100,7 +117,17 @@ public static class ExperimentalBinarySiiReader
     }
 }
 
-public sealed record ExperimentalBinaryBlock(string Type, ulong NamelessId, IReadOnlyDictionary<string, int> Int32Fields);
+public sealed record ExperimentalBinaryBlock(string Type, ulong NamelessId, IReadOnlyDictionary<string, int> Int32Fields)
+{
+    public IReadOnlyDictionary<string, ExperimentalBinaryUInt32> UInt32Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryUInt32>(new Dictionary<string, ExperimentalBinaryUInt32>());
+    public IReadOnlyDictionary<string, long> Int64Fields { get; init; } = new ReadOnlyDictionary<string, long>(new Dictionary<string, long>());
+}
+/// <summary>Raw 0x27 bytes are retained; the legacy decoder renders all bits set as nil.</summary>
+public readonly record struct ExperimentalBinaryUInt32(uint Raw)
+{
+    public bool IsLegacyNil => Raw == uint.MaxValue;
+    public uint? LegacyValue => IsLegacyNil ? null : Raw;
+}
 public enum ExperimentalBinarySiiError { InvalidHeader, UnsupportedVersion, Truncated, UnsupportedType, UnsupportedIdentifier, UnsupportedName, InvalidStructure, Ambiguous, LimitExceeded, TrailingData }
 public sealed class ExperimentalBinarySiiException(ExperimentalBinarySiiError error, int offset) : FormatException($"Unsupported or invalid experimental binary SII ({error}) at byte {offset}.")
 {

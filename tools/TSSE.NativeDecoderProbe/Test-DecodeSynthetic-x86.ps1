@@ -35,10 +35,16 @@ public static class SyntheticNativeDecodeProbe {
             writer.Write((uint)0); writer.Write((byte)1); writer.Write((uint)1);
             WriteString(writer, "synthetic");  // structure name
             writer.Write((uint)0x25); WriteString(writer, "value"); // Int32 field
+            writer.Write((uint)0x27); WriteString(writer, "xp"); // UInt32 field
+            writer.Write((uint)0x27); WriteString(writer, "xp_value");
+            writer.Write((uint)0x31); WriteString(writer, "balance"); // Int64 field
             writer.Write((uint)0);             // end of field definitions
             writer.Write((uint)1);             // data block references structure 1
             writer.Write((byte)0xff); writer.Write((ulong)0x1234); // nameless ID
             writer.Write((int)42);
+            writer.Write(uint.MaxValue);
+            writer.Write(uint.MaxValue - 1);
+            writer.Write(long.MinValue);
             writer.Write((uint)0); writer.Write((byte)0); // end marker
             return stream.ToArray();
         }
@@ -82,7 +88,9 @@ public static class SyntheticNativeDecodeProbe {
 '@
 
 $decoded = [SyntheticNativeDecodeProbe]::Check($dllPath)
-if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synthetic\s*:' -or $decoded -notmatch '(?m)^\s*value:\s*42\s*$') {
-    throw 'The synthetic decoded text did not contain the expected structure and value.'
+if ($decoded -notmatch '(?m)^SiiNunit\s*$' -or $decoded -notmatch '(?m)^\s*synthetic\s*:' -or $decoded -notmatch '(?m)^\s*value:\s*42\s*$' -or
+    $decoded -notmatch '(?m)^\s*xp:\s*nil\s*$' -or $decoded -notmatch '(?m)^\s*xp_value:\s*4294967294\s*$' -or
+    $decoded -notmatch '(?m)^\s*balance:\s*-9223372036854775808\s*$') {
+    throw ('The fixed synthetic decoded text did not contain the expected structure and value: ' + $decoded)
 }
 Write-Output 'Synthetic x86 DecodeMemory: success with 0/1 reported bytes for undersized capacities; bounded decode contained expected values; no save file used.'
