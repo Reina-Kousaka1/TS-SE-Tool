@@ -30,6 +30,24 @@ public sealed class LegacyAccessoryInspectorTests
             AccessoryReferenceState.Missing, AccessoryReferenceState.ResolvedKnownType, AccessoryReferenceState.Empty },
             values.Select(item => item.State));
         Assert.Equal("unknown_mod_accessory", values[1].TargetBlockType);
+        Assert.Equal(AccessoryDataPathState.Present, values[0].DataPathState);
+        Assert.Equal("\"synthetic\"", values[0].RawDataPath);
+        Assert.Equal(AccessoryDataPathState.NotInspected, values[1].DataPathState);
+        Assert.Null(values[1].RawDataPath);
+        Assert.Equal(input, document.ToText());
+    }
+
+    [Theory]
+    [InlineData("other: 1", AccessoryDataPathState.Missing)]
+    [InlineData("data_path:", AccessoryDataPathState.Empty)]
+    [InlineData("data_path: a\n data_path: b", AccessoryDataPathState.Ambiguous)]
+    public void KnownAccessoryDataPathDoesNotGuessMissingOrAmbiguousValues(string field, AccessoryDataPathState expected)
+    {
+        string input = "vehicle : v {\n accessories: 1\n accessories[0]: a\n}\nvehicle_accessory : a {\n " + field + "\n unknown: \"保持\"\n}\n";
+        var document = SiiSyntaxDocument.Parse(input);
+        var value = Assert.Single(LegacyAccessoryInspector.InspectDeclaredArray(document, "vehicle", "v"));
+        Assert.Equal(expected, value.DataPathState);
+        Assert.Null(value.RawDataPath);
         Assert.Equal(input, document.ToText());
     }
 

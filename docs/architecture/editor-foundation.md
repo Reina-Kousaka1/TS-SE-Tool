@@ -73,6 +73,14 @@ than silently clamped. No compatibility or write gate is changed.
 
 ## In-memory SII edit batches
 
+The synthetic accessory inspector exposes the raw `data_path` field declared
+by the legacy accessory classes when a known target has exactly one nonempty
+field. Missing, empty and duplicate fields are reported separately; unknown
+mod block types are not interpreted. The UI shows this as raw syntax only: it
+does not open a filesystem path, verify an asset, or validate vehicle fit.
+Architecture self-review (not independent): inspection uses the existing
+bounded reference reader and does not mutate source text or enable save writes.
+
 The syntax parser does not classify inline comments. As a conservative loss
 prevention measure, replacing a field is refused when its old or new value has
 a whitespace-separated `#` or `//` marker outside quoted text. Quoted markers

@@ -41,13 +41,34 @@ public static class LegacyAccessoryInspector
                 continue;
             }
             string type = targets[0].Type;
-            result.Add(new(i, reference,
-                KnownTypes.Contains(type) ? AccessoryReferenceState.ResolvedKnownType : AccessoryReferenceState.ResolvedUnknownType,
-                type));
+            if (!KnownTypes.Contains(type))
+            {
+                result.Add(new(i, reference, AccessoryReferenceState.ResolvedUnknownType, type));
+                continue;
+            }
+            SiiField[] paths = targets[0].Fields.Where(field => field.Name == "data_path").ToArray();
+            var pathState = paths.Length switch
+            {
+                0 => AccessoryDataPathState.Missing,
+                1 when !string.IsNullOrWhiteSpace(paths[0].Value) => AccessoryDataPathState.Present,
+                1 => AccessoryDataPathState.Empty,
+                _ => AccessoryDataPathState.Ambiguous
+            };
+            result.Add(new(i, reference, AccessoryReferenceState.ResolvedKnownType, type)
+            {
+                DataPathState = pathState,
+                RawDataPath = pathState == AccessoryDataPathState.Present ? paths[0].Value : null
+            });
         }
         return result.AsReadOnly();
     }
 }
 
 public enum AccessoryReferenceState { Empty, Missing, Ambiguous, ResolvedKnownType, ResolvedUnknownType }
-public sealed record AccessoryReference(int Index, string RawReference, AccessoryReferenceState State, string? TargetBlockType);
+public enum AccessoryDataPathState { NotInspected, Present, Missing, Empty, Ambiguous }
+/// <summary>Raw data path is syntax only, never a filesystem path or verified asset.</summary>
+public sealed record AccessoryReference(int Index, string RawReference, AccessoryReferenceState State, string? TargetBlockType)
+{
+    public AccessoryDataPathState DataPathState { get; init; }
+    public string? RawDataPath { get; init; }
+}

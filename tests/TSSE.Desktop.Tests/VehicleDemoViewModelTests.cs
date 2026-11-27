@@ -310,6 +310,7 @@ public sealed class VehicleDemoViewModelTests
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
         string before = demo.PreviewText;
         Assert.Contains("demo.accessory — known legacy type", demo.AccessorySummary, StringComparison.Ordinal);
+        Assert.Contains("raw data_path: \"synthetic\"", demo.AccessorySummary, StringComparison.Ordinal);
         Assert.Contains("demo.mod — unknown type", demo.AccessorySummary, StringComparison.Ordinal);
         Assert.Contains("demo.missing — missing target", demo.AccessorySummary, StringComparison.Ordinal);
         Assert.Equal(before, demo.PreviewText);

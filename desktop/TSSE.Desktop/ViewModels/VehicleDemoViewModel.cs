@@ -167,7 +167,10 @@ public sealed class VehicleDemoViewModel : ObservableObject
                 return entries.Count == 0 ? _text.Get("accessory.emptyList") :
                     string.Join(Environment.NewLine, entries.Select(entry =>
                         _text.Format("accessory.row", entry.Index, entry.RawReference,
-                            _text.Get("accessory.state." + entry.State), entry.TargetBlockType ?? "—")));
+                            _text.Get("accessory.state." + entry.State), entry.TargetBlockType ?? "—") +
+                        (entry.DataPathState == AccessoryDataPathState.NotInspected ? "" :
+                            " — " + _text.Get("accessory.pathState." + entry.DataPathState) +
+                            (entry.RawDataPath is null ? "" : ": " + entry.RawDataPath))));
             }
             catch (InvalidOperationException)
             {
