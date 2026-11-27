@@ -21,6 +21,20 @@ namespace TSSE.Desktop.Tests;
 public sealed class AvaloniaWindowTests
 {
     [AvaloniaFact]
+    public void Synthetic_profile_skill_editor_is_visible_in_savegame_explorer()
+    {
+        var (viewModel, window, _) = CreateMainWindow();
+        try
+        {
+            window.Show();
+            var page = viewModel.FilteredNavigationItems.Single(item => item.PageKey == "savegame-explorer");
+            viewModel.NavigateCommand.Execute(page);
+            Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), block =>
+                block.Text == "Synthetic profile skills" && block.IsEffectivelyVisible);
+        }
+        finally { window.Close(); }
+    }
+    [AvaloniaFact]
     public void Job_demo_is_accessible_from_navigation_and_shows_synthetic_data()
     {
         var (viewModel, window, _) = CreateMainWindow();

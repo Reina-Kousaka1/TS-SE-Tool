@@ -26,12 +26,14 @@ public sealed class ProfileDemoViewModel : ObservableObject
         _text = text ?? throw new ArgumentNullException(nameof(text));
         _workspace = workspace ?? new DemoWorkspace();
         _session = _workspace.Workspace.Profile;
+        Skills = new SkillDemoViewModel(_workspace, _text);
         _workspace.Changed += (_, _) => RefreshFromWorkspace();
         _message = _text.Get("profileDemo.ready");
         ActionCommand = new RelayCommand<string>(Execute);
     }
 
     public string Heading => _text.Get("profileDemo.heading");
+    public SkillDemoViewModel Skills { get; }
     public string Description => _text.Get("profileDemo.description");
     public string BalanceLabel => _text.Get("profileDemo.balance");
     public string ExperienceLabel => _text.Get("profileDemo.experience");

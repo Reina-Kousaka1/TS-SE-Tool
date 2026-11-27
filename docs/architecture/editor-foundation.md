@@ -144,6 +144,19 @@ before real profile editing.
 
 ## Experimental profile mapping
 
+The synthetic profile demo exposes the legacy `adr`, `long_dist`, `heavy`,
+`fragile`, `urgent`, and `mechanical` fields. The original Economy model uses
+bytes, while the original skill controls expose six ADR bits and five six-step
+controls. The preview accepts ADR 0–63 and other skills 0–6, refuses missing,
+duplicate or out-of-range original values, preserves unknown fields, and uses
+the shared undo history. Per-field drafts survive selection and require review
+after an underlying value changes. Skill-to-XP relationships, bit meanings,
+current versions and game compatibility remain unverified; no files are opened.
+
+Skill self-review (not independent): edits target exactly one existing legacy
+field, reject unsupported values instead of truncating bits, and inherit the
+in-memory syntax transaction. UI labels identify the data as synthetic.
+
 `LegacyProfilePreview` resolves an explicitly selected economy block's bank
 reference and maps legacy `money_account` (Int64) and `experience_points`
 (UInt32) fields for in-memory synthetic fixtures. These names and types are

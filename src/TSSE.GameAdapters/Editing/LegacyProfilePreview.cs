@@ -12,6 +12,7 @@ namespace TSSE.GameAdapters.Editing;
 /// </summary>
 public sealed class LegacyProfilePreview
 {
+    private static readonly string[] SkillNames = ["adr", "long_dist", "heavy", "fragile", "urgent", "mechanical"];
     private readonly SiiEditSession _session;
     private readonly string _economyId;
     private readonly string _bankId;
@@ -56,6 +57,27 @@ public sealed class LegacyProfilePreview
     public bool IsDirty => _session.IsDirty;
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;
+
+    /// <summary>Reads one explicitly selected legacy-shaped skill from synthetic SII.</summary>
+    public byte GetSkill(string name)
+    {
+        if (!SkillNames.Contains(name, StringComparer.Ordinal))
+            throw new ArgumentException("Unknown synthetic skill.", nameof(name));
+        string raw = FindValue(FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText), "economy", _economyId), name);
+        if (!byte.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out byte value) || value > SkillMaximum(name))
+            throw new InvalidOperationException("The skill value is missing, ambiguous, or unsupported.");
+        return value;
+    }
+
+    public void SetSkill(string name, byte value)
+    {
+        byte current = GetSkill(name);
+        if (value > SkillMaximum(name)) throw new ArgumentOutOfRangeException(nameof(value));
+        if (value != current)
+            _session.Apply([new("economy", _economyId, name, value.ToString(CultureInfo.InvariantCulture))]);
+    }
+
+    private static byte SkillMaximum(string name) => name == "adr" ? (byte)63 : (byte)6;
 
     public void Apply(ProfileValues values)
     {
