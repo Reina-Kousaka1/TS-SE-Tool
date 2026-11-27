@@ -54,6 +54,8 @@
   "vehicleDemo.repairWheels": "Reset wheel wear",
   "editor.historyLimit": "The demo history is full. Undo an edit before making a different change; no data was changed.",
   "vehicleDemo.repair": "Reset listed body wear",
+  "vehicleDemo.repairTruckAll": "Reset all listed demo truck wear",
+  "vehicleDemo.repairTruckAllDetail": "Resets engine, transmission, cabin, chassis and existing wheel values in one undoable change. Fuel is unchanged.",
   "vehicleDemo.refuel": "Fill demo tank",
   "vehicleDemo.repairDetail": "Resets the listed body and mechanical wear only. Wheels, cargo, accessories and linked trailers are not changed.",
   "profileDemo.levelHeading": "Legacy level calculation",

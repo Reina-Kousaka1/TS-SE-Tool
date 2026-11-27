@@ -7,6 +7,44 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyVehiclePreviewTests
 {
     [Fact]
+    public void FullTruckRepairPreservesFuelWheelsAndUnknownDataWithOneUndo()
+    {
+        const string input = "vehicle : t {\n fuel_relative: 0.5\n engine_wear: 0.2\n transmission_wear: 0.3\n cabin_wear: 0.4\n chassis_wear: 0.5\n wheels_wear: 2\n wheels_wear[0]: &3f000000\n wheels_wear[1]: 0.25\n mod: \"未知\"\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        preview.RepairTruckAll();
+        Assert.Equal(6, preview.Changes.Count);
+        Assert.Contains("fuel_relative: 0.5", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("wheels_wear: 2", preview.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod: \"未知\"", preview.PreviewText, StringComparison.Ordinal);
+        Assert.True(preview.Undo());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+        Assert.True(preview.Redo());
+        Assert.Equal(6, preview.Changes.Count);
+    }
+
+    [Theory]
+    [InlineData("wheels_wear[0]: invalid")]
+    [InlineData("wheels_wear[1]: 0.2")]
+    [InlineData("wheels_wear[0]: 0.2\n wheels_wear[0]: 0.3")]
+    public void InvalidWheelsPreventAnyFullTruckRepair(string wheel)
+    {
+        string input = "vehicle : t {\n engine_wear: 0.2\n transmission_wear: 0.3\n cabin_wear: 0.4\n chassis_wear: 0.5\n wheels_wear: 1\n " + wheel + "\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Truck, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.RepairTruckAll());
+        Assert.Equal(input, preview.PreviewText);
+        Assert.False(preview.CanUndo);
+    }
+
+    [Fact]
+    public void FullTruckRepairCannotTargetATrailer()
+    {
+        const string input = "trailer : t {\n}\n";
+        var preview = new LegacyVehiclePreview(SiiSyntaxDocument.Parse(input), LegacyVehicleKind.Trailer, "t");
+        Assert.Throws<InvalidOperationException>(() => preview.RepairTruckAll());
+        Assert.Equal(input, preview.PreviewText);
+    }
+    [Fact]
     public void FullChainRepairIsAtomicPreservesWheelArraysAndHasOneUndo()
     {
         const string input = "trailer : a {\n trailer_body_wear: 0.2\n chassis_wear: 0.3\n cargo_damage: 0.4\n wheels_wear: 1\n wheels_wear[0]: &3f000000\n slave_trailer: b\n mod: \"保持\"\n}\ntrailer : b {\n trailer_body_wear: 0.5\n chassis_wear: 0.6\n cargo_damage: 0.7\n wheels_wear: 1\n wheels_wear[0]: 0.8\n slave_trailer: null\n}\n";

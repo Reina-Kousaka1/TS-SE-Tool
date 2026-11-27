@@ -103,6 +103,21 @@ public sealed class LegacyVehiclePreview
         _session.Apply(edits);
     }
 
+    /// <summary>Validates and resets synthetic truck body, mechanical and wheel wear as one edit.</summary>
+    public void RepairTruckAll()
+    {
+        if (_blockType != "vehicle")
+            throw new InvalidOperationException("Full truck repair requires a vehicle block.");
+        var edits = new List<SiiFieldEdit>();
+        foreach (string name in new[] { "engine_wear", "transmission_wear", "cabin_wear", "chassis_wear" })
+        {
+            if (GetValue(name) != 0) edits.Add(new("vehicle", _blockId, name, "0"));
+        }
+        SiiBlock block = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText));
+        CollectWheelRepairs(block, "vehicle", _blockId, edits);
+        _session.Apply(edits);
+    }
+
     /// <summary>Resets body/chassis wear across a validated synthetic trailer chain.</summary>
     public void RepairTrailerChainBody() => RepairTrailerChain(includeCargoAndWheels: false);
 

@@ -60,6 +60,8 @@ public sealed class VehicleDemoViewModel : ObservableObject
     public string UndoLabel => _text.Get("vehicleDemo.undo");
     public string RedoLabel => _text.Get("vehicleDemo.redo");
     public string RepairLabel => _text.Get("vehicleDemo.repair");
+    public string TruckRepairAllLabel => _text.Get("vehicleDemo.repairTruckAll");
+    public string TruckRepairAllDetail => _text.Get("vehicleDemo.repairTruckAllDetail");
     public string RepairDetail => _text.Get("vehicleDemo.repairDetail");
     public string RefuelLabel => _text.Get("vehicleDemo.refuel");
     public string WheelRepairLabel => _text.Get("vehicleDemo.repairWheels");
@@ -236,6 +238,11 @@ public sealed class VehicleDemoViewModel : ObservableObject
             else if (action == "wheels")
             {
                 Session.RepairWheelWear();
+                success = true;
+            }
+            else if (action == "truck-all" && CanRefuel)
+            {
+                Session.RepairTruckAll();
                 success = true;
             }
             else if (action == "chain" && CanRepairChain)

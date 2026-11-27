@@ -8,6 +8,22 @@ namespace TSSE.Desktop.Tests;
 public sealed class VehicleDemoViewModelTests
 {
     [Fact]
+    public void FullTruckRepairTargetsSelectedTruckAndCanBeUndone()
+    {
+        var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.SelectedTruck = "demo.truck2";
+        string before = demo.PreviewText;
+        demo.ActionCommand.Execute("truck-all");
+        Assert.Contains("engine_wear: 0.2", demo.PreviewText, StringComparison.Ordinal);
+        Assert.DoesNotContain("engine_wear: 0.4", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("fuel_relative: 0.25", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("demo_unknown: \"second truck\"", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        Assert.Equal(before, demo.PreviewText);
+        demo.ActionCommand.Execute("redo");
+        Assert.DoesNotContain("engine_wear: 0.4", demo.PreviewText, StringComparison.Ordinal);
+    }
+    [Fact]
     public void FullTrailerChainRepairIsVisibleAndUndoableAsOneDemoChange()
     {
         var demo = new VehicleDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
