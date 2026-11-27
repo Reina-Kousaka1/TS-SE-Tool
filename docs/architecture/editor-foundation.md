@@ -145,6 +145,17 @@ undo/redo and preservation of an unknown field in the displayed preview.
 
 ## Experimental vehicle mapping
 
+`LegacyAccessoryInspector` inspects the legacy-shaped `accessories` array of
+an explicitly named synthetic block. It preserves ordering and duplicate
+references and reports missing, ambiguous, empty, known-type and unknown-type
+targets. Invalid counts and indices fail closed. It does not classify a block
+as a truck, trailer or coach, and introduces no Coaches-specific fields.
+
+Accessory self-review (not independent): the inspector is read-only and keeps
+unknown block types and raw references visible. Its generic selector enables
+future schema work without asserting that a coach has any particular field.
+Real reference formats, ownership and DLC compatibility remain unverified.
+
 `LegacyVehiclePreview` edits selected fuel and wear ratios in explicitly
 selected synthetic `vehicle` and `trailer` blocks. Field names are based on
 legacy Vehicle.cs and Trailer.cs. Both decimal and `&` plus eight hexadecimal
