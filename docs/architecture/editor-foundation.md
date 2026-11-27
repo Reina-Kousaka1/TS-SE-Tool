@@ -353,6 +353,19 @@ demo trailer. It does not validate game-level cargo or trailer relationships.
 
 ## Experimental active job mapping
 
+The synthetic job preview exposes `urgency`, declared as Int32 in the legacy
+`Player_Job` model; the original freight-market UI offers values 0, 1 and 2
+(`FormMethods.cs`). The preview accepts only those three historical choices,
+rejects missing, duplicate or unsupported existing values, preserves unknown
+fields, and participates in shared undo/redo. Drafts require review after
+changes to their baseline. This is neither a claim about current game values
+nor validation of payment, delivery times or other job relationships.
+
+Urgency architecture self-review (not independent): edit validation precedes
+the existing in-memory syntax transaction, no-op edits retain original text,
+and no file or compatibility gate is introduced. Current game behavior and an
+independent review remain unverified.
+
 The synthetic job demo permits a nonnegative `cargo_model_index` integer,
 declared by the legacy `Player_Job` model. It checks the existing field and
 shares undo/redo and stale-draft safeguards. It does not resolve or validate

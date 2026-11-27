@@ -7,6 +7,39 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyJobPreviewTests
 {
     [Fact]
+    public void UrgencyEditPreservesUnknownFieldsAndRedoAfterRejectedValues()
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  urgency: 00", StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        editor.SetUrgency(0);
+        Assert.Equal(input, editor.PreviewText);
+        editor.SetUrgency(2);
+        Assert.Contains("urgency: 2", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod_data: \"保持\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetUrgency(3));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal(2, editor.Urgency);
+    }
+
+    [Theory]
+    [InlineData("urgency: -1")]
+    [InlineData("urgency: 3")]
+    [InlineData("urgency: nil")]
+    [InlineData("urgency: 2147483648")]
+    [InlineData("urgency: 0\n  urgency: 1")]
+    [InlineData("other: 0")]
+    public void InvalidUrgencyCannotBeOverwritten(string field)
+    {
+        string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  " + field, StringComparison.Ordinal);
+        var editor = new LegacyJobPreview(SiiSyntaxDocument.Parse(input), "p");
+        Assert.Throws<InvalidOperationException>(() => editor.SetUrgency(1));
+        Assert.Equal(input, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+    }
+
+    [Fact]
     public void CargoDetailsAreAtomicAndUndoAsOneStep()
     {
         string input = Synthetic.Replace("units_count: 0003", "units_count: 0003\n  cargo_model_index: 0002", StringComparison.Ordinal)

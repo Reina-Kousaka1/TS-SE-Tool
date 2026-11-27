@@ -249,6 +249,15 @@
           <Button Content="{Binding ApplyCargoLabel}" Command="{Binding ActionCommand}" CommandParameter="cargo" />
           <Button IsVisible="{Binding IsCargoStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="cargo-reviewed" />
           <Button Content="{Binding DiscardCargoLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-cargo" />
+          <TextBlock Text="{Binding UrgencyLabel}" />
+          <TextBlock Text="{Binding UrgencyDetail}" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding UrgencyInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding UrgencyLabel}" />
+            <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="urgency" />
+          </Grid>
+          <TextBlock Text="{Binding UrgencyDraftNotice}" TextWrapping="Wrap" />
+          <Button IsVisible="{Binding IsUrgencyStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="urgency-reviewed" />
+          <Button Content="{Binding DiscardUrgencyLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-urgency" />
           <TextBlock Text="{Binding ModelLabel}" />
           <TextBlock Text="{Binding ModelDetail}" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

@@ -14,6 +14,9 @@ public sealed class JobDemoViewModel : ObservableObject
     private string _unitsInput = "3";
     private string _distanceInput = "120";
     private string _modelInput = "0";
+    private string _urgencyInput = "0";
+    private string _lastUrgency = "0";
+    private string _baseUrgency = "0";
     private string _message;
     private string _lastUnits = "3";
     private string _lastDistance = "120";
@@ -58,6 +61,12 @@ public sealed class JobDemoViewModel : ObservableObject
     public string DistanceLabel => _text.Get("jobDemo.distance");
     public string ModelLabel => _text.Get("jobDemo.modelIndex");
     public string ModelDetail => _text.Get("jobDemo.modelDetail");
+    public string UrgencyLabel => _text.Get("jobDemo.urgency");
+    public string UrgencyDetail => _text.Get("jobDemo.urgencyDetail");
+    public string DiscardUrgencyLabel => _text.Get("jobDemo.discardUrgency");
+    public string UrgencyInput { get => _urgencyInput; set { if (_urgencyInput == _lastUrgency) _baseUrgency = _lastUrgency; if (SetProperty(ref _urgencyInput, value ?? "")) NotifyDrafts(); } }
+    public bool IsUrgencyStale => UrgencyInput != _lastUrgency && _baseUrgency != _lastUrgency;
+    public string UrgencyDraftNotice => IsUrgencyStale ? _text.Format("editor.staleDraft", _lastUrgency) : "";
     public string ApplyLabel => _text.Get("jobDemo.apply");
     public string ApplyBothLabel => _text.Get("jobDemo.applyBoth");
     public string ApplyBothReviewedLabel => _text.Get("jobDemo.applyBothReviewed");
@@ -87,19 +96,21 @@ public sealed class JobDemoViewModel : ObservableObject
 
     private void Execute(string action)
     {
-        if (action is "discard-units" or "discard-distance" or "discard-model" or "discard-cargo")
+        if (action is "discard-units" or "discard-distance" or "discard-model" or "discard-cargo" or "discard-urgency")
         {
             if (action == "discard-units") { _baseUnits = _lastUnits; SetProperty(ref _unitsInput, _lastUnits, nameof(UnitsInput)); }
             else if (action == "discard-distance") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
             else if (action == "discard-model") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
-            else { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
+            else if (action == "discard-cargo") { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
+            else { _baseUrgency = _lastUrgency; SetProperty(ref _urgencyInput, _lastUrgency, nameof(UrgencyInput)); }
             NotifyDrafts();
             Message = _text.Get("jobDemo.draftDiscarded");
             return;
         }
         if ((action == "apply" && IsUnitsStale) || (action == "distance" && IsDistanceStale) ||
             (action == "apply-both" && (IsUnitsStale || IsDistanceStale)) || (action == "model" && IsModelStale) ||
-            (action == "cargo" && IsCargoStale) || (action == "cargo-details" && IsCargoDetailsStale))
+            (action == "cargo" && IsCargoStale) || (action == "cargo-details" && IsCargoDetailsStale) ||
+            (action == "urgency" && IsUrgencyStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -136,6 +147,11 @@ public sealed class JobDemoViewModel : ObservableObject
                 _session.SetCargoModelIndex(model);
                 success = true;
             }
+            else if ((action is "urgency" or "urgency-reviewed") && int.TryParse(UrgencyInput, NumberStyles.None, CultureInfo.InvariantCulture, out int urgency))
+            {
+                _session.SetUrgency(urgency);
+                success = true;
+            }
             else if (action is "cargo" or "cargo-reviewed") { _session.SelectObservedCargo(SelectedCargo); success = true; }
             else if (action == "swap-route") { _session.SwapRoute(); success = true; }
             else if (action == "undo") success = _session.Undo();
@@ -156,6 +172,7 @@ public sealed class JobDemoViewModel : ObservableObject
             if (action is "distance" or "distance-reviewed" or "apply-both" or "apply-both-reviewed") { _baseDistance = _lastDistance; SetProperty(ref _distanceInput, _lastDistance, nameof(DistanceInput)); }
             if (action is "model" or "model-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseModel = _lastModel; SetProperty(ref _modelInput, _lastModel, nameof(ModelInput)); }
             if (action is "cargo" or "cargo-reviewed" or "cargo-details" or "cargo-details-reviewed") { _baseCargo = _lastCargo; SetProperty(ref _selectedCargo, _lastCargo, nameof(SelectedCargo)); }
+            if (action is "urgency" or "urgency-reviewed") { _baseUrgency = _lastUrgency; SetProperty(ref _urgencyInput, _lastUrgency, nameof(UrgencyInput)); }
             NotifyDrafts();
         }
     }
@@ -166,14 +183,17 @@ public sealed class JobDemoViewModel : ObservableObject
         string distance = _session.PlannedDistanceKm.ToString(CultureInfo.InvariantCulture);
         string model = _session.CargoModelIndex.ToString(CultureInfo.InvariantCulture);
         string cargo = _session.CargoReference;
+        string urgency = _session.Urgency.ToString(CultureInfo.InvariantCulture);
         if (UnitsInput == _lastUnits || UnitsInput == units) { _baseUnits = units; SetProperty(ref _unitsInput, units, nameof(UnitsInput)); }
         if (DistanceInput == _lastDistance || DistanceInput == distance) { _baseDistance = distance; SetProperty(ref _distanceInput, distance, nameof(DistanceInput)); }
         if (ModelInput == _lastModel || ModelInput == model) { _baseModel = model; SetProperty(ref _modelInput, model, nameof(ModelInput)); }
         if (SelectedCargo == _lastCargo || SelectedCargo == cargo) { _baseCargo = cargo; SetProperty(ref _selectedCargo, cargo, nameof(SelectedCargo)); }
+        if (UrgencyInput == _lastUrgency || UrgencyInput == urgency) { _baseUrgency = urgency; SetProperty(ref _urgencyInput, urgency, nameof(UrgencyInput)); }
         _lastUnits = units;
         _lastDistance = distance;
         _lastModel = model;
         _lastCargo = cargo;
+        _lastUrgency = urgency;
         OnPropertyChanged(nameof(Cargo));
         OnPropertyChanged(nameof(CargoChoices));
         OnPropertyChanged(nameof(PreviewText));
@@ -194,5 +214,7 @@ public sealed class JobDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(IsCargoStale));
         OnPropertyChanged(nameof(CargoDraftNotice));
         OnPropertyChanged(nameof(IsCargoDetailsStale));
+        OnPropertyChanged(nameof(IsUrgencyStale));
+        OnPropertyChanged(nameof(UrgencyDraftNotice));
     }
 }

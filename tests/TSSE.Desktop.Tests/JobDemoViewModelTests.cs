@@ -8,6 +8,33 @@ namespace TSSE.Desktop.Tests;
 public sealed class JobDemoViewModelTests
 {
     [Fact]
+    public void UrgencyValidatesAndProtectsStaleDrafts()
+    {
+        var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.UrgencyInput = "3";
+        demo.ActionCommand.Execute("urgency");
+        Assert.Equal(original, demo.PreviewText);
+        demo.UrgencyInput = "1";
+        demo.ActionCommand.Execute("urgency");
+        Assert.Contains("urgency: 1", demo.PreviewText, StringComparison.Ordinal);
+        demo.UrgencyInput = "2";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsUrgencyStale);
+        demo.ActionCommand.Execute("urgency");
+        Assert.Equal(original, demo.PreviewText);
+        demo.ActionCommand.Execute("urgency-reviewed");
+        Assert.Contains("urgency: 2", demo.PreviewText, StringComparison.Ordinal);
+        demo.ActionCommand.Execute("undo");
+        demo.UrgencyInput = "1";
+        demo.ActionCommand.Execute("discard-urgency");
+        Assert.Equal("0", demo.UrgencyInput);
+        Assert.False(demo.IsUrgencyStale);
+        demo.ActionCommand.Execute("redo");
+        Assert.Contains("urgency: 2", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CargoDetailsApplyTogetherAndRejectInvalidOrStaleDrafts()
     {
         var demo = new JobDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));

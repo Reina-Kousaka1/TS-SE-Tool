@@ -46,6 +46,15 @@ public sealed class LegacyJobPreview
     public int PlannedDistanceKm => ReadNonnegativeInt(CurrentJob(), "planned_distance_km");
     /// <summary>Legacy-shaped synthetic integer only; no cargo model semantics are validated.</summary>
     public int CargoModelIndex => ReadNonnegativeInt(CurrentJob(), "cargo_model_index");
+    /// <summary>Historical synthetic urgency value; current game meaning is unverified.</summary>
+    public int Urgency
+    {
+        get
+        {
+            int value = ReadNonnegativeInt(CurrentJob(), "urgency");
+            return value <= 2 ? value : throw new InvalidOperationException("The urgency is unsupported.");
+        }
+    }
     public string SourceCompany => RouteValue(CurrentJob(), "source_company");
     public string TargetCompany => RouteValue(CurrentJob(), "target_company");
 
@@ -109,6 +118,13 @@ public sealed class LegacyJobPreview
         if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
         if (CargoModelIndex == index) return;
         _session.Apply([new("player_job", _jobId, "cargo_model_index", index.ToString(CultureInfo.InvariantCulture))]);
+    }
+
+    public void SetUrgency(int urgency)
+    {
+        if (urgency is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(urgency));
+        if (Urgency == urgency) return;
+        _session.Apply([new("player_job", _jobId, "urgency", urgency.ToString(CultureInfo.InvariantCulture))]);
     }
 
     /// <summary>Applies three syntactic values together; game-level compatibility is not validated.</summary>
