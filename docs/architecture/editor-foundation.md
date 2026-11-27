@@ -7,6 +7,10 @@ mapping. A new session has an original baseline. Valid edits create snapshots,
 undo and redo move through them, and a different edit after undo drops redo.
 Unchanged or invalid edits leave history intact. Callers of the generic history
 must supply immutable snapshots and a validator.
+The generic history compares the current snapshot to its original using the
+snapshot type's default equality comparer; a manual return to the original
+clears dirty status without removing undo/redo entries. Snapshot types must
+therefore implement equality appropriate to their editing semantics.
 The profile and SII editing sessions report dirty state relative to the
 original values or exact original text respectively, even if a later edit
 returns to that baseline. This does not discard undo or redo history. Textual

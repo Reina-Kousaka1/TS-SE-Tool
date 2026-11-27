@@ -8,6 +8,20 @@ public sealed class EditHistoryTests
     private sealed record Snapshot(string Name, long Balance);
 
     [Fact]
+    public void ReturningToOriginalValuesClearsDirtyWithoutDiscardingHistory()
+    {
+        var history = new EditHistory<Snapshot>(new("A", 0), s => s.Balance >= 0);
+        Assert.True(history.TryApply(new("B", 5)));
+        Assert.True(history.TryApply(new("A", 0)));
+        Assert.False(history.IsDirty);
+        Assert.True(history.CanUndo);
+        Assert.True(history.Undo());
+        Assert.True(history.IsDirty);
+        Assert.True(history.Redo());
+        Assert.False(history.IsDirty);
+    }
+
+    [Fact]
     public void InvalidEditDoesNotChangeHistory()
     {
         var history = new EditHistory<Snapshot>(new("Profil 🚛", 0), s => s.Balance >= 0);

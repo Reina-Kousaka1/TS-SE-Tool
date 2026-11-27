@@ -26,7 +26,7 @@ public sealed class EditHistory<T> where T : notnull
     public bool CanUndo => position > 0;
     public bool CanRedo => position + 1 < states.Count;
     /// <summary>True unless the current snapshot is the original session snapshot.</summary>
-    public bool IsDirty => position != 0;
+    public bool IsDirty => !EqualityComparer<T>.Default.Equals(Current, states[0]);
 
     public bool TryApply(T next)
     {
