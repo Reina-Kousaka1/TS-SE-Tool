@@ -8,6 +8,20 @@ namespace TSSE.Core.Tests;
 public sealed class AtomicFileRecoveryPreviewerTests
 {
     [Fact]
+    public async Task Analyze_MissingParentDoesNotClaimTargetIsAbsent()
+    {
+        using var directory = new TemporaryDirectory();
+        string targetPath = Path.Combine(directory.Path, "missing", "profile.sii");
+        AtomicFileRecoveryPreviewResult result = await new AtomicFileRecoveryPreviewer().AnalyzeAsync(
+            targetPath, _ => null, TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsComplete);
+        Assert.Null(result.TargetExists);
+        Assert.Empty(result.Candidates);
+        Assert.False(Directory.Exists(Path.GetDirectoryName(targetPath)));
+    }
+
+    [Fact]
     public async Task Analyze_OffersSeparateCopyForValidCandidateAndLeavesAllFilesUntouched()
     {
         using var directory = new TemporaryDirectory();

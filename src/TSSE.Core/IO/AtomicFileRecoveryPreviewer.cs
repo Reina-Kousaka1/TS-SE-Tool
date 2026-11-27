@@ -84,7 +84,32 @@ public sealed class AtomicFileRecoveryPreviewer
                 "target_path_invalid");
         }
 
-        bool targetExists = File.Exists(fullTargetPath);
+        bool targetExists;
+        try
+        {
+            // File.Exists hides access and I/O errors by returning false, which
+            // could incorrectly describe an inaccessible original as absent.
+            _ = File.GetAttributes(fullTargetPath);
+            targetExists = true;
+        }
+        catch (FileNotFoundException)
+        {
+            // If the parent disappeared after inventory, absence is not known.
+            if (!Directory.Exists(Path.GetDirectoryName(fullTargetPath)))
+                return new AtomicFileRecoveryPreviewResult(false, null, null,
+                    Array.Empty<RecoveryPayloadPreview>(), "target_attributes_unavailable");
+            targetExists = false;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return new AtomicFileRecoveryPreviewResult(false, null, null,
+                Array.Empty<RecoveryPayloadPreview>(), "target_attributes_unavailable");
+        }
+        catch (Exception ex) when (IsFileOperationFailure(ex))
+        {
+            return new AtomicFileRecoveryPreviewResult(false, null, null,
+                Array.Empty<RecoveryPayloadPreview>(), "target_attributes_unavailable");
+        }
         RecoveryPayloadPreview? target = targetExists
             ? await InspectPayloadAsync(fullTargetPath, null, validator, cancellationToken).ConfigureAwait(false)
             : null;
