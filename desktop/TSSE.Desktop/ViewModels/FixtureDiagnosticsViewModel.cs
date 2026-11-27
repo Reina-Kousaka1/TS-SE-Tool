@@ -51,8 +51,8 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     }));
     public string Error => _report.SyntaxError is null ? _text.Get("fixture.noError") :
         _report.ErrorColumn is int column
-            ? _text.Format("fixture.errorColumn", _report.SyntaxError, _report.ErrorLine, column)
-            : _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine);
+            ? _text.Format("fixture.errorColumn", _report.SyntaxError, _report.ErrorLine ?? 0, column)
+            : _text.Format("fixture.error", _report.SyntaxError, _report.ErrorLine ?? 0);
     public string LegacyVersion
     {
         get
