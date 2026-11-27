@@ -97,6 +97,13 @@ The latter three prefixes are rejected as unsupported before text parsing. A
 prefix is only a hint: it establishes neither validity nor game compatibility,
 and BOM-prefixed or other forms can remain unknown. Tests use synthetic bytes;
 there is no decoder, decryption, profile discovery or real fixture evidence.
+The original `MethodsDecodeSave.cs` calls `SII_Decrypt.dll` twice and sets
+`FileDecoded` after the second call without checking its result. The new
+`LegacyDecodeSafetyCheck` does not invoke that DLL: it checks supplied status
+codes and conservative size limits, then only reports syntax evidence after
+rejecting malformed, opaque or ambiguous output. The contract and size rules
+remain unverified against the native library and genuine saves. No decoder is
+registered or enabled; these checks do not grant file-read or write permission.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
