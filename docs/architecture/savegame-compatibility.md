@@ -172,6 +172,19 @@ This binary does not match an x64 or ARM64 process. `NativeDecoderHeaderProbe`
 checks bounded PE headers without loading native code; an architecture match
 does not establish ABI, exports, OS compatibility, trust, or authorization.
 The original binary was not executed and no 64-bit replacement is assumed.
+An additional bounded `NativeDecoderExportProbe` inspects the PE export table
+without loading the image. The bundled binary has named non-forwarded RVAs for
+`GetMemoryFormat`, `DecodeMemory` and `DecryptAndDecodeMemory`; malformed or
+oversized tables are rejected. The table layout and forwarder distinction follow
+the [Microsoft PE specification](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format).
+An RVA may point to code or data: this evidence does not confirm a callable
+function, calling convention, parameter sizes, implementation, trust, or
+platform compatibility. No native calls or container decoding are enabled.
+Export-probe self-review (not independent): input and table counts are bounded,
+names are checked as terminated ASCII, ordinal indexes are range-checked, and
+forwarded entries are distinguished. Synthetic corruption tests and the checked-in
+legacy binary exercise inspection only; ABI review and isolated decoder tests
+remain necessary.
 The Avalonia Compatibility Lab now exposes this report through fixed
 synthetic examples, separating syntax status, prefix hints, byte-roundtrip and
 structured syntax errors. It accepts no paths, pasted saves or external data.
