@@ -25,6 +25,8 @@ public sealed class LegacyProfileReadInspectorTests
     [Theory]
     [InlineData("economy : e {\nbank: b\nexperience_points: 1\n}\nbank : b {\nmoney_account: 5\n}\neconomy : f {\nbank: b\nexperience_points: 2\n}")]
     [InlineData("economy : e {\nbank: b\nexperience_points: 1\n}\nbank : b {\nmoney_account: not-a-number\n}")]
+    [InlineData("economy : e {\nbank: b\nexperience_points: 4294967295\n}\nbank : b {\nmoney_account: 5\n}")]
+    [InlineData("economy : e {\nbank: b\nbank: b\nexperience_points: 1\n}\nbank : b {\nmoney_account: 5\n}")]
     public void RejectsAmbiguousOrInvalidKnownFields(string input)
         => Assert.Throws<InvalidDataException>(() => LegacyProfileReadInspector.InspectText(SiiSyntaxDocument.Parse(input)));
 }

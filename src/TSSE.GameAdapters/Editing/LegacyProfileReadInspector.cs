@@ -18,7 +18,8 @@ public static class LegacyProfileReadInspector
             throw new InvalidDataException("The selected economy bank reference is null or empty.");
         SiiBlock bank = Single(document.Blocks, "bank", bankId);
         if (!long.TryParse(Value(bank, "money_account"), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long balance) ||
-            !uint.TryParse(Value(economy, "experience_points"), NumberStyles.None, CultureInfo.InvariantCulture, out uint experience))
+            !uint.TryParse(Value(economy, "experience_points"), NumberStyles.None, CultureInfo.InvariantCulture, out uint experience) ||
+            experience == uint.MaxValue)
             throw new InvalidDataException("Known profile scalars are missing or not supported decimal integers.");
         int? coachExperience = null;
         SiiField[] coachFields = economy.Fields.Where(field => field.Name == "bus_experience_points").ToArray();
