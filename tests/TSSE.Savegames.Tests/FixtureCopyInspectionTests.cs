@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using TSSE.FixtureInspector;
@@ -201,7 +204,8 @@ public sealed class FixtureCopyInspectionTests
     public void BinaryProfilePreviewExercisesMoneyXpAndExistingCoachSkillWithoutWritingTheCopy()
     {
         string path = Path.GetTempFileName();
-        byte[] original = BinaryProfileFixture();
+        byte[] payload = BinaryProfileFixture();
+        byte[] original = EncryptContainer(payload);
         try
         {
             File.WriteAllBytes(path, original);
@@ -219,11 +223,16 @@ public sealed class FixtureCopyInspectionTests
             Assert.Equal(1, report.GetProperty("ExistingCoachSkillCount").GetInt32());
             Assert.True(report.GetProperty("ExistingCoachSkillUndoRedoRestoredExactPayload").GetBoolean());
             Assert.True(report.GetProperty("SourceBytesStableAcrossPreview").GetBoolean());
+            Assert.True(report.GetProperty("ContainerAuthenticationUnverified").GetBoolean());
             Assert.False(report.GetProperty("GameCompatibilityEstablished").GetBoolean());
             Assert.False(report.GetProperty("SaveWritingEnabled").GetBoolean());
             Assert.Equal(original, File.ReadAllBytes(path));
         }
-        finally { File.Delete(path); }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(payload);
+            File.Delete(path);
+        }
     }
 
     private static byte[] BinaryProfileFixture()
@@ -252,6 +261,39 @@ public sealed class FixtureCopyInspectionTests
         writer.Write(0u);
         writer.Write((byte)0);
         return stream.ToArray();
+    }
+
+    private static byte[] EncryptContainer(byte[] payload)
+    {
+        byte[] key = [
+            0x2a, 0x5f, 0xcb, 0x17, 0x91, 0xd2, 0x2f, 0xb6,
+            0x02, 0x45, 0xb3, 0xd8, 0x36, 0x9e, 0xd0, 0xb2,
+            0xc2, 0x73, 0x71, 0x56, 0x3f, 0xbf, 0x1f, 0x3c,
+            0x9e, 0xdf, 0x6b, 0x11, 0x82, 0x5a, 0x5d, 0x0a];
+        using var compressed = new MemoryStream();
+        using (var zlib = new ZLibStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+            zlib.Write(payload);
+        byte[] compressedBytes = compressed.ToArray();
+        Array.Resize(ref compressedBytes, (compressedBytes.Length + 15) / 16 * 16);
+        byte[] iv = Enumerable.Range(0, 16).Select(value => (byte)(value + 17)).ToArray();
+        byte[] ciphertext;
+        using (Aes aes = Aes.Create())
+        {
+            aes.Key = key;
+            aes.IV = iv;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.None;
+            using ICryptoTransform encryptor = aes.CreateEncryptor();
+            ciphertext = encryptor.TransformFinalBlock(compressedBytes, 0, compressedBytes.Length);
+        }
+        byte[] container = new byte[56 + ciphertext.Length];
+        "ScsC"u8.CopyTo(container);
+        iv.CopyTo(container, 36);
+        BinaryPrimitives.WriteUInt32LittleEndian(container.AsSpan(52), (uint)payload.Length);
+        ciphertext.CopyTo(container, 56);
+        CryptographicOperations.ZeroMemory(compressedBytes);
+        CryptographicOperations.ZeroMemory(ciphertext);
+        return container;
     }
 
     private static void Structure(BinaryWriter writer, uint id, string name, params (uint Type, string Name)[] fields)

@@ -90,9 +90,9 @@ public static class FixtureCopyInspection
                 bool valuesChanged = expectedChanges.SetEquals(profile.Changes.Select(change => change.FieldName));
                 bool valueRedoMatches;
                 // Apply creates the initial undo state; capture, undo, redo, and undo again to verify exact history bytes.
-                valueRedoMatches = profile.Undo() && input.AsSpan().SequenceEqual(profile.PreviewBytes) &&
+                valueRedoMatches = profile.Undo() && payloadSnapshot.Span.SequenceEqual(profile.PreviewBytes) &&
                     profile.Redo() && preview.AsSpan().SequenceEqual(profile.PreviewBytes) &&
-                    profile.Undo() && input.AsSpan().SequenceEqual(profile.PreviewBytes);
+                    profile.Undo() && payloadSnapshot.Span.SequenceEqual(profile.PreviewBytes);
 
                 IReadOnlyDictionary<string, byte> skills = profile.CoachSkills;
                 bool? skillRedoMatches = null;
@@ -106,9 +106,9 @@ public static class FixtureCopyInspection
                     bool onlySelectedSkillChanged = profile.Changes.Count == 1 &&
                         profile.Changes[0].FieldName == selected.Key;
                     skillRedoMatches = onlySelectedSkillChanged && profile.Undo() &&
-                        input.AsSpan().SequenceEqual(profile.PreviewBytes) && profile.Redo() &&
+                        payloadSnapshot.Span.SequenceEqual(profile.PreviewBytes) && profile.Redo() &&
                         skillPreview.AsSpan().SequenceEqual(profile.PreviewBytes) && profile.Undo() &&
-                        input.AsSpan().SequenceEqual(profile.PreviewBytes);
+                        payloadSnapshot.Span.SequenceEqual(profile.PreviewBytes);
                     CryptographicOperations.ZeroMemory(skillPreview);
                 }
 
