@@ -171,13 +171,13 @@ public sealed class ExperimentalBinarySiiReaderTests
     [Fact]
     public void UnsupportedStructureTypeReportsItsCodeAndFieldContext()
     {
-        ExperimentalBinarySiiException exception = Reject(Fixture(fieldType: 0x08));
+        ExperimentalBinarySiiException exception = Reject(Fixture(fieldType: 0x3f));
 
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, exception.Error);
-        Assert.Equal(0x08u, exception.UnsupportedTypeCode);
+        Assert.Equal(0x3fu, exception.UnsupportedTypeCode);
         Assert.Equal("synthetic", exception.StructureName);
         Assert.Equal("value", exception.FieldName);
-        Assert.Contains("type 0x00000008", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("type 0x0000003f", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -373,8 +373,6 @@ public sealed class ExperimentalBinarySiiReaderTests
     {
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedVersion, Reject(Fixture(version: 4)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x3f)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x08)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x3e)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(idKind: 0)).Error);
         Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture()[..^1]).Error);
         Assert.Equal(ExperimentalBinarySiiError.InvalidStructure, Reject([.. Fixture(), 0]).Error);
