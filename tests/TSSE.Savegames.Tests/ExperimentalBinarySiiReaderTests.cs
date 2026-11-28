@@ -143,8 +143,11 @@ public sealed class ExperimentalBinarySiiReaderTests
         var vector2 = Assert.Single(block.Float32Vector2ArrayFields["vector2s"]);
         Assert.Equal(0x3f800000u, vector2.X.RawBits);
         Assert.Equal(0xc0200000u, vector2.Y.RawBits);
-        Assert.Equal(short.MinValue, block.Int16Fields["signed_short"]);
-        Assert.Equal(new[] { short.MinValue, short.MaxValue }, block.Int16ArrayFields["signed_shorts"]);
+        Assert.Equal(short.MinValue, block.Int16Fields["signed_short"].Raw);
+        Assert.False(block.Int16Fields["signed_short"].IsLegacyNil);
+        Assert.Equal(new[] { short.MinValue, short.MaxValue }, block.Int16ArrayFields["signed_shorts"].Select(value => value.Raw));
+        Assert.True(block.Int16ArrayFields["signed_shorts"][1].IsLegacyNil);
+        Assert.Null(block.Int16ArrayFields["signed_shorts"][1].LegacyValue);
         Assert.Equal(new[] { int.MinValue, int.MaxValue }, block.Int32ArrayFields["signed_values"]);
         Assert.Equal(new uint[] { 0, uint.MaxValue, uint.MaxValue - 1 }, block.UInt32ArrayFields["unsigned_values"].Select(value => value.Raw));
         Assert.True(block.UInt32ArrayFields["unsigned_values"][1].IsLegacyNil);
@@ -385,8 +388,11 @@ public sealed class ExperimentalBinarySiiReaderTests
         var block = Assert.Single(ExperimentalBinarySiiReader.Read(ModernFixture()));
 
         Assert.Equal(3u, block.BinaryVersion);
-        Assert.Equal((ushort)513, block.UInt16Fields["small"]);
-        Assert.Equal(new ushort[] { 1, ushort.MaxValue }, block.UInt16ArrayFields["small_list"]);
+        Assert.Equal((ushort)513, block.UInt16Fields["small"].Raw);
+        Assert.Equal((ushort)513, block.UInt16Fields["small"].LegacyValue);
+        Assert.Equal(new ushort[] { 1, ushort.MaxValue }, block.UInt16ArrayFields["small_list"].Select(value => value.Raw));
+        Assert.True(block.UInt16ArrayFields["small_list"][1].IsLegacyNil);
+        Assert.Null(block.UInt16ArrayFields["small_list"][1].LegacyValue);
         Assert.Equal(uint.MaxValue, block.UInt32PlainFields["wide32"]);
         Assert.Equal(2u, block.OrdinalFields["mode"].Raw);
         Assert.Equal("two", block.OrdinalFields["mode"].Name);

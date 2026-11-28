@@ -259,6 +259,8 @@ and raw identity parts. This support is based on the published
 [`sii-decode-rs` parser](https://github.com/fangyi-zhou/sii-decode-rs/blob/main/src/bsii_parse.rs)
 and [`sii-decrypt-ts` type reference](https://github.com/Trucky/sii-decrypt-ts/blob/main/DOCS.md#complete-data-type-reference),
 not an official SCS schema specification.
+The `Int16` and `UInt16` value models expose their documented maximum-value
+nil sentinel separately from their raw numeric bits, including array entries.
 It returns values only after a complete parse and requires the
 explicit end marker. Block order, per-block field order, field definitions,
 ordinal names, and each field's exact bytes are retained. Types without an

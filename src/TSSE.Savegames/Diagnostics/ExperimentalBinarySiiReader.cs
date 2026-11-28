@@ -106,10 +106,10 @@ public static class ExperimentalBinarySiiReader
                 var stringArrays = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
                 var encodedStrings = new Dictionary<string, ExperimentalBinaryEncodedString>(StringComparer.Ordinal);
                 var encodedStringArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>(StringComparer.Ordinal);
-                var shortValues = new Dictionary<string, ushort>(StringComparer.Ordinal);
-                var shortArrays = new Dictionary<string, IReadOnlyList<ushort>>(StringComparer.Ordinal);
-                var signedShortValues = new Dictionary<string, short>(StringComparer.Ordinal);
-                var signedShortArrays = new Dictionary<string, IReadOnlyList<short>>(StringComparer.Ordinal);
+                var shortValues = new Dictionary<string, ExperimentalBinaryUInt16>(StringComparer.Ordinal);
+                var shortArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt16>>(StringComparer.Ordinal);
+                var signedShortValues = new Dictionary<string, ExperimentalBinaryInt16>(StringComparer.Ordinal);
+                var signedShortArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryInt16>>(StringComparer.Ordinal);
                 var plainUnsignedValues = new Dictionary<string, uint>(StringComparer.Ordinal);
                 var ordinals = new Dictionary<string, ExperimentalBinaryOrdinal>(StringComparer.Ordinal);
                 var rawFields = new Dictionary<string, ExperimentalBinaryRawField>(StringComparer.Ordinal);
@@ -139,9 +139,9 @@ public static class ExperimentalBinarySiiReader
                             cursor.Skip(FixedValueSize(field.Type, version)); break;
                         case 0x0a: case 0x12: case 0x18: case 0x1a:
                             cursor.SkipFixedArray(FixedValueSize(field.Type, version)); break;
-                        case 0x2b: shortValues.Add(field.Name, cursor.UInt16()); break;
+                        case 0x2b: shortValues.Add(field.Name, new ExperimentalBinaryUInt16(cursor.UInt16())); break;
                         case 0x2c: shortArrays.Add(field.Name, cursor.UInt16Array()); break;
-                        case 0x29: signedShortValues.Add(field.Name, cursor.Int16()); break;
+                        case 0x29: signedShortValues.Add(field.Name, new ExperimentalBinaryInt16(cursor.Int16())); break;
                         case 0x2a: signedShortArrays.Add(field.Name, cursor.Int16Array()); break;
                         case 0x2f: plainUnsignedValues.Add(field.Name, cursor.UInt32()); break;
                         case 0x37: ordinals.Add(field.Name, new ExperimentalBinaryOrdinal(cursor.UInt32(), field.OrdinalValues)); break;
@@ -174,10 +174,10 @@ public static class ExperimentalBinarySiiReader
                     StringArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<string>>(stringArrays),
                     EncodedStringFields = new ReadOnlyDictionary<string, ExperimentalBinaryEncodedString>(encodedStrings),
                     EncodedStringArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>(encodedStringArrays),
-                    UInt16Fields = new ReadOnlyDictionary<string, ushort>(shortValues),
-                    UInt16ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ushort>>(shortArrays),
-                    Int16Fields = new ReadOnlyDictionary<string, short>(signedShortValues),
-                    Int16ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<short>>(signedShortArrays),
+                    UInt16Fields = new ReadOnlyDictionary<string, ExperimentalBinaryUInt16>(shortValues),
+                    UInt16ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt16>>(shortArrays),
+                    Int16Fields = new ReadOnlyDictionary<string, ExperimentalBinaryInt16>(signedShortValues),
+                    Int16ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryInt16>>(signedShortArrays),
                     UInt32PlainFields = new ReadOnlyDictionary<string, uint>(plainUnsignedValues),
                     OrdinalFields = new ReadOnlyDictionary<string, ExperimentalBinaryOrdinal>(ordinals),
                     RawFields = new ReadOnlyDictionary<string, ExperimentalBinaryRawField>(rawFields)
@@ -329,16 +329,16 @@ public static class ExperimentalBinarySiiReader
             for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryBool(Byte()));
             return result.AsReadOnly();
         }
-        public IReadOnlyList<ushort> UInt16Array()
+        public IReadOnlyList<ExperimentalBinaryUInt16> UInt16Array()
         {
-            int count = FixedArrayCount(2); var result = new List<ushort>(count);
-            for (int i = 0; i < count; i++) result.Add(UInt16());
+            int count = FixedArrayCount(sizeof(ushort)); var result = new List<ExperimentalBinaryUInt16>(count);
+            for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryUInt16(UInt16()));
             return result.AsReadOnly();
         }
-        public IReadOnlyList<short> Int16Array()
+        public IReadOnlyList<ExperimentalBinaryInt16> Int16Array()
         {
-            int count = FixedArrayCount(sizeof(short)); var result = new List<short>(count);
-            for (int i = 0; i < count; i++) result.Add(Int16());
+            int count = FixedArrayCount(sizeof(short)); var result = new List<ExperimentalBinaryInt16>(count);
+            for (int i = 0; i < count; i++) result.Add(new ExperimentalBinaryInt16(Int16()));
             return result.AsReadOnly();
         }
         public IReadOnlyList<string> TextArray()
@@ -404,10 +404,10 @@ public sealed record ExperimentalBinaryBlock(string Type, ulong? NamelessId, IRe
     public IReadOnlyDictionary<string, IReadOnlyList<string>> StringArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<string>>(new Dictionary<string, IReadOnlyList<string>>());
     public IReadOnlyDictionary<string, ExperimentalBinaryEncodedString> EncodedStringFields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryEncodedString>(new Dictionary<string, ExperimentalBinaryEncodedString>());
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>> EncodedStringArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryEncodedString>>());
-    public IReadOnlyDictionary<string, ushort> UInt16Fields { get; init; } = new ReadOnlyDictionary<string, ushort>(new Dictionary<string, ushort>());
-    public IReadOnlyDictionary<string, IReadOnlyList<ushort>> UInt16ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ushort>>(new Dictionary<string, IReadOnlyList<ushort>>());
-    public IReadOnlyDictionary<string, short> Int16Fields { get; init; } = new ReadOnlyDictionary<string, short>(new Dictionary<string, short>());
-    public IReadOnlyDictionary<string, IReadOnlyList<short>> Int16ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<short>>(new Dictionary<string, IReadOnlyList<short>>());
+    public IReadOnlyDictionary<string, ExperimentalBinaryUInt16> UInt16Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryUInt16>(new Dictionary<string, ExperimentalBinaryUInt16>());
+    public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt16>> UInt16ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt16>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt16>>());
+    public IReadOnlyDictionary<string, ExperimentalBinaryInt16> Int16Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryInt16>(new Dictionary<string, ExperimentalBinaryInt16>());
+    public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryInt16>> Int16ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryInt16>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryInt16>>());
     public IReadOnlyDictionary<string, uint> UInt32PlainFields { get; init; } = new ReadOnlyDictionary<string, uint>(new Dictionary<string, uint>());
     public IReadOnlyDictionary<string, ExperimentalBinaryOrdinal> OrdinalFields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryOrdinal>(new Dictionary<string, ExperimentalBinaryOrdinal>());
     /// <summary>Original encoded payload for every field, including opaque vector and placement values.</summary>
@@ -505,6 +505,18 @@ public readonly record struct ExperimentalBinaryUInt32(uint Raw)
 {
     public bool IsLegacyNil => Raw == uint.MaxValue;
     public uint? LegacyValue => IsLegacyNil ? null : Raw;
+}
+
+public readonly record struct ExperimentalBinaryUInt16(ushort Raw)
+{
+    public bool IsLegacyNil => Raw == ushort.MaxValue;
+    public ushort? LegacyValue => IsLegacyNil ? null : Raw;
+}
+
+public readonly record struct ExperimentalBinaryInt16(short Raw)
+{
+    public bool IsLegacyNil => Raw == short.MaxValue;
+    public short? LegacyValue => IsLegacyNil ? null : Raw;
 }
 /// <summary>Raw 0x33 bits are preserved; the legacy decoder prints nil when either 32-bit half is all ones.</summary>
 public readonly record struct ExperimentalBinaryUInt64(ulong Raw)
