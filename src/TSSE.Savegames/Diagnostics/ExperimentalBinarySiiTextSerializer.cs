@@ -19,7 +19,7 @@ public static class ExperimentalBinarySiiTextSerializer
     {
         IReadOnlyList<ExperimentalBinaryBlock> blocks = ExperimentalBinarySiiReader.Read(payload);
         var text = new StringBuilder("SiiNunit\n{\n");
-        var expectedFieldsByBlock = new List<IReadOnlyList<(string Name, string Value)>>(blocks.Count);
+        var expectedFieldLineCounts = new List<int>(blocks.Count);
         foreach (ExperimentalBinaryBlock block in blocks)
         {
             string id = FormatBlockIdentifier(block.Identifier);
@@ -30,7 +30,7 @@ public static class ExperimentalBinarySiiTextSerializer
                 throw new ExperimentalBinaryTextSerializationException("FieldDefinitionMismatch");
 
             text.Append(block.Type).Append(" : ").Append(id).Append(" {\n");
-            var expectedFields = new List<(string Name, string Value)>();
+            int fieldLineCount = 0;
             foreach (ExperimentalBinaryFieldDefinition definition in block.FieldDefinitions)
             {
                 if (!block.RawFields.TryGetValue(definition.Name, out ExperimentalBinaryRawField? raw) ||
@@ -39,13 +39,11 @@ public static class ExperimentalBinarySiiTextSerializer
                 IReadOnlyList<string> values = DecodeField(block, definition, raw);
                 if (IsArrayType(definition.TypeCode))
                 {
-                    expectedFields.Add((definition.Name, values.Count.ToString(CultureInfo.InvariantCulture)));
+                    fieldLineCount = checked(fieldLineCount + 1 + values.Count);
                     text.Append(' ').Append(definition.Name).Append(": ")
                         .Append(values.Count.ToString(CultureInfo.InvariantCulture)).Append('\n');
                     for (int index = 0; index < values.Count; index++)
                     {
-                        string elementName = definition.Name + "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
-                        expectedFields.Add((elementName, values[index]));
                         text.Append(' ').Append(definition.Name).Append('[')
                             .Append(index.ToString(CultureInfo.InvariantCulture)).Append("]: ")
                             .Append(values[index]).Append('\n');
@@ -55,13 +53,13 @@ public static class ExperimentalBinarySiiTextSerializer
                 {
                     if (values.Count != 1)
                         throw new ExperimentalBinaryTextSerializationException("InvalidScalarValueCount");
-                    expectedFields.Add((definition.Name, values[0]));
+                    fieldLineCount++;
                     text.Append(' ').Append(definition.Name).Append(": ").Append(values[0]).Append('\n');
                 }
                 if (text.Length > SiiSyntaxParseLimits.Default.MaximumCharacters)
                     throw new ExperimentalBinaryTextSerializationException("OutputLimitExceeded");
             }
-            expectedFieldsByBlock.Add(expectedFields.AsReadOnly());
+            expectedFieldLineCounts.Add(fieldLineCount);
             text.Append("}\n\n");
         }
         text.Append('}');
@@ -86,13 +84,25 @@ public static class ExperimentalBinarySiiTextSerializer
             {
                 SiiBlock parsedBlock = parsed.Blocks[i + 1];
                 if (parsedBlock.Type != blocks[i].Type || parsedBlock.Id != FormatBlockIdentifier(blocks[i].Identifier) ||
-                    parsedBlock.Fields.Count != expectedFieldsByBlock[i].Count)
+                    parsedBlock.Fields.Count != expectedFieldLineCounts[i])
                     throw new ExperimentalBinaryTextSerializationException("SyntaxValidationFailed");
-                for (int fieldIndex = 0; fieldIndex < parsedBlock.Fields.Count; fieldIndex++)
+                int fieldIndex = 0;
+                foreach (ExperimentalBinaryFieldDefinition definition in blocks[i].FieldDefinitions)
                 {
-                    SiiField actual = parsedBlock.Fields[fieldIndex];
-                    (string expectedName, string expectedValue) = expectedFieldsByBlock[i][fieldIndex];
-                    if (actual.Name != expectedName || actual.Value.Trim() != expectedValue)
+                    IReadOnlyList<string> values = DecodeField(blocks[i], definition, blocks[i].RawFields[definition.Name]);
+                    if (IsArrayType(definition.TypeCode))
+                    {
+                        if (!MatchesField(parsedBlock.Fields[fieldIndex++], definition.Name,
+                                values.Count.ToString(CultureInfo.InvariantCulture)))
+                            throw new ExperimentalBinaryTextSerializationException("SyntaxValidationFailed");
+                        for (int valueIndex = 0; valueIndex < values.Count; valueIndex++)
+                        {
+                            string elementName = definition.Name + "[" + valueIndex.ToString(CultureInfo.InvariantCulture) + "]";
+                            if (!MatchesField(parsedBlock.Fields[fieldIndex++], elementName, values[valueIndex]))
+                                throw new ExperimentalBinaryTextSerializationException("SyntaxValidationFailed");
+                        }
+                    }
+                    else if (!MatchesField(parsedBlock.Fields[fieldIndex++], definition.Name, values[0]))
                         throw new ExperimentalBinaryTextSerializationException("SyntaxValidationFailed");
                 }
             }
@@ -104,6 +114,9 @@ public static class ExperimentalBinarySiiTextSerializer
 
         return result;
     }
+
+    private static bool MatchesField(SiiField actual, string expectedName, string expectedValue) =>
+        actual.Name == expectedName && actual.Value.Trim() == expectedValue;
 
     private static IReadOnlyList<string> DecodeField(
         ExperimentalBinaryBlock block,
