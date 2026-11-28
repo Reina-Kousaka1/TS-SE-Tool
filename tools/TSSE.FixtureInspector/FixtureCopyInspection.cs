@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Security.Cryptography;
 using System.Runtime.InteropServices;
+using TSSE.Core.Editing;
 using TSSE.Core.IO;
 using TSSE.GameAdapters.Editing;
 using TSSE.Savegames.Diagnostics;
@@ -67,13 +68,14 @@ public static class FixtureCopyInspection
                 throw new InvalidOperationException("The supplied copy is not a decoded BSII save.");
 
             ExperimentalBinaryBlock[] economies = decoded.BinaryBlocks.Where(block => block.Type == "economy").ToArray();
-            if (economies.Length != 1 || economies[0].Identifier is null)
+            ExperimentalBinaryBlockIdentifier? economyId = economies.Length == 1 ? economies[0].Identifier : null;
+            if (economyId is null)
                 throw new InvalidOperationException("The binary economy selection is ambiguous or unavailable.");
 
             ReadOnlyMemory<byte> payloadSnapshot = decoded.Payload;
             try
             {
-                var profile = new LegacyBinaryProfilePreview(payloadSnapshot.Span, economies[0].Identifier);
+                var profile = new LegacyBinaryProfilePreview(payloadSnapshot.Span, economyId);
                 ProfileValues originalValues = profile.Current;
                 long changedBalance = originalValues.Balance == long.MaxValue
                     ? originalValues.Balance - 1 : originalValues.Balance + 1;
