@@ -62,13 +62,33 @@ public sealed class LegacyCoachProfileInspector
             stops.Add(new LegacyCoachStopSnapshot(id, discovered, ReadArray(stop, "lines_offer").Count));
         }
 
+        LegacyCoachPlayerSnapshot? player = null;
+        string? playerId = OptionalValue(_economy, "player");
+        if (!IsNullReference(playerId))
+        {
+            SiiBlock referencedPlayer = FindUniqueBlock(_document, "player", playerId!);
+            IReadOnlyList<string> busIds = ReadArray(referencedPlayer, "buses");
+            var buses = busIds.Select(id => ResolveReference(_document, id)).ToArray();
+            string? currentJobId = OptionalValue(referencedPlayer, "current_bus_job");
+            LegacyCoachUnitReference? currentJob = IsNullReference(currentJobId)
+                ? null : ResolveReference(_document, currentJobId!);
+            player = new LegacyCoachPlayerSnapshot(
+                playerId!,
+                OptionalValue(referencedPlayer, "my_vehicles_mode"),
+                OptionalValue(referencedPlayer, "assigned_vehicles_mode"),
+                busIds,
+                buses,
+                currentJob);
+        }
+
         return new LegacyCoachEconomySnapshot(
             counters,
             stopIds,
             jobLogId,
             jobLogVersion,
             jobLogEntryCount,
-            stops);
+            stops,
+            player);
     }
 
     private static IReadOnlyList<string> ReadArray(SiiBlock block, string name)
@@ -135,6 +155,21 @@ public sealed class LegacyCoachProfileInspector
             ? matches[0]
             : throw new InvalidOperationException($"The legacy {type} reference is missing, ambiguous, or has the wrong type.");
     }
+
+    private static LegacyCoachUnitReference ResolveReference(SiiSyntaxDocument document, string id)
+    {
+        SiiBlock[] matches = document.Blocks.Where(block => block.Id == id).ToArray();
+        return matches.Length switch
+        {
+            0 => new LegacyCoachUnitReference(id, LegacyCoachReferenceState.Unresolved, null),
+            1 => new LegacyCoachUnitReference(id, LegacyCoachReferenceState.Resolved, matches[0].Type),
+            _ => new LegacyCoachUnitReference(id, LegacyCoachReferenceState.Ambiguous, null)
+        };
+    }
+
+    private static bool IsNullReference(string? value) =>
+        string.IsNullOrWhiteSpace(value) || value.Equals("nil", StringComparison.OrdinalIgnoreCase) ||
+        value.Equals("null", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record LegacyCoachEconomySnapshot(
@@ -143,6 +178,19 @@ public sealed record LegacyCoachEconomySnapshot(
     string? JobLogId,
     int? JobLogVersion,
     int? JobLogEntryCount,
-    IReadOnlyList<LegacyCoachStopSnapshot> Stops);
+    IReadOnlyList<LegacyCoachStopSnapshot> Stops,
+    LegacyCoachPlayerSnapshot? Player);
 
 public sealed record LegacyCoachStopSnapshot(string Id, bool Discovered, int OfferedLineCount);
+
+public sealed record LegacyCoachPlayerSnapshot(
+    string Id,
+    string? MyVehiclesMode,
+    string? AssignedVehiclesMode,
+    IReadOnlyList<string> BusIds,
+    IReadOnlyList<LegacyCoachUnitReference> Buses,
+    LegacyCoachUnitReference? CurrentBusJob);
+
+public sealed record LegacyCoachUnitReference(string Id, LegacyCoachReferenceState State, string? ResolvedType);
+
+public enum LegacyCoachReferenceState { Resolved, Unresolved, Ambiguous }

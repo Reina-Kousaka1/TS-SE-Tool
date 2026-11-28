@@ -36,7 +36,7 @@
   "fixture.example.text": "Plain text example",
   "fixture.example.legacy-info": "Synthetic legacy metadata",
   "fixture.example.coaches": "Synthetic legacy Coaches fields",
-  "fixture.coach.summary": "Synthetic historical Coaches preview — XP: {0}; referenced stops: {1}; job-log entries: {2}. Current game compatibility is unverified.",
+  "fixture.coach.summary": "Synthetic historical Coaches preview — XP: {0}; referenced stops: {1}; job-log entries: {2}; bus references: {3}; current bus-job reference: {4}; vehicle modes my/assigned: {5}/{6}. Current game compatibility is unverified.",
   "fixture.coach.metricUnavailable": "not present",
   "fixture.coach.unavailable": "Coaches parser preview: select the synthetic Coaches example.",
   "fixture.versionValue": "Synthetic legacy version field: {0} (compatibility unverified)",

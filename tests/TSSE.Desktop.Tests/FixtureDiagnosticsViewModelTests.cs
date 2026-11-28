@@ -24,6 +24,9 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("XP: 4321", demo.CoachSummary, StringComparison.Ordinal);
         Assert.Contains("referenced stops: 1", demo.CoachSummary, StringComparison.Ordinal);
         Assert.Contains("job-log entries: 1", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("bus references: 1", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("current bus-job reference: resolved", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("vehicle modes my/assigned: truck/coach", demo.CoachSummary, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "opaque");
         Assert.Contains("unclassified syntax", demo.Status, StringComparison.Ordinal);
         Assert.Contains("Incomplete", demo.Duplicates, StringComparison.Ordinal);
