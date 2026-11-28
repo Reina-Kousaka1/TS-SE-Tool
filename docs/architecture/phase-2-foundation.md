@@ -1,5 +1,9 @@
 # Phase 2 — Next Generation Rebuild
 
+## Decoded payload snapshot isolation
+
+`SiiDecodedSave` clones decoded input on construction and now also returns a fresh byte snapshot from `Payload`. `ReadOnlyMemory<byte>` alone does not make its backing array immutable: callers can recover it with `MemoryMarshal.TryGetArray`. The regression test mutates both the original input and an exposed backing array and verifies later payload reads and parsed text remain unchanged. This adds a defensive copy on each `Payload` access (up to the decoder's 32 MiB bound). It does not authenticate ScsC, establish game compatibility, or enable file writes. Local .NET 10 tests are unavailable on this host because only SDK 8.0.425 is installed; validation must be completed by the branch CI before treating the change as verified.
+
 ## CI smoke-test timeout investigation
 
 The installed Linux ARM64 desktop smoke test timed out in runs 46008818803

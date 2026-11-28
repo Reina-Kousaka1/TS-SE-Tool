@@ -184,7 +184,11 @@ public sealed class SiiDecodedSave
     public bool ContainerAuthenticationUnverified { get; }
     /// <summary>True when the six-byte 3nK wrapper was removed before SII parsing.</summary>
     public bool ThreeNkDecoded { get; }
-    public ReadOnlyMemory<byte> Payload => _payload;
+    /// <summary>
+    /// Returns a defensive snapshot. ReadOnlyMemory is a read-only view, but
+    /// its backing array can still be recovered by callers via MemoryMarshal.
+    /// </summary>
+    public ReadOnlyMemory<byte> Payload => new((byte[])_payload.Clone());
     public SiiSyntaxDocument? TextDocument { get; }
     public IReadOnlyList<ExperimentalBinaryBlock>? BinaryBlocks { get; }
 }

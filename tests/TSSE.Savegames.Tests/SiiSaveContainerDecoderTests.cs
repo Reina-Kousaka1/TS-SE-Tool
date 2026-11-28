@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using TSSE.Savegames.Diagnostics;
@@ -34,6 +35,21 @@ public sealed class SiiSaveContainerDecoderTests
         Assert.Equal(SiiPayloadFormat.Binary, decodedBinary.Format);
         Assert.Equal(3u, Assert.Single(decodedBinary.BinaryBlocks!).BinaryVersion);
         Assert.Null(decodedBinary.TextDocument);
+    }
+
+    [Fact]
+    public void PayloadMemoryCannotMutateTheDecodedSaveSnapshot()
+    {
+        byte[] input = Encoding.UTF8.GetBytes(TextSave);
+        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(input);
+        input[0] = (byte)'X';
+
+        ReadOnlyMemory<byte> exposed = decoded.Payload;
+        Assert.True(MemoryMarshal.TryGetArray(exposed, out ArraySegment<byte> segment));
+        segment.Array![segment.Offset] = (byte)'X';
+
+        Assert.Equal(Encoding.UTF8.GetBytes(TextSave), decoded.Payload.ToArray());
+        Assert.Equal(TextSave, decoded.TextDocument!.ToText());
     }
 
     [Theory]
