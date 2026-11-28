@@ -143,6 +143,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         var vector2 = Assert.Single(block.Float32Vector2ArrayFields["vector2s"]);
         Assert.Equal(0x3f800000u, vector2.X.RawBits);
         Assert.Equal(0xc0200000u, vector2.Y.RawBits);
+        Assert.Equal(short.MinValue, block.Int16Fields["signed_short"]);
+        Assert.Equal(new[] { short.MinValue, short.MaxValue }, block.Int16ArrayFields["signed_shorts"]);
         Assert.Equal(new[] { int.MinValue, int.MaxValue }, block.Int32ArrayFields["signed_values"]);
         Assert.Equal(new uint[] { 0, uint.MaxValue, uint.MaxValue - 1 }, block.UInt32ArrayFields["unsigned_values"].Select(value => value.Raw));
         Assert.True(block.UInt32ArrayFields["unsigned_values"][1].IsLegacyNil);
@@ -587,6 +589,8 @@ public sealed class ExperimentalBinarySiiReaderTests
             }
             writer.Write(0x800000000000000bul);
             writer.Write(4u); writer.Write(0ul); writer.Write(12ul); writer.Write(0x800000000000000bul); writer.Write(12ul);
+            writer.Write(short.MinValue);
+            writer.Write(2u); writer.Write(short.MinValue); writer.Write(short.MaxValue);
         }
         writer.Write("BSII"u8);
         writer.Write(version);
@@ -619,6 +623,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x02); Name("labels");
         writer.Write((uint)0x03); Name("encoded");
         writer.Write((uint)0x04); Name("encoded_list");
+        writer.Write((uint)0x29); Name("signed_short");
+        writer.Write((uint)0x2a); Name("signed_shorts");
         writer.Write((uint)0);
         Data(namedBlockParts);
         if (duplicateBlock) Data(secondNamedBlockParts ?? namedBlockParts);

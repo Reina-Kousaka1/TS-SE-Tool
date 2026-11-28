@@ -251,8 +251,9 @@ uses the format description as a reference and does not incorporate its code.
 `ExperimentalBinarySiiReader` accepts in-memory BSII versions 1, 2 and 3. The
 versioned placement size is 7 floats in v1 and 8 in v2/v3. It accepts the
 documented active type codes. Independent implementations document `0x08` as
-an array of two-float vectors and `0x3e` as an ID-reference array. The managed
-reader now retains these values with bounded parsing and raw-field capture.
+an array of two-float vectors, `0x29`/`0x2a` as signed Int16 scalar/array and
+`0x3e` as an ID-reference array. The managed reader now retains these values
+with bounded parsing and raw-field capture.
 Vector components retain exact IEEE-754 bits; references retain the type code
 and raw identity parts. This support is based on the published
 [`sii-decode-rs` parser](https://github.com/fangyi-zhou/sii-decode-rs/blob/main/src/bsii_parse.rs)
@@ -266,7 +267,7 @@ encoded data. Duplicate structure IDs, field names, ordinal values and block
 identities, unresolved structure IDs, invalid UTF-8, unknown types, oversized
 arrays, malformed identifiers, missing terminators, trailing bytes and
 truncation fail without partial output. Synthetic fixtures cover versioned
-placement widths, type `0x08` vector arrays and type `0x3e` reference arrays;
+placement widths, types `0x08`, `0x29`, `0x2a` and `0x3e`;
 this is not a genuine-save
 compatibility claim. No binary writer or real profile access is enabled. The
 type table and version rule are based on the independently reverse-engineered
