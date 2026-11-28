@@ -211,7 +211,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     {
         try
         {
-            IReadOnlyDictionary<string, int?> counters = LegacyCoachProfileInspector.InspectBinaryCounters(blocks);
+            IReadOnlyDictionary<string, long?> counters = LegacyCoachProfileInspector.InspectBinaryCounters(blocks);
             string Number(string name) => counters[name]?.ToString(CultureInfo.InvariantCulture)
                 ?? _text.Get("fixture.import.profile.noCoachField");
             string countersText = _text.Format("fixture.import.coach.binaryCounters",
