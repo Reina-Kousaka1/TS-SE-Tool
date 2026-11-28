@@ -34,7 +34,7 @@
   "fixture.description": "Synthetic examples plus explicitly selected files. Format or syntax results do not establish game compatibility. File inspection is read-only.",
   "fixture.import.button": "Inspect one selected save copy (read-only)",
   "fixture.import.none": "No file inspected. Selection is manual, read-only and limited to 32 MiB.",
-  "fixture.import.success": "Decoded {0} payload ({1}); {2} top-level blocks. This is format evidence only, not game compatibility. ScsC authentication is not verified.",
+  "fixture.import.success": "Decoded {0} payload ({1}); {2} parsed blocks. This is format evidence only, not game compatibility. ScsC authentication is not verified.",
   "fixture.import.failure": "Could not decode the selected file: {0}. No data was changed.",
   "fixture.import.failure.generic": "Could not decode the selected file. No data was changed.",
   "fixture.import.readFailure": "Could not read the selected file. No data was changed.",

@@ -69,7 +69,7 @@ public sealed class FixtureDiagnosticsViewModelTests
         viewModel.InspectSelectedBytes(bytes);
 
         Assert.Contains("Decoded text SII payload", viewModel.ImportResult, StringComparison.Ordinal);
-        Assert.Contains("1 top-level blocks", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("2 parsed blocks", viewModel.ImportResult, StringComparison.Ordinal);
         Assert.Contains("not game compatibility", viewModel.ImportResult, StringComparison.Ordinal);
     }
 
