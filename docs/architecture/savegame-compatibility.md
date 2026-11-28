@@ -17,7 +17,7 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 | Vehicle / accessory references | A read-only inspector resolves an explicitly selected legacy-shaped synthetic array and reports missing, ambiguous and unknown targets; it does not infer categories or validate game semantics. Duplicate values are retained. | Synthetic array and reference tests. | **Synthetic inspection only; real reference validation unsupported.** |
 | Profiles | No profile discovery or profile hierarchy reader is active. | Repository source and UI gates; no profile fixtures. | **Not tested; disabled.** |
 | Trucks and trailers | No game-specific vehicle or trailer save models are implemented. | Repository model inventory; no real fixtures. | **Not tested; unsupported.** |
-| Coaches DLC | No Coaches field names, references, or data model have been inferred. Generic block and field syntax can retain unknown text. | No genuine Coaches fixture exists. | **Not tested; unsupported.** |
+| Coaches DLC | No Coaches field names, references, or data model have been inferred. Generic block and field syntax can retain unknown text. | SCS confirms three licensed coach vehicles and describes coach ownership as separate from trucks while finances are shared ([release](https://blog.scssoft.com/2026/11/coaches-release.html), [ownership and jobs](https://blog.scssoft.com/2026/08/coaches-vehicle-ownership-job-schedule.html)). These are gameplay-level facts, not save-format evidence; no genuine Coaches fixture exists. | **Not tested; unsupported.** |
 
 The in-memory fixture report counts repeated non-null block IDs across types
 and repeated exact field names within each block. Indexed names are compared
