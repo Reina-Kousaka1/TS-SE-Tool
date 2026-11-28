@@ -376,7 +376,7 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("two", block.OrdinalFields["mode"].Name);
         Assert.Null((block.OrdinalFields["mode"] with { Raw = 99 }).Name);
         Assert.Equal("vector2", block.FieldDefinitions[0].Name);
-        Assert.Equal("mode", block.FieldDefinitions[^2].Name);
+        Assert.Equal("mode", block.FieldDefinitions[^1].Name);
         Assert.Equal(new byte[] { 0, 0, 0x80, 0x3f, 0, 0, 0, 0x40 }, block.RawFields["vector2"].Bytes);
         Assert.Equal((uint)0x07, block.RawFields["vector2"].TypeCode);
         Assert.Equal(12, block.RawFields["vector3"].Bytes.Count);
