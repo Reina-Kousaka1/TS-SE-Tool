@@ -6,8 +6,8 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 
 | Area | Current implementation | Evidence | Status |
 | --- | --- | --- | --- |
-| Euro Truck Simulator 2 | No game adapter is registered; no container decoder, version schema, profile reader, or game-specific validator exists. | Generic syntax tests only; no real ETS2 fixture. | **Not tested; game compatibility unsupported.** |
-| American Truck Simulator | Same foundation as ETS2; shared SII syntax does not establish ATS compatibility. | Generic syntax tests only; no real ATS fixture. | **Not tested; game compatibility unsupported.** |
+| Euro Truck Simulator 2 | Read-only in-memory SII decoders exist, but no registered game adapter, version schema, profile reader, or game-specific validator exists. | Synthetic format tests only; no real ETS2 fixture. | **Not tested; game compatibility unsupported.** |
+| American Truck Simulator | Same read-only in-memory decoder foundation; no registered game adapter, version schema, profile reader, or game-specific validator exists. | Synthetic format tests only; no real ATS fixture. | **Not tested; game compatibility unsupported.** |
 | Savegame versions | A legacy-shaped synthetic `save_container` version field can be inspected; no game version or adapter is inferred or registered. | Legacy `SaveFileInfoData` uses UInt16; synthetic structural and bounds tests only. | **Synthetic field inspection only; real versions unsupported.** |
 | Modified / modded saves | Raw field values and unclassified source lines are retained by the syntax document. The parser does not load mods, resolve mod schemas, or validate mod-specific meaning. | Synthetic unknown fields and trailer syntax are covered. | **Synthetic preservation confirmed; real mod saves not tested.** |
 | Unknown SII attributes | Colon-delimited fields retain their original raw line and value. Unclassified lines are exposed as opaque source lines and block field editing. | Synthetic tests cover unknown field values and unclassified lines. | **Synthetic source preservation confirmed; semantic meaning unknown.** |
@@ -23,7 +23,7 @@ The in-memory fixture report counts repeated non-null block IDs across types
 and repeated exact field names within each block. Indexed names are compared
 literally. These are diagnostic hints, not schema validation; unclassified
 syntax can make the counts incomplete. Counts are unavailable when parsing fails.
-| Encoding and save containers | The in-memory plain-text wrapper accepts strict UTF-8 (with or without BOM) and BOM-marked UTF-16 LE/BE. An experimental BSII v2/v3 reader parses bounded raw binary payloads but does not decrypt/decompress `ScsC`, reconstruct containers, or serialize BSII. | Synthetic byte-level tests only; the managed decoder has no real save fixture. | **Outer game-save containers and compatibility unverified.** |
+| Encoding and save containers | Read-only in-memory decoding now accepts plain `SiiN`, raw BSII v2/v3, and the AES-CBC/zlib `ScsC` wrapper under strict input/output limits. `ScsC` HMAC authentication is not checked; no container reconstruction or BSII serialization exists. | Synthetic byte-level tests only; no managed component has been tested against a genuine save. | **Container and game compatibility unverified; decoded `ScsC` data unauthenticated.** |
 
 ## Roundtrip guarantees
 
