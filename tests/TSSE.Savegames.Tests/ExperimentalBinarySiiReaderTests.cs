@@ -358,7 +358,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x08)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x3e)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(idKind: 0)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject([.. Fixture(), 0]).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture()[..^1]).Error);
+        Assert.Equal(ExperimentalBinarySiiError.InvalidStructure, Reject([.. Fixture(), 0]).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(new byte[ExperimentalBinarySiiReader.MaximumBytes + 1]).Error);
     }
 
@@ -517,8 +518,6 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write(2u); writer.Write((ushort)1); writer.Write(ushort.MaxValue);
         writer.Write(uint.MaxValue);
         writer.Write(2u);
-        writer.Write(1u);
-        writer.Write((byte)1); writer.Write(11ul);
         writer.Write(0u); writer.Write((byte)0);
         return stream.ToArray();
     }
