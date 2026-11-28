@@ -64,7 +64,7 @@ public sealed class SiiEncodedTextTests
         SiiEncodedText parsed = SiiEncodedText.Parse(source);
 
         Assert.Equal(source, parsed.ToBytes());
-        SiiBlock block = Assert.Single(parsed.Syntax.Blocks.Where(item => item.Type == "test"));
+        SiiBlock block = Assert.Single(parsed.Syntax.Blocks, item => item.Type == "test");
         Assert.Equal("1", Assert.Single(block.Fields).Value);
     }
 }
