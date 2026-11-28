@@ -104,6 +104,8 @@ public static class ExperimentalBinarySiiReader
                 var int32Vector3Arrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryInt32Vector3>>(StringComparer.Ordinal);
                 var vector4Fields = new Dictionary<string, ExperimentalBinaryFloat32Vector4>(StringComparer.Ordinal);
                 var vector4Arrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector4>>(StringComparer.Ordinal);
+                var variableVectors = new Dictionary<string, ExperimentalBinaryFloat32Vector>(StringComparer.Ordinal);
+                var variableVectorArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector>>(StringComparer.Ordinal);
                 var intArrays = new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal);
                 var uintArrays = new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(StringComparer.Ordinal);
                 var longArrays = new Dictionary<string, IReadOnlyList<long>>(StringComparer.Ordinal);
@@ -148,10 +150,8 @@ public static class ExperimentalBinarySiiReader
                         case 0x34: ulongArrays.Add(field.Name, cursor.UInt64Array()); break;
                         case 0x35: booleans.Add(field.Name, new ExperimentalBinaryBool(cursor.Byte())); break;
                         case 0x36: booleanArrays.Add(field.Name, cursor.BoolArray()); break;
-                        case 0x19:
-                            cursor.Skip(FixedValueSize(field.Type, version)); break;
-                        case 0x1a:
-                            cursor.SkipFixedArray(FixedValueSize(field.Type, version)); break;
+                        case 0x19: variableVectors.Add(field.Name, cursor.FloatVector(FixedValueSize(field.Type, version) / sizeof(uint))); break;
+                        case 0x1a: variableVectorArrays.Add(field.Name, cursor.FloatVectorArray(FixedValueSize(field.Type, version) / sizeof(uint))); break;
                         case 0x2b: shortValues.Add(field.Name, new ExperimentalBinaryUInt16(cursor.UInt16())); break;
                         case 0x2c: shortArrays.Add(field.Name, cursor.UInt16Array()); break;
                         case 0x29: signedShortValues.Add(field.Name, new ExperimentalBinaryInt16(cursor.Int16())); break;
@@ -185,6 +185,8 @@ public static class ExperimentalBinarySiiReader
                     Int32Vector3ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryInt32Vector3>>(int32Vector3Arrays),
                     Float32Vector4Fields = new ReadOnlyDictionary<string, ExperimentalBinaryFloat32Vector4>(vector4Fields),
                     Float32Vector4ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector4>>(vector4Arrays),
+                    VersionedFloatVectorFields = new ReadOnlyDictionary<string, ExperimentalBinaryFloat32Vector>(variableVectors),
+                    VersionedFloatVectorArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector>>(variableVectorArrays),
                     Int32ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<int>>(intArrays),
                     UInt32ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(uintArrays),
                     Int64ArrayFields = new ReadOnlyDictionary<string, IReadOnlyList<long>>(longArrays),
@@ -266,13 +268,6 @@ public static class ExperimentalBinarySiiReader
         public long Int64() => BinaryPrimitives.ReadInt64LittleEndian(Take(8));
         public ulong UInt64() => BinaryPrimitives.ReadUInt64LittleEndian(Take(8));
         public void Skip(int count) => _ = Take(count);
-        public void SkipFixedArray(int elementSize)
-        {
-            uint count = UInt32();
-            if (count > MaximumArrayItems) throw Error(ExperimentalBinarySiiError.LimitExceeded);
-            if ((long)count * elementSize > _input.Length - _position) throw Error(ExperimentalBinarySiiError.Truncated);
-            Skip(checked((int)count * elementSize));
-        }
         public byte[] CopyRange(int start, int end) => _input.Slice(start, end - start).ToArray();
         public IReadOnlyDictionary<uint, string> OrdinalValues()
         {
@@ -323,6 +318,19 @@ public static class ExperimentalBinarySiiReader
         public ExperimentalBinaryFloat32Vector3 FloatVector3() => new(new ExperimentalBinaryFloat32(UInt32()), new ExperimentalBinaryFloat32(UInt32()), new ExperimentalBinaryFloat32(UInt32()));
         public ExperimentalBinaryInt32Vector3 Int32Vector3() => new(Int32(), Int32(), Int32());
         public ExperimentalBinaryFloat32Vector4 FloatVector4() => new(new ExperimentalBinaryFloat32(UInt32()), new ExperimentalBinaryFloat32(UInt32()), new ExperimentalBinaryFloat32(UInt32()), new ExperimentalBinaryFloat32(UInt32()));
+        public ExperimentalBinaryFloat32Vector FloatVector(int components)
+        {
+            var values = new ExperimentalBinaryFloat32[components];
+            for (int i = 0; i < components; i++) values[i] = new ExperimentalBinaryFloat32(UInt32());
+            return new ExperimentalBinaryFloat32Vector(values);
+        }
+        public IReadOnlyList<ExperimentalBinaryFloat32Vector> FloatVectorArray(int components)
+        {
+            int count = FixedArrayCount(checked(components * sizeof(uint)));
+            var result = new List<ExperimentalBinaryFloat32Vector>(count);
+            for (int i = 0; i < count; i++) result.Add(FloatVector(components));
+            return result.AsReadOnly();
+        }
         public IReadOnlyList<ExperimentalBinaryFloat32Vector3> FloatVector3Array()
         {
             int count = FixedArrayCount(12); var result = new List<ExperimentalBinaryFloat32Vector3>(count);
@@ -444,6 +452,8 @@ public sealed record ExperimentalBinaryBlock(string Type, ulong? NamelessId, IRe
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryInt32Vector3>> Int32Vector3ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryInt32Vector3>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryInt32Vector3>>());
     public IReadOnlyDictionary<string, ExperimentalBinaryFloat32Vector4> Float32Vector4Fields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryFloat32Vector4>(new Dictionary<string, ExperimentalBinaryFloat32Vector4>());
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector4>> Float32Vector4ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector4>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector4>>());
+    public IReadOnlyDictionary<string, ExperimentalBinaryFloat32Vector> VersionedFloatVectorFields { get; init; } = new ReadOnlyDictionary<string, ExperimentalBinaryFloat32Vector>(new Dictionary<string, ExperimentalBinaryFloat32Vector>());
+    public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector>> VersionedFloatVectorArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryFloat32Vector>>());
     public IReadOnlyDictionary<string, IReadOnlyList<int>> Int32ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<int>>(new Dictionary<string, IReadOnlyList<int>>());
     public IReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>> UInt32ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>(new Dictionary<string, IReadOnlyList<ExperimentalBinaryUInt32>>());
     public IReadOnlyDictionary<string, IReadOnlyList<long>> Int64ArrayFields { get; init; } = new ReadOnlyDictionary<string, IReadOnlyList<long>>(new Dictionary<string, IReadOnlyList<long>>());
@@ -521,6 +531,16 @@ public readonly record struct ExperimentalBinaryFloat32Vector2(ExperimentalBinar
 public readonly record struct ExperimentalBinaryFloat32Vector3(ExperimentalBinaryFloat32 X, ExperimentalBinaryFloat32 Y, ExperimentalBinaryFloat32 Z);
 public readonly record struct ExperimentalBinaryInt32Vector3(int X, int Y, int Z);
 public readonly record struct ExperimentalBinaryFloat32Vector4(ExperimentalBinaryFloat32 X, ExperimentalBinaryFloat32 Y, ExperimentalBinaryFloat32 Z, ExperimentalBinaryFloat32 W);
+public sealed record ExperimentalBinaryFloat32Vector
+{
+    public ExperimentalBinaryFloat32Vector(IEnumerable<ExperimentalBinaryFloat32> components)
+    {
+        ArgumentNullException.ThrowIfNull(components);
+        Components = Array.AsReadOnly(components.ToArray());
+    }
+
+    public IReadOnlyList<ExperimentalBinaryFloat32> Components { get; }
+}
 /// <summary>Preserves reference type, marker and every original 64-bit part; it does not resolve ownership.</summary>
 public sealed record ExperimentalBinaryReference(uint TypeCode, byte Marker, IReadOnlyList<ulong> RawParts)
 {

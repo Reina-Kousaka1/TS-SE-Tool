@@ -408,6 +408,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(new ExperimentalBinaryInt32Vector3(1, 2, 3), Assert.Single(block.Int32Vector3ArrayFields["int_vector3_list"]));
         Assert.Equal(0x40800000u, block.Float32Vector4Fields["quaternion"].W.RawBits);
         Assert.Equal(0x40800000u, Assert.Single(block.Float32Vector4ArrayFields["quaternion_list"]).W.RawBits);
+        Assert.Equal(8, block.VersionedFloatVectorFields["placement"].Components.Count);
+        Assert.Equal(8, Assert.Single(block.VersionedFloatVectorArrayFields["placements"]).Components.Count);
         Assert.Equal(new byte[] { 0, 0, 0x80, 0x3f, 0, 0, 0, 0x40 }, block.RawFields["vector2"].Bytes);
         Assert.Equal((uint)0x07, block.RawFields["vector2"].TypeCode);
         Assert.Equal(12, block.RawFields["vector3"].Bytes.Count);
@@ -447,6 +449,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(12, block.RawFields["vector3"].Bytes.Count);
         Assert.Equal(scalarWidth, block.RawFields["placement"].Bytes.Count);
         Assert.Equal(arrayWidth, block.RawFields["placements"].Bytes.Count);
+        Assert.Equal(version == 1 ? 7 : 8, block.VersionedFloatVectorFields["placement"].Components.Count);
+        Assert.Equal(version == 1 ? 7 : 8, Assert.Single(block.VersionedFloatVectorArrayFields["placements"]).Components.Count);
     }
 
     [Theory]
