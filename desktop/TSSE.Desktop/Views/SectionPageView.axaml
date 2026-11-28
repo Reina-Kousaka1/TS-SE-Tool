@@ -21,6 +21,8 @@
         <StackPanel DataContext="{Binding FixtureDiagnostics}" Spacing="8">
           <TextBlock Text="{Binding Heading}" FontSize="16" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+          <Button Content="{Binding ImportLabel}" Click="OnInspectSaveClick" HorizontalAlignment="Left" />
+          <TextBlock Text="{Binding ImportResult}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ImportResult}" />
           <ComboBox ItemsSource="{Binding Examples}" SelectedItem="{Binding Selected, Mode=TwoWay}" AutomationProperties.Name="{Binding SelectionLabel}">
             <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate>
           </ComboBox>

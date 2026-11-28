@@ -8,12 +8,13 @@ using TSSE.Savegames.Syntax;
 
 namespace TSSE.Desktop.ViewModels;
 
-/// <summary>Fixed in-memory examples only; does not accept paths or user save data.</summary>
+/// <summary>In-memory format examples and explicit read-only inspection results.</summary>
 public sealed class FixtureDiagnosticsViewModel : ObservableObject
 {
     private readonly IUiTextCatalog _text;
     private FixtureDiagnosticsExample _selected;
     private SiiFixtureReport _report;
+    private string _importResult;
 
     public FixtureDiagnosticsViewModel(IUiTextCatalog text)
     {
@@ -22,10 +23,13 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             .Select(key => new FixtureDiagnosticsExample(key, _text.Get("fixture.example." + key))).ToArray();
         _selected = Examples[0];
         _report = Inspect(_selected.Key);
+        _importResult = _text.Get("fixture.import.none");
     }
 
     public string Heading => _text.Get("fixture.heading");
     public string Description => _text.Get("fixture.description");
+    public string ImportLabel => _text.Get("fixture.import.button");
+    public string ImportResult => _importResult;
     public string SelectionLabel => _text.Get("fixture.selection");
     public IReadOnlyList<FixtureDiagnosticsExample> Examples { get; }
     public FixtureDiagnosticsExample Selected
@@ -96,6 +100,39 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             string assignedVehiclesMode = sample.Player?.AssignedVehiclesMode ?? _text.Get("fixture.coach.metricUnavailable");
             return _text.Format("fixture.coach.summary", xp, stops, entries, busCount, jobState, myVehiclesMode, assignedVehiclesMode);
         }
+    }
+
+    /// <summary>Reports format decoding for bytes explicitly selected by the user. Never writes or retains input bytes.</summary>
+    public void InspectSelectedBytes(ReadOnlySpan<byte> bytes)
+    {
+        try
+        {
+            using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(bytes);
+            string format = _text.Get("fixture.import.format." + decoded.Format);
+            int blocks = decoded.TextDocument?.Blocks.Count ?? decoded.BinaryBlocks?.Count ?? 0;
+            string container = decoded.ContainerAuthenticationUnverified
+                ? _text.Get("fixture.import.container.encrypted")
+                : decoded.ThreeNkDecoded ? _text.Get("fixture.import.container.3nk")
+                : _text.Get("fixture.import.container.plain");
+            SetImportResult(_text.Format("fixture.import.success", format, container, blocks));
+        }
+        catch (SiiSaveContainerException ex)
+        {
+            SetImportResult(_text.Format("fixture.import.failure", _text.Get("fixture.import.error." + ex.Error)));
+        }
+        catch (Exception ex) when (ex is InvalidDataException or SiiSyntaxException or ArgumentException)
+        {
+            SetImportResult(_text.Get("fixture.import.failure.generic"));
+        }
+    }
+
+    public void ReportImportReadFailure() => SetImportResult(_text.Get("fixture.import.readFailure"));
+    public void ReportImportTooLarge() => SetImportResult(_text.Get("fixture.import.tooLarge"));
+
+    private void SetImportResult(string result)
+    {
+        _importResult = result;
+        OnPropertyChanged(nameof(ImportResult));
     }
 
     private static SiiFixtureReport Inspect(string key) => SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes(ExampleText(key)));

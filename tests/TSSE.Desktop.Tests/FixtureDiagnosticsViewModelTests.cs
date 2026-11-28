@@ -59,4 +59,28 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("Binärpräfix", demo.Signature, StringComparison.Ordinal);
         Assert.Contains("nicht durchgeführt", demo.RoundTrip, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ExplicitFileBytesAreDecodedInMemoryAndNeverReportedAsCompatible()
+    {
+        var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        byte[] bytes = "SiiNunit\n{\n demo : sample {\n  unknown: \"kept\"\n }\n}\n"u8.ToArray();
+
+        viewModel.InspectSelectedBytes(bytes);
+
+        Assert.Contains("Decoded text SII payload", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("1 top-level blocks", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("not game compatibility", viewModel.ImportResult, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void InvalidSelectedBytesReturnControlledFailure()
+    {
+        var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));
+
+        viewModel.InspectSelectedBytes("not a save"u8);
+
+        Assert.Contains("nicht unterstützte oder ungültige Nutzdaten", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("keine Daten geändert", viewModel.ImportResult, StringComparison.Ordinal);
+    }
 }

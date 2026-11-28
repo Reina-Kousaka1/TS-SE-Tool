@@ -24,14 +24,14 @@ public sealed class SiiSaveContainerDecoderTests
     public void DecodesPlainTextAndRawBinaryInMemory()
     {
         byte[] text = Encoding.UTF8.GetBytes(TextSave);
-        var decodedText = SiiSaveContainerDecoder.Decode(text);
+        using var decodedText = SiiSaveContainerDecoder.Decode(text);
         Assert.Equal(SiiPayloadFormat.Text, decodedText.Format);
         Assert.False(decodedText.ContainerAuthenticationUnverified);
         Assert.Equal(text, decodedText.Payload.ToArray());
         Assert.NotNull(decodedText.TextDocument);
         Assert.Null(decodedText.BinaryBlocks);
 
-        var decodedBinary = SiiSaveContainerDecoder.Decode(MinimalBinaryFixture());
+        using var decodedBinary = SiiSaveContainerDecoder.Decode(MinimalBinaryFixture());
         Assert.Equal(SiiPayloadFormat.Binary, decodedBinary.Format);
         Assert.Equal(3u, Assert.Single(decodedBinary.BinaryBlocks!).BinaryVersion);
         Assert.Null(decodedBinary.TextDocument);
@@ -41,7 +41,7 @@ public sealed class SiiSaveContainerDecoderTests
     public void PayloadMemoryCannotMutateTheDecodedSaveSnapshot()
     {
         byte[] input = Encoding.UTF8.GetBytes(TextSave);
-        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(input);
+        using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(input);
         input[0] = (byte)'X';
 
         ReadOnlyMemory<byte> exposed = decoded.Payload;
@@ -50,6 +50,16 @@ public sealed class SiiSaveContainerDecoderTests
 
         Assert.Equal(Encoding.UTF8.GetBytes(TextSave), decoded.Payload.ToArray());
         Assert.Equal(TextSave, decoded.TextDocument!.ToText());
+    }
+
+    [Fact]
+    public void DisposingDecodedPayloadClearsItsSnapshotAndPreventsFurtherAccess()
+    {
+        using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(Encoding.UTF8.GetBytes(TextSave));
+
+        decoded.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => _ = decoded.Payload);
     }
 
     [Theory]
@@ -61,7 +71,7 @@ public sealed class SiiSaveContainerDecoderTests
         if (alsoScsCWrapped)
             wrapped = EncryptContainer(wrapped);
 
-        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(wrapped);
+        using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(wrapped);
 
         Assert.Equal(SiiPayloadFormat.Text, decoded.Format);
         Assert.True(decoded.ThreeNkDecoded);
@@ -78,7 +88,7 @@ public sealed class SiiSaveContainerDecoderTests
         byte[] vector = Convert.FromHexString(
             "336E4B010000ABB8C3CD291B6753BAE2E8EB715E2901072C4333F6C5EDCE4E7D1A3EF0C4B5DFA3FBAA83192D5E62E2D0A7855778393F270874479FFF9EA20A092F71D987");
 
-        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(vector);
+        using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(vector);
 
         Assert.True(decoded.ThreeNkDecoded);
         Assert.Equal(TextSave, decoded.TextDocument!.ToText());
@@ -89,7 +99,7 @@ public sealed class SiiSaveContainerDecoderTests
     {
         byte[] expected = MinimalBinaryFixture();
 
-        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(EncodeThreeNk(expected, seed: 17));
+        using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(EncodeThreeNk(expected, seed: 17));
 
         Assert.Equal(SiiPayloadFormat.Binary, decoded.Format);
         Assert.True(decoded.ThreeNkDecoded);
@@ -114,7 +124,7 @@ public sealed class SiiSaveContainerDecoderTests
         byte[] container = EncryptContainer(Encoding.UTF8.GetBytes(TextSave));
         container[4] ^= 0xff; // HMAC is deliberately not verified by this read-only path.
 
-        var decoded = SiiSaveContainerDecoder.Decode(container);
+        using var decoded = SiiSaveContainerDecoder.Decode(container);
 
         Assert.Equal(SiiPayloadFormat.Text, decoded.Format);
         Assert.True(decoded.ContainerAuthenticationUnverified);
@@ -126,7 +136,7 @@ public sealed class SiiSaveContainerDecoderTests
     public void DecryptsScsCWrappedBinaryPayloadThroughTheBoundedBsiiReader()
     {
         byte[] payload = MinimalBinaryFixture();
-        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(EncryptContainer(payload));
+        using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(EncryptContainer(payload));
 
         Assert.Equal(SiiPayloadFormat.Binary, decoded.Format);
         Assert.True(decoded.ContainerAuthenticationUnverified);

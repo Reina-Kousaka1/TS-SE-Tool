@@ -159,9 +159,10 @@ public static class SiiSaveContainerDecoder
     }
 }
 
-public sealed class SiiDecodedSave
+public sealed class SiiDecodedSave : IDisposable
 {
     private readonly byte[] _payload;
+    private bool _disposed;
 
     internal SiiDecodedSave(
         byte[] payload,
@@ -188,9 +189,18 @@ public sealed class SiiDecodedSave
     /// Returns a defensive snapshot. ReadOnlyMemory is a read-only view, but
     /// its backing array can still be recovered by callers via MemoryMarshal.
     /// </summary>
-    public ReadOnlyMemory<byte> Payload => new((byte[])_payload.Clone());
+    public ReadOnlyMemory<byte> Payload => _disposed
+        ? throw new ObjectDisposedException(nameof(SiiDecodedSave))
+        : new((byte[])_payload.Clone());
     public SiiSyntaxDocument? TextDocument { get; }
     public IReadOnlyList<ExperimentalBinaryBlock>? BinaryBlocks { get; }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        CryptographicOperations.ZeroMemory(_payload);
+        _disposed = true;
+    }
 }
 
 public enum SiiPayloadFormat { Text, Binary }

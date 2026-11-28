@@ -18,11 +18,11 @@ Avalonia's framework platform matrix includes Windows x64/ARM64, Linux x64/ARM64
 
 The window can resize in the desktop layout; cards wrap inside a scrolling content area. The 7/30-day and Truck/Trailer/Coach selectors only update preview state. They do not query game data or claim those editors are implemented.
 
-The Compatibility Lab includes a fixed synthetic historical Coaches example. It exercises read-only extraction of legacy counters, stop/job-log references and explicitly source-observed candidate player/bus/job references; it never scans profiles, opens save files, or claims current DLC compatibility. Real Coaches save validation remains outstanding.
+The Compatibility Lab includes a fixed synthetic historical Coaches example and an explicit user-triggered file picker for a single save copy. The picker reads at most 32 MiB into memory and reports only decoder format, wrapper state and top-level block count; it does not display paths or save contents, retain the input, or write files. ScsC authentication remains unverified. The synthetic Coaches example exercises historical counters, stop/job-log references and source-observed candidate player/bus/job references. The UI does not yet map a selected save into the Coaches model or claim current DLC compatibility. Real Coaches save validation remains outstanding.
 
 ## Data and safety boundaries
 
-- No game folder discovery, background watcher, file-picker, profile loader or save read is wired to the app.
+- No game folder discovery, background watcher, automatic profile loader or save write is wired to the app. A single file can be selected explicitly for bounded, read-only format decoding in the Compatibility Lab.
 - No save write, backup restore, quarantine, or process-control command exists in the UI.
 - The only persisted desktop preference is the dark/light theme choice. It contains no account, game, or savegame data.
 - The status cards use `GameAdapterRegistry.RegistrationCount`; the registry starts empty.
