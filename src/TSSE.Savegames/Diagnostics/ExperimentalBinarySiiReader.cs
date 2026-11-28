@@ -142,7 +142,7 @@ public static class ExperimentalBinarySiiReader
                         case 0x3a or 0x3c or 0x3e: referenceArrays.Add(field.Name, cursor.ReferenceArray(field.Type)); break;
                         default: throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     }
-                    rawFields.Add(field.Name, new ExperimentalBinaryRawField(field.Type, cursor.CopyRange(valueStart, cursor.Position)));
+                    rawFields.Add(field.Name, new ExperimentalBinaryRawField(field.Type, valueStart, cursor.CopyRange(valueStart, cursor.Position)));
                 }
                 blocks.Add(new ExperimentalBinaryBlock(structure.Name, nameless, new ReadOnlyDictionary<string, int>(values))
                 {
@@ -391,14 +391,18 @@ public sealed record ExperimentalBinaryFieldDefinition(string Name, uint TypeCod
 /// <summary>Exact encoded bytes for one BSII field value; bytes are exposed through a read-only collection.</summary>
 public sealed record ExperimentalBinaryRawField
 {
-    public ExperimentalBinaryRawField(uint typeCode, byte[] bytes)
+    public ExperimentalBinaryRawField(uint typeCode, int byteOffset, byte[] bytes)
     {
         ArgumentNullException.ThrowIfNull(bytes);
+        if (byteOffset < 0) throw new ArgumentOutOfRangeException(nameof(byteOffset));
         TypeCode = typeCode;
+        ByteOffset = byteOffset;
         Bytes = Array.AsReadOnly((byte[])bytes.Clone());
     }
 
     public uint TypeCode { get; }
+    /// <summary>Absolute byte offset in the original BSII payload.</summary>
+    public int ByteOffset { get; }
     public IReadOnlyList<byte> Bytes { get; }
 }
 
