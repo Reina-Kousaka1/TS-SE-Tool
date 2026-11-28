@@ -114,7 +114,34 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
                 ? _text.Get("fixture.import.container.encrypted")
                 : decoded.ThreeNkDecoded ? _text.Get("fixture.import.container.3nk")
                 : _text.Get("fixture.import.container.plain");
-            SetImportResult(_text.Format("fixture.import.success", format, container, blocks));
+            string profile = _text.Get("fixture.import.profile.unavailable");
+            if (decoded.TextDocument is not null)
+            {
+                try
+                {
+                    var values = LegacyProfileReadInspector.InspectText(decoded.TextDocument);
+                    profile = _text.Format("fixture.import.profile.values", values.Balance, values.Experience,
+                        values.CoachExperience?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"));
+                }
+                catch (InvalidDataException)
+                {
+                    // Format decoding is still useful; profile mapping is deliberately fail-closed.
+                }
+            }
+            else if (decoded.Format == SiiPayloadFormat.Binary)
+            {
+                try
+                {
+                    var values = LegacyProfileReadInspector.InspectBinary(decoded.BinaryBlocks!);
+                    profile = _text.Format("fixture.import.profile.values", values.Balance, values.Experience,
+                        values.CoachExperience?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"));
+                }
+                catch (InvalidDataException)
+                {
+                    // Format decoding is still useful; profile mapping is deliberately fail-closed.
+                }
+            }
+            SetImportResult(_text.Format("fixture.import.success", format, container, blocks) + " " + profile);
         }
         catch (SiiSaveContainerException ex)
         {

@@ -74,6 +74,19 @@ public sealed class FixtureDiagnosticsViewModelTests
     }
 
     [Fact]
+    public void ExplicitTextImportDisplaysOnlyUnambiguousKnownProfileValues()
+    {
+        var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        byte[] bytes = "SiiNunit\n{\n economy : e {\n  bank: b\n  experience_points: 500\n  extra: \"kept\"\n }\n bank : b {\n  money_account: 987654\n }\n}\n"u8.ToArray();
+
+        viewModel.InspectSelectedBytes(bytes);
+
+        Assert.Contains("balance 987654; XP 500", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("mapping unverified", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.DoesNotContain("extra", viewModel.ImportResult, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InvalidSelectedBytesReturnControlledFailure()
     {
         var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));

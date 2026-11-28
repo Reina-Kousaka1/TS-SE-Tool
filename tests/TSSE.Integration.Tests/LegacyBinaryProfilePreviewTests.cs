@@ -9,6 +9,16 @@ namespace TSSE.Integration.Tests;
 public sealed class LegacyBinaryProfilePreviewTests
 {
     [Fact]
+    public void ReadOnlyInspectorReadsKnownSyntheticBinaryProfileValues()
+    {
+        byte[] payload = BinaryProfileFixture();
+
+        ProfileValues values = LegacyProfileReadInspector.InspectBinary(payload);
+
+        Assert.Equal(new ProfileValues(123456789, 42, 7), values);
+    }
+
+    [Fact]
     public void EditsSyntheticBinaryProfileScalarsAsOneUndoableChangeAndRetainsUnknownBytes()
     {
         byte[] original = BinaryProfileFixture();
