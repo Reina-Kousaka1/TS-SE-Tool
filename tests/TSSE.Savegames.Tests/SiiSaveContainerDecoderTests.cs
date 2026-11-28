@@ -63,6 +63,21 @@ public sealed class SiiSaveContainerDecoderTests
     }
 
     [Fact]
+    public void RejectsScsCWithMissingZlibChecksumEvenWhenAnnouncedPayloadLengthMatches()
+    {
+        byte[] payload = Encoding.UTF8.GetBytes(TextSave);
+        using var compressedStream = new MemoryStream();
+        using (var zlib = new ZLibStream(compressedStream, CompressionLevel.Optimal, leaveOpen: true))
+            zlib.Write(payload);
+        byte[] compressedWithoutChecksum = compressedStream.ToArray()[..^4];
+
+        SiiSaveContainerException error = Assert.Throws<SiiSaveContainerException>(() =>
+            SiiSaveContainerDecoder.Decode(EncryptCompressedData(compressedWithoutChecksum, (uint)payload.Length)));
+
+        Assert.Equal(SiiSaveContainerError.DecompressionFailed, error.Error);
+    }
+
+    [Fact]
     public void RejectsMalformedAndOutOfBoundsContainers()
     {
         Assert.Equal(SiiSaveContainerError.UnsupportedPayload,
