@@ -83,6 +83,14 @@ independent review**. No Architect tool is available in this session.
   primary file reported invalid syntax. Neither file was modified. This checks
   syntax coverage only; binary/text semantic equivalence and game acceptance
   remain unverified.
+- A second hash-verified inspector build exercised `LegacyBinaryProfilePreview`
+  on the same ScsC backup entirely in memory. Money, XP, and existing Coaches
+  XP scalar changes passed exact payload undo/redo checks; six existing
+  candidate Coach skill fields were found and one field passed its own exact
+  undo/redo check. A final two-read source-hash comparison matched. The command
+  reports no profile values or identifiers and has no file-writing path. This
+  verifies editor preview behavior on this sample only, not file export or game
+  acceptance.
 
 ## Risks and open questions
 
