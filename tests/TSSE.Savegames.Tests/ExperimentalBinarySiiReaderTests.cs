@@ -163,6 +163,18 @@ public sealed class ExperimentalBinarySiiReaderTests
     }
 
     [Fact]
+    public void UnsupportedStructureTypeReportsItsCodeAndFieldContext()
+    {
+        ExperimentalBinarySiiException exception = Reject(Fixture(fieldType: 0x08));
+
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, exception.Error);
+        Assert.Equal(0x08u, exception.UnsupportedTypeCode);
+        Assert.Equal("synthetic", exception.StructureName);
+        Assert.Equal("value", exception.FieldName);
+        Assert.Contains("type 0x00000008", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void NamedBlockIdentityPreservesRawPartsAndRejectsLegacyTextCollisions()
     {
         ulong[] named = [0x800000000000000bul, 12];

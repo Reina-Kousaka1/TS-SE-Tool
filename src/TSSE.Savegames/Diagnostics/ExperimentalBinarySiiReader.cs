@@ -51,7 +51,11 @@ public static class ExperimentalBinarySiiReader
                 {
                     uint type = cursor.UInt32();
                     if (type == 0) break;
-                    if (!IsKnownType(type)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    if (!IsKnownType(type))
+                    {
+                        string unsupportedFieldName = cursor.Name();
+                        throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType, type, name, unsupportedFieldName);
+                    }
                     if (fields.Count >= MaximumFieldsPerStructure) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                     string field = cursor.Name();
                     if (!fieldNames.Add(field)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
@@ -212,7 +216,12 @@ public static class ExperimentalBinarySiiReader
         private int _position = 0;
         public bool End => _position == _input.Length;
         public int Position => _position;
-        public ExperimentalBinarySiiException Error(ExperimentalBinarySiiError error) => new(error, _position);
+        public ExperimentalBinarySiiException Error(
+            ExperimentalBinarySiiError error,
+            uint? unsupportedTypeCode = null,
+            string? structureName = null,
+            string? fieldName = null)
+            => new(error, _position, unsupportedTypeCode, structureName, fieldName);
         public ReadOnlySpan<byte> Take(int count)
         {
             if (count < 0 || count > _input.Length - _position) throw Error(ExperimentalBinarySiiError.Truncated);
@@ -475,8 +484,20 @@ public readonly record struct ExperimentalBinaryUInt64(ulong Raw)
     public ulong? LegacyValue => LegacyRendersNil ? null : Raw;
 }
 public enum ExperimentalBinarySiiError { InvalidHeader, UnsupportedVersion, Truncated, UnsupportedType, UnsupportedIdentifier, UnsupportedName, InvalidStringEncoding, InvalidStructure, Ambiguous, LimitExceeded, TrailingData }
-public sealed class ExperimentalBinarySiiException(ExperimentalBinarySiiError error, int offset) : FormatException($"Unsupported or invalid experimental binary SII ({error}) at byte {offset}.")
+public sealed class ExperimentalBinarySiiException(
+    ExperimentalBinarySiiError error,
+    int offset,
+    uint? unsupportedTypeCode = null,
+    string? structureName = null,
+    string? fieldName = null)
+    : FormatException($"Unsupported or invalid experimental binary SII ({error}) at byte {offset}" +
+        (unsupportedTypeCode is uint type ? $"; type 0x{type:x8}" : string.Empty) +
+        (structureName is null ? string.Empty : $"; structure '{structureName}'") +
+        (fieldName is null ? string.Empty : $"; field '{fieldName}'") + ".")
 {
     public ExperimentalBinarySiiError Error { get; } = error;
     public int Offset { get; } = offset;
+    public uint? UnsupportedTypeCode { get; } = unsupportedTypeCode;
+    public string? StructureName { get; } = structureName;
+    public string? FieldName { get; } = fieldName;
 }

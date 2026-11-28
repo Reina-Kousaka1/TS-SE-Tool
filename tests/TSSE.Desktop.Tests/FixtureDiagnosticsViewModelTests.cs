@@ -109,4 +109,15 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("nicht unterstützte oder ungültige Nutzdaten", viewModel.ImportResult, StringComparison.Ordinal);
         Assert.Contains("keine Daten geändert", viewModel.ImportResult, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void UnsupportedSelectedBinaryVersionReturnsControlledFailure()
+    {
+        var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));
+
+        viewModel.InspectSelectedBytes("BSII\u0009\u0000\u0000\u0000"u8);
+
+        Assert.Contains("nicht unterstützte oder ungültige Nutzdaten", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("keine Daten geändert", viewModel.ImportResult, StringComparison.Ordinal);
+    }
 }

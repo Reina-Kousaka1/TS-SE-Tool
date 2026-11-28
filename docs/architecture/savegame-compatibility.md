@@ -252,7 +252,9 @@ uses the format description as a reference and does not incorporate its code.
 versioned placement size is 7 floats in v1 and 8 in v2/v3. It accepts the
 documented active type codes. Codes `0x08` and `0x3e` are listed as unknown and
 their experimental support is marked inactive in the historical type notes,
-so this reader rejects them as unsupported. It returns values only after a complete parse and requires the
+so this reader rejects them as unsupported and now includes the numeric type,
+structure, field and byte offset in the exception for those structure declarations.
+It returns values only after a complete parse and requires the
 explicit end marker. Block order, per-block field order, field definitions,
 ordinal names, and each field's exact bytes are retained. Types without an
 application-level interpretation (vectors and placements) are exposed as raw
