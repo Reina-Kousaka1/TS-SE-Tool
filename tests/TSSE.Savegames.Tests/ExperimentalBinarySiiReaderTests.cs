@@ -447,12 +447,12 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("synthetic", block.Type);
         Assert.Equal("_nameless.1234", block.Id);
         Assert.Contains(block.Fields, field => field.Name == "value");
-        Assert.Equal("nil", Assert.Single(block.Fields.Where(field => field.Name == "xp")).Value.Trim());
-        Assert.Equal("-9223372036854775808", Assert.Single(block.Fields.Where(field => field.Name == "balance")).Value.Trim());
-        Assert.Equal("\"route demo\"", Assert.Single(block.Fields.Where(field => field.Name == "label")).Value.Trim());
-        Assert.Equal("3", Assert.Single(block.Fields.Where(field => field.Name == "labels")).Value.Trim());
-        Assert.Equal("\"\"", Assert.Single(block.Fields.Where(field => field.Name == "labels[0]")).Value.Trim());
-        Assert.Equal("true", Assert.Single(block.Fields.Where(field => field.Name == "flags[3]")).Value.Trim());
+        Assert.Equal("nil", Assert.Single(block.Fields, field => field.Name == "xp").Value.Trim());
+        Assert.Equal("-9223372036854775808", Assert.Single(block.Fields, field => field.Name == "balance").Value.Trim());
+        Assert.Equal("\"route demo\"", Assert.Single(block.Fields, field => field.Name == "label").Value.Trim());
+        Assert.Equal("3", Assert.Single(block.Fields, field => field.Name == "labels").Value.Trim());
+        Assert.Equal("\"\"", Assert.Single(block.Fields, field => field.Name == "labels[0]").Value.Trim());
+        Assert.Equal("true", Assert.Single(block.Fields, field => field.Name == "flags[3]").Value.Trim());
         Assert.Empty(document.OpaqueLines);
     }
 
@@ -469,9 +469,9 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("mode", block.Fields[^1].Name);
         Assert.Equal("two", block.Fields[^1].Value.Trim());
         Assert.Contains(block.Fields, field => field.Name == "placement" && field.Value.Contains(") (", StringComparison.Ordinal));
-        Assert.Single(block.Fields.Where(field => field.Name == "placements[0]"));
+        Assert.Single(block.Fields, field => field.Name == "placements[0]");
         Assert.Equal("&3f800000",
-            Assert.Single(block.Fields.Where(field => field.Name == "vector3")).Value.Trim().TrimStart('(').Split(',')[0]);
+            Assert.Single(block.Fields, field => field.Name == "vector3").Value.Trim().TrimStart('(').Split(',')[0]);
         Assert.Empty(document.OpaqueLines);
     }
 
