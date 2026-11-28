@@ -44,8 +44,11 @@ independent review**. No Architect tool is available in this session.
   BSII v1-v3 value types to a plain `SiiNunit` text representation in memory.
   It consumes every declared field's raw bytes, rejects invalid references,
   unresolved ordinals, unsupported string values, trailing field bytes, and
-  unsupported types, then reparses the entire output and verifies block and
-  field-line counts. It does not create files or serialize a ScsC container.
+  unsupported types, then reparses the entire output and checks each block,
+  field name, array count/index, and emitted value against a second bounded
+  decode of the original field bytes. The verification retains only per-block
+  field counts rather than a second document-sized list of expected values.
+  It does not create files or serialize a ScsC container.
 - The type formatting was cross-checked against public implementations and
   format notes: [avoinescu/ets2-decrypt](https://github.com/avoinescu/ets2-decrypt)
   documents a decoder tested against real 1.61/1.62 saves, and
@@ -64,6 +67,11 @@ independent review**. No Architect tool is available in this session.
   This verifies only the tested synthetic cases; it does not replace comparison
   against an independent decoder or an in-game load. The architecture
   self-review is not an independent review.
+- The field/value reparse verification passed the .NET 10 suite on commit
+  `3fadc9e` (613 tests, zero failures on Linux x64). The complete seven-job
+  matrix passed after one macOS DMG creation retry; the first attempt failed
+  with `hdiutil: create failed - Resource busy`. This remains syntax/output
+  verification only, not semantic equivalence or game acceptance.
 
 ## Bounded fixture-inspector integration
 
