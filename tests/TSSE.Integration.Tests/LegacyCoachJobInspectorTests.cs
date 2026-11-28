@@ -1,6 +1,7 @@
 using TSSE.GameAdapters.Editing;
 using TSSE.Savegames.Syntax;
 using Xunit;
+using System.Text.RegularExpressions;
 
 namespace TSSE.Integration.Tests;
 
@@ -36,15 +37,13 @@ public sealed class LegacyCoachJobInspectorTests
     [Fact]
     public void PreservesAbsentArraysAndReportsMissingOrAmbiguousReferences()
     {
-        string input = Fixture.Replace("  stages: 2\n  stages[0]: stage-a\n  stages[1]: stage-b\n  passengers: 1\n  passengers[0]: passenger-a\n", "", StringComparison.Ordinal);
-        input = input.Replace(" player_bus_job_stage : stage-b {\n  unknown_stage_field: retained\n }\n", "", StringComparison.Ordinal);
-        input = input.Replace(" player_bus_passenger : passenger-a {\n  unknown_passenger_field: retained\n }\n", "", StringComparison.Ordinal);
+        string input = RemoveArrayFields(RemoveArrayFields(Fixture, "stages"), "passengers");
         LegacyCoachJobSnapshot withoutArrays = Assert.Single(new LegacyCoachJobInspector(
             SiiSyntaxDocument.Parse(input), "player-id").Snapshot.Jobs);
         Assert.Null(withoutArrays.Stages);
         Assert.Null(withoutArrays.Passengers);
 
-        input = input.Replace("player_bus_job : job-a {", "player_bus_job : job-a {\n  stages: 1\n  stages[0]: missing-stage\n  passengers: 1\n  passengers[0]: missing-passenger", StringComparison.Ordinal);
+        input = InsertJobFields(input, "  stages: 1\n  stages[0]: missing-stage\n  passengers: 1\n  passengers[0]: missing-passenger");
 
         LegacyCoachJobSnapshot job = Assert.Single(new LegacyCoachJobInspector(
             SiiSyntaxDocument.Parse(input), "player-id").Snapshot.Jobs);
@@ -66,10 +65,7 @@ public sealed class LegacyCoachJobInspectorTests
     [InlineData("stages: 1\n  stages[x]: stage-a\n")]
     public void RejectsIncompleteOrMalformedObservedReferenceArrays(string fields)
     {
-        string input = Fixture.Replace(
-            "  stages: 2\n  stages[0]: stage-a\n  stages[1]: stage-b\n",
-            "  " + fields,
-            StringComparison.Ordinal);
+        string input = InsertJobFields(RemoveArrayFields(Fixture, "stages"), "  " + fields);
 
         Assert.Throws<InvalidOperationException>(() => new LegacyCoachJobInspector(
             SiiSyntaxDocument.Parse(input), "player-id"));
@@ -101,4 +97,14 @@ public sealed class LegacyCoachJobInspectorTests
          }
         }
         """;
+
+    private static string RemoveArrayFields(string input, string name) => Regex.Replace(
+        input,
+        $"(?m)^[\\t ]*{Regex.Escape(name)}(?:\\[[^\\]\\r\\n]*\\])?:[^\\r\\n]*(?:\\r?\\n|$)",
+        string.Empty);
+
+    private static string InsertJobFields(string input, string fields) => input.Replace(
+        "player_bus_job : job-a {",
+        "player_bus_job : job-a {\n" + fields,
+        StringComparison.Ordinal);
 }

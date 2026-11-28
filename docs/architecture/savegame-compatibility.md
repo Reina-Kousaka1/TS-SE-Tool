@@ -490,3 +490,5 @@ or in-game acceptance. The .NET 10 test suite has not run locally because only
 .NET SDK 8.0.425 is installed; branch CI remains required.
 
 The first CI run for this commit, [46131806391](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46131806391), reached compilation on four .NET 10 targets and failed on CS8602 nullable dereferences in the new test file. The assertions were changed to capture the selected snapshots in local variables before dereferencing. This is a compile-time test fix; rerun CI is still required.
+
+The follow-up CI run, [46131968392](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46131968392), compiled but exposed four faulty fixture mutations: they relied on exact indentation and did not remove or replace the raw-array lines. The tests now remove array fields by line pattern before inserting malformed or unresolved examples. This review is a documented implementation self-review, not an independent architecture review; the complete matrix is pending again.
