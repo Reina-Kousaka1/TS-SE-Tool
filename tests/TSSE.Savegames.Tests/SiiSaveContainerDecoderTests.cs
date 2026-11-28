@@ -55,6 +55,20 @@ public sealed class SiiSaveContainerDecoderTests
     }
 
     [Fact]
+    public void DecodesThreeNkFixedFormatVector()
+    {
+        // Fixed synthetic vector derived from the published 3nK key schedule;
+        // this does not use the test encoder below.
+        byte[] vector = Convert.FromHexString(
+            "336E4B010000ABB8C3CD291B6753BAE2E8EB715E2901072C4333F6C5EDCE4E7D1A3EF0C4B5DFA3FBAA83192D5E62E2D0A7855778393F270874479FFF9EA20A092F71D987");
+
+        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(vector);
+
+        Assert.True(decoded.ThreeNkDecoded);
+        Assert.Equal(TextSave, decoded.TextDocument!.ToText());
+    }
+
+    [Fact]
     public void DecodesThreeNkWrappedBinaryPayload()
     {
         byte[] expected = MinimalBinaryFixture();
