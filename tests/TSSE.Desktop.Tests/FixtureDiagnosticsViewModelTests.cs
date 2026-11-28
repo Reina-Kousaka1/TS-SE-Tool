@@ -19,6 +19,11 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("blocks: 1", demo.Duplicates, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "legacy-info");
         Assert.Contains("55 (compatibility unverified)", demo.LegacyVersion, StringComparison.Ordinal);
+        demo.Selected = demo.Examples.Single(item => item.Key == "coaches");
+        Assert.Contains("Synthetic historical Coaches preview", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("XP: 4321", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("referenced stops: 1", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("job-log entries: 1", demo.CoachSummary, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "opaque");
         Assert.Contains("unclassified syntax", demo.Status, StringComparison.Ordinal);
         Assert.Contains("Incomplete", demo.Duplicates, StringComparison.Ordinal);

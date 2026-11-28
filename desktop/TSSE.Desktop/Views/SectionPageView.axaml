@@ -31,6 +31,7 @@
           <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Duplicates}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding LegacyVersion}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CoachSummary}" TextWrapping="Wrap" AutomationProperties.Name="{Binding CoachSummary}" />
         </StackPanel>
       </Border>
 

@@ -18,6 +18,8 @@ Avalonia's framework platform matrix includes Windows x64/ARM64, Linux x64/ARM64
 
 The window can resize in the desktop layout; cards wrap inside a scrolling content area. The 7/30-day and Truck/Trailer/Coach selectors only update preview state. They do not query game data or claim those editors are implemented.
 
+The Compatibility Lab includes a fixed synthetic historical Coaches example. It exercises read-only extraction of legacy counters and stop/job-log references; it never scans profiles, opens save files, or claims current DLC compatibility. Real Coaches save validation remains outstanding.
+
 ## Data and safety boundaries
 
 - No game folder discovery, background watcher, file-picker, profile loader or save read is wired to the app.

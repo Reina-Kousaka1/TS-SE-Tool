@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text;
 using TSSE.Desktop.Services;
 using TSSE.GameAdapters.Compatibility;
+using TSSE.GameAdapters.Editing;
 using TSSE.Savegames.Diagnostics;
 using TSSE.Savegames.Syntax;
 
@@ -16,7 +18,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     public FixtureDiagnosticsViewModel(IUiTextCatalog text)
     {
         _text = text ?? throw new ArgumentNullException(nameof(text));
-        Examples = new[] { "text", "legacy-info", "opaque", "duplicates", "unclosed", "unexpected-close", "encrypted", "binary", "threenk" }
+        Examples = new[] { "text", "legacy-info", "coaches", "opaque", "duplicates", "unclosed", "unexpected-close", "encrypted", "binary", "threenk" }
             .Select(key => new FixtureDiagnosticsExample(key, _text.Get("fixture.example." + key))).ToArray();
         _selected = Examples[0];
         _report = Inspect(_selected.Key);
@@ -42,6 +44,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             OnPropertyChanged(nameof(Error));
             OnPropertyChanged(nameof(Duplicates));
             OnPropertyChanged(nameof(LegacyVersion));
+            OnPropertyChanged(nameof(CoachSummary));
         }
     }
 
@@ -73,11 +76,28 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         }
     }
 
+    public string CoachSummary
+    {
+        get
+        {
+            if (Selected.Key != "coaches") return _text.Get("fixture.coach.unavailable");
+            LegacyCoachEconomySnapshot sample = new LegacyCoachProfileInspector(
+                SiiSyntaxDocument.Parse(ExampleText(Selected.Key)), "coach-economy").Snapshot;
+            string xp = sample.Counters["bus_experience_points"]?.ToString(CultureInfo.InvariantCulture)
+                ?? _text.Get("fixture.coach.metricUnavailable");
+            string stops = sample.Stops.Count.ToString(CultureInfo.InvariantCulture);
+            string entries = sample.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture)
+                ?? _text.Get("fixture.coach.metricUnavailable");
+            return _text.Format("fixture.coach.summary", xp, stops, entries);
+        }
+    }
+
     private static SiiFixtureReport Inspect(string key) => SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes(ExampleText(key)));
     private static string ExampleText(string key) => key switch
     {
         "text" => "SiiNunit\n{\n demo : sample {\n  unknown_field: \"synthetic\"\n }\n}\n",
         "legacy-info" => "SiiNunit\n{\n save_container : demo {\n  version: 55\n  unknown_field: \"synthetic\"\n }\n}\n",
+        "coaches" => "SiiNunit\n{\n economy : coach-economy {\n  bus_experience_points: 4321\n  bus_stops: 1\n  bus_stops[0]: coach-stop-sample\n  bus_job_log: coach-log-sample\n }\n bus_stop : coach-stop-sample {\n  discovered: true\n  lines_offer: 1\n  lines_offer[0]: coach-line-sample\n }\n bus_job_log : coach-log-sample {\n  version: 1\n  entries: 1\n  entries[0]: synthetic-entry\n }\n}\n",
         "opaque" => "SiiNunit\n{\n demo : sample {\n  unknown syntax\n }\n}\n",
         "duplicates" => "SiiNunit\n{\n demo : sample {\n  value: 1\n  value: 2\n }\n other : sample {\n }\n}\n",
         "unclosed" => "SiiNunit\n{\n demo : sample {\n  value: 1\n",
