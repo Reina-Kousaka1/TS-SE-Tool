@@ -141,6 +141,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
                 {
                     // Format decoding is still useful; profile mapping is deliberately fail-closed.
                 }
+                profile += " " + InspectBinaryCoachCounters(decoded.BinaryBlocks!);
             }
             SetImportResult(_text.Format("fixture.import.success", format, container, blocks) + " " + profile);
         }
@@ -180,6 +181,26 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             int metrics = snapshot.Counters.Count(pair => pair.Value.HasValue);
             return _text.Format("fixture.import.coach.historical", metrics, snapshot.Stops.Count,
                 snapshot.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"));
+        }
+        catch (InvalidOperationException)
+        {
+            return _text.Get("fixture.import.coach.unavailable");
+        }
+    }
+
+    private string InspectBinaryCoachCounters(IReadOnlyList<ExperimentalBinaryBlock> blocks)
+    {
+        try
+        {
+            IReadOnlyDictionary<string, int?> counters = LegacyCoachProfileInspector.InspectBinaryCounters(blocks);
+            if (!counters.Values.Any(value => value.HasValue))
+                return _text.Get("fixture.import.coach.unavailable");
+            string Number(string name) => counters[name]?.ToString(CultureInfo.InvariantCulture)
+                ?? _text.Get("fixture.import.profile.noCoachField");
+            return _text.Format("fixture.import.coach.binaryCounters",
+                Number("bus_experience_points"), Number("bus_total_distance"), Number("bus_finished_job_count"),
+                Number("bus_cancelled_job_count"), Number("bus_total_passengers"), Number("bus_total_stops"),
+                Number("bus_game_time"), Number("bus_playing_time"));
         }
         catch (InvalidOperationException)
         {

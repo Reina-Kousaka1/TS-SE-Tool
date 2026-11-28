@@ -40,6 +40,7 @@
   "fixture.import.profile.unavailable": "Known profile values could not be mapped unambiguously; nothing was changed.",
   "fixture.import.coach.historical": "Historical Coaches fields detected (legacy schema only; DLC compatibility unverified): {0} known counters, {1} stops, {2} job-log entries.",
   "fixture.import.coach.unavailable": "No unambiguous historical Coaches structure found; current DLC support is unconfirmed.",
+  "fixture.import.coach.binaryCounters": "Historical BSII Coaches counters only (legacy schema; DLC compatibility unverified): XP {0}; distance {1}; completed jobs {2}; cancelled jobs {3}; passengers {4}; stops {5}; game time {6}; play time {7}.",
   "fixture.import.failure": "Could not decode the selected file: {0}. No data was changed.",
   "fixture.import.failure.generic": "Could not decode the selected file. No data was changed.",
   "fixture.import.readFailure": "Could not read the selected file. No data was changed.",

@@ -19,6 +19,18 @@ public sealed class LegacyBinaryProfilePreviewTests
     }
 
     [Fact]
+    public void BinaryCoachCounterInspectorReadsOnlySourceObservedInt32Fields()
+    {
+        byte[] payload = BinaryProfileFixture();
+        IReadOnlyDictionary<string, int?> counters = LegacyCoachProfileInspector.InspectBinaryCounters(
+            ExperimentalBinarySiiReader.Read(payload));
+
+        Assert.Equal(7, counters["bus_experience_points"]);
+        Assert.Null(counters["bus_total_distance"]);
+        Assert.Equal(8, counters.Count);
+    }
+
+    [Fact]
     public void EditsSyntheticBinaryProfileScalarsAsOneUndoableChangeAndRetainsUnknownBytes()
     {
         byte[] original = BinaryProfileFixture();

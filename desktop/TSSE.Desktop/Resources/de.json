@@ -40,6 +40,7 @@
   "fixture.import.profile.unavailable": "Bekannte Profilwerte nicht eindeutig zuordenbar; keine Werte geändert.",
   "fixture.import.coach.historical": "Historische Coaches-Felder erkannt (nur Legacy-Schema; DLC-Kompatibilität ungeprüft): {0} bekannte Zähler, {1} Stopps, {2} Auftragslog-Einträge.",
   "fixture.import.coach.unavailable": "Keine eindeutig lesbare historische Coaches-Struktur erkannt; aktuelle DLC-Unterstützung ist nicht bestätigt.",
+  "fixture.import.coach.binaryCounters": "Nur historische BSII-Coach-Zähler (Legacy-Schema; DLC-Kompatibilität ungeprüft): XP {0}; Strecke {1}; abgeschlossene Aufträge {2}; abgebrochene Aufträge {3}; Fahrgäste {4}; Stopps {5}; Spielzeit {6}; Nutzungszeit {7}.",
   "fixture.import.failure": "Ausgewählte Datei konnte nicht dekodiert werden: {0}. Es wurden keine Daten geändert.",
   "fixture.import.failure.generic": "Ausgewählte Datei konnte nicht dekodiert werden. Es wurden keine Daten geändert.",
   "fixture.import.readFailure": "Ausgewählte Datei konnte nicht gelesen werden. Es wurden keine Daten geändert.",

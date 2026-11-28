@@ -1,4 +1,5 @@
 using System.Globalization;
+using TSSE.Savegames.Diagnostics;
 using TSSE.Savegames.Syntax;
 
 namespace TSSE.GameAdapters.Editing;
@@ -29,6 +30,29 @@ public sealed class LegacyCoachProfileInspector
     }
 
     public LegacyCoachEconomySnapshot Snapshot { get; }
+
+    /// <summary>Reads only the historical Int32 Coaches counters from one explicitly decoded BSII economy block.</summary>
+    public static IReadOnlyDictionary<string, int?> InspectBinaryCounters(IReadOnlyList<ExperimentalBinaryBlock> blocks)
+    {
+        ArgumentNullException.ThrowIfNull(blocks);
+        ExperimentalBinaryBlock[] matches = blocks.Where(block => block.Type == "economy").ToArray();
+        if (matches.Length != 1)
+            throw new InvalidOperationException("The binary economy block is missing or ambiguous.");
+        ExperimentalBinaryBlock economy = matches[0];
+        var counters = new Dictionary<string, int?>(StringComparer.Ordinal);
+        foreach (string name in Counters)
+        {
+            if (!economy.RawFields.ContainsKey(name))
+            {
+                counters.Add(name, null);
+                continue;
+            }
+            if (!economy.Int32Fields.TryGetValue(name, out int value))
+                throw new InvalidOperationException($"The historical binary Coaches counter '{name}' has an unsupported representation.");
+            counters.Add(name, value);
+        }
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, int?>(counters);
+    }
 
     private LegacyCoachEconomySnapshot ReadSnapshot()
     {
