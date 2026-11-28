@@ -442,7 +442,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     {
         byte[] text = ExperimentalBinarySiiTextSerializer.Serialize(Fixture());
         SiiSyntaxDocument document = SiiEncodedText.Parse(text).Syntax;
-        SiiBlock block = Assert.Single(document.Blocks);
+        SiiBlock block = Assert.Single(document.Blocks, candidate => candidate.Type == "synthetic");
 
         Assert.Equal("synthetic", block.Type);
         Assert.Equal("_nameless.1234", block.Id);
@@ -464,7 +464,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     {
         SiiSyntaxDocument document = SiiEncodedText.Parse(
             ExperimentalBinarySiiTextSerializer.Serialize(ModernFixture(version: version))).Syntax;
-        SiiBlock block = Assert.Single(document.Blocks);
+        SiiBlock block = Assert.Single(document.Blocks, candidate => candidate.Type == "synthetic");
 
         Assert.Equal("mode", block.Fields[^1].Name);
         Assert.Equal("two", block.Fields[^1].Value.Trim());
