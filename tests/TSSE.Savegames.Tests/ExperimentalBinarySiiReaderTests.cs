@@ -385,7 +385,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(20, block.RawFields["quaternion_list"].Bytes.Count);
         Assert.Equal(32, block.RawFields["placement"].Bytes.Count);
         Assert.Equal(36, block.RawFields["placements"].Bytes.Count);
-        Assert.Equal(4, block.RawFields["small_list"].Bytes.Count);
+        // RawFields preserves the encoded array count followed by its two ushort values.
+        Assert.Equal(8, block.RawFields["small_list"].Bytes.Count);
         Assert.Equal(13, block.RawFields["refs"].Bytes.Count);
         Assert.Equal(0x3eu, Assert.Single(block.ReferenceArrayFields["refs"]).TypeCode);
     }
