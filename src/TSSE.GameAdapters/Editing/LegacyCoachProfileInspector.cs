@@ -107,12 +107,26 @@ public sealed class LegacyCoachProfileInspector
 
         return new LegacyCoachEconomySnapshot(
             counters,
+            ReadCoachSkills(_economy),
             stopIds,
             jobLogId,
             jobLogVersion,
             jobLogEntryCount,
             stops,
             player);
+    }
+
+    private static IReadOnlyDictionary<string, int?> ReadCoachSkills(SiiBlock economy)
+    {
+        var skills = new Dictionary<string, int?>(StringComparer.Ordinal);
+        foreach (string name in LegacyCoachSkillCatalog.FieldNames)
+        {
+            int? value = OptionalInt32(economy, name);
+            if (value is int rank && rank is < 0 or > LegacyCoachSkillCatalog.MaximumRank)
+                throw new InvalidOperationException($"The candidate Coaches skill '{name}' is outside its supported synthetic 0–3 range.");
+            skills.Add(name, value);
+        }
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, int?>(skills);
     }
 
     private static IReadOnlyList<string> ReadArray(SiiBlock block, string name)
@@ -198,6 +212,7 @@ public sealed class LegacyCoachProfileInspector
 
 public sealed record LegacyCoachEconomySnapshot(
     IReadOnlyDictionary<string, int?> Counters,
+    IReadOnlyDictionary<string, int?> CoachSkills,
     IReadOnlyList<string> StopIds,
     string? JobLogId,
     int? JobLogVersion,
@@ -218,3 +233,14 @@ public sealed record LegacyCoachPlayerSnapshot(
 public sealed record LegacyCoachUnitReference(string Id, LegacyCoachReferenceState State, string? ResolvedType);
 
 public enum LegacyCoachReferenceState { Resolved, Unresolved, Ambiguous }
+
+/// <summary>Candidate 1.62 Coaches skill fields reported by an independent implementation; not an official schema.</summary>
+public static class LegacyCoachSkillCatalog
+{
+    private static readonly string[] Names =
+    ["long_duty", "tight_schedule", "satisfaction_decrease", "low_acceleration", "satisfaction_increase", "ecodriving"];
+    private static readonly IReadOnlyList<string> ReadOnlyNames = Array.AsReadOnly(Names);
+
+    public static IReadOnlyList<string> FieldNames => ReadOnlyNames;
+    public const byte MaximumRank = 3;
+}

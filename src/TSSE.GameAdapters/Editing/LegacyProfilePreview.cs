@@ -13,6 +13,8 @@ namespace TSSE.GameAdapters.Editing;
 public sealed class LegacyProfilePreview
 {
     private static readonly string[] SkillNames = ["adr", "long_dist", "heavy", "fragile", "urgent", "mechanical"];
+    // Names reported for the Coaches career by an independent 1.62 implementation.
+    // Presence and range are still checked against the selected document; fields are never added.
     private readonly SiiEditSession _session;
     private readonly string _economyId;
     private readonly string _bankId;
@@ -83,6 +85,50 @@ public sealed class LegacyProfilePreview
     }
 
     private static byte SkillMaximum(string name) => name == "adr" ? (byte)63 : (byte)6;
+
+    /// <summary>Reads one candidate Coaches skill only when the selected document already contains it.</summary>
+    public byte GetCoachSkill(string name)
+    {
+        if (!LegacyCoachSkillCatalog.FieldNames.Contains(name, StringComparer.Ordinal))
+            throw new ArgumentException("Unknown candidate Coaches skill.", nameof(name));
+        SiiBlock economy = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText), "economy", _economyId);
+        string raw = FindValue(economy, name);
+        if (!byte.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out byte value) || value > LegacyCoachSkillCatalog.MaximumRank)
+            throw new InvalidOperationException("The Coaches skill is missing, ambiguous, or outside its supported 0–3 range.");
+        return value;
+    }
+
+    /// <summary>Changes one existing candidate Coaches skill in memory; it never creates a missing field.</summary>
+    public void SetCoachSkill(string name, byte value)
+    {
+        if (!LegacyCoachSkillCatalog.FieldNames.Contains(name, StringComparer.Ordinal))
+            throw new ArgumentException("Unknown candidate Coaches skill.", nameof(name));
+        if (value > LegacyCoachSkillCatalog.MaximumRank) throw new ArgumentOutOfRangeException(nameof(value));
+        byte current = GetCoachSkill(name);
+        if (value != current)
+            _session.Apply([new("economy", _economyId, name, value.ToString(CultureInfo.InvariantCulture))]);
+    }
+
+    /// <summary>Resets present candidate Coaches skill fields atomically, preserving all absent and unknown fields.</summary>
+    public void ResetCoachSkills()
+    {
+        SiiBlock economy = FindBlock(SiiSyntaxDocument.Parse(_session.PreviewText), "economy", _economyId);
+        var edits = new List<SiiFieldEdit>();
+        foreach (string name in LegacyCoachSkillCatalog.FieldNames)
+        {
+            if (FindOptionalValue(economy, name) is null) continue;
+            byte value = GetCoachSkill(name);
+            if (value != 0) edits.Add(new("economy", _economyId, name, "0"));
+        }
+        if (edits.Count != 0)
+        {
+            _session.Apply(edits);
+            return;
+        }
+
+        if (LegacyCoachSkillCatalog.FieldNames.Any(name => FindOptionalValue(economy, name) is not null)) return;
+        throw new InvalidOperationException("The selected profile has no modeled Coaches skill fields.");
+    }
 
     /// <summary>Resets all supported synthetic skill fields in one undoable edit.</summary>
     public void ResetSkills()

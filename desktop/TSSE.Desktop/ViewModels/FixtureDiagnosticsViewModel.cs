@@ -98,7 +98,8 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
                 ?? _text.Get("fixture.coach.metricUnavailable");
             string myVehiclesMode = sample.Player?.MyVehiclesMode ?? _text.Get("fixture.coach.metricUnavailable");
             string assignedVehiclesMode = sample.Player?.AssignedVehiclesMode ?? _text.Get("fixture.coach.metricUnavailable");
-            return _text.Format("fixture.coach.summary", xp, stops, entries, busCount, jobState, myVehiclesMode, assignedVehiclesMode);
+            int coachSkillCount = sample.CoachSkills.Count(pair => pair.Value.HasValue);
+            return _text.Format("fixture.coach.summary", xp, stops, entries, busCount, jobState, myVehiclesMode, assignedVehiclesMode, coachSkillCount);
         }
     }
 
@@ -179,8 +180,10 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         {
             LegacyCoachEconomySnapshot snapshot = new LegacyCoachProfileInspector(document, economies[0].Id!).Snapshot;
             int metrics = snapshot.Counters.Count(pair => pair.Value.HasValue);
+            int coachSkills = snapshot.CoachSkills.Count(pair => pair.Value.HasValue);
             return _text.Format("fixture.import.coach.historical", metrics, snapshot.Stops.Count,
-                snapshot.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"));
+                snapshot.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"),
+                coachSkills);
         }
         catch (InvalidOperationException)
         {
@@ -213,7 +216,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     {
         "text" => "SiiNunit\n{\n demo : sample {\n  unknown_field: \"synthetic\"\n }\n}\n",
         "legacy-info" => "SiiNunit\n{\n save_container : demo {\n  version: 55\n  unknown_field: \"synthetic\"\n }\n}\n",
-        "coaches" => "SiiNunit\n{\n economy : coach-economy {\n  bus_experience_points: 4321\n  bus_stops: 1\n  bus_stops[0]: coach-stop-sample\n  bus_job_log: coach-log-sample\n  player: coach-player-sample\n }\n player : coach-player-sample {\n  buses: 1\n  buses[0]: coach-vehicle-sample\n  current_bus_job: coach-job-sample\n  my_vehicles_mode: truck\n  assigned_vehicles_mode: coach\n }\n vehicle : coach-vehicle-sample {\n  future_coach_field: preserved\n }\n bus_job : coach-job-sample {\n  future_job_field: preserved\n }\n bus_stop : coach-stop-sample {\n  discovered: true\n  lines_offer: 1\n  lines_offer[0]: coach-line-sample\n }\n bus_job_log : coach-log-sample {\n  version: 1\n  entries: 1\n  entries[0]: synthetic-entry\n }\n}\n",
+        "coaches" => "SiiNunit\n{\n economy : coach-economy {\n  bus_experience_points: 4321\n  long_duty: 2\n  tight_schedule: 1\n  satisfaction_decrease: 0\n  low_acceleration: 3\n  satisfaction_increase: 1\n  ecodriving: 2\n  bus_stops: 1\n  bus_stops[0]: coach-stop-sample\n  bus_job_log: coach-log-sample\n  player: coach-player-sample\n }\n player : coach-player-sample {\n  buses: 1\n  buses[0]: coach-vehicle-sample\n  current_bus_job: coach-job-sample\n  my_vehicles_mode: truck\n  assigned_vehicles_mode: coach\n }\n vehicle : coach-vehicle-sample {\n  future_coach_field: preserved\n }\n bus_job : coach-job-sample {\n  future_job_field: preserved\n }\n bus_stop : coach-stop-sample {\n  discovered: true\n  lines_offer: 1\n  lines_offer[0]: coach-line-sample\n }\n bus_job_log : coach-log-sample {\n  version: 1\n  entries: 1\n  entries[0]: synthetic-entry\n }\n}\n",
         "opaque" => "SiiNunit\n{\n demo : sample {\n  unknown syntax\n }\n}\n",
         "duplicates" => "SiiNunit\n{\n demo : sample {\n  value: 1\n  value: 2\n }\n other : sample {\n }\n}\n",
         "unclosed" => "SiiNunit\n{\n demo : sample {\n  value: 1\n",

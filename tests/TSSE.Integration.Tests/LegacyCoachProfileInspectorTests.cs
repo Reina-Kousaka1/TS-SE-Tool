@@ -35,6 +35,20 @@ public sealed class LegacyCoachProfileInspectorTests
         Assert.All(result.Counters.Values, Assert.Null);
         Assert.Empty(result.StopIds);
         Assert.Null(result.JobLogId);
+        Assert.All(result.CoachSkills.Values, Assert.Null);
+    }
+
+    [Fact]
+    public void ReadsOnlyPresentCandidateCoachSkillsAndRejectsOutOfRangeRanks()
+    {
+        string input = Fixture.Replace("bus_experience_points: 4321", "bus_experience_points: 4321\n  long_duty: 2\n  ecodriving: 3", StringComparison.Ordinal);
+        LegacyCoachEconomySnapshot snapshot = new LegacyCoachProfileInspector(SiiSyntaxDocument.Parse(input), "economy-id").Snapshot;
+
+        Assert.Equal(2, snapshot.CoachSkills["long_duty"]);
+        Assert.Equal(3, snapshot.CoachSkills["ecodriving"]);
+        Assert.Null(snapshot.CoachSkills["tight_schedule"]);
+        string invalid = input.Replace("long_duty: 2", "long_duty: 4", StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => new LegacyCoachProfileInspector(SiiSyntaxDocument.Parse(invalid), "economy-id"));
     }
 
     [Theory]

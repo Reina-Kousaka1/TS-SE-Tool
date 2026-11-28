@@ -67,7 +67,7 @@ levels 0–150. It uses wider arithmetic to avoid overflow at UInt32.MaxValue.
 These tables are not verified against current game versions. No file is changed.
 
 The original repository's legacy `Economy.cs` also declares and parses
-`bus_experience_points` as a signed Int32 ([source at pinned commit](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Economy.cs)). The current preview can change that field only when it already exists exactly once. It does not create the field, infer a Coaches profile, or validate a current game save. This is legacy implementation evidence, not a genuine Coaches fixture.
+`bus_experience_points` as a signed Int32 ([source at pinned commit](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Economy.cs)). The current preview can change that field only when it already exists exactly once. It also offers a synthetic-only in-memory preview for six candidate Coaches skill names reported by an independent 1.62 implementation; it validates ranks 0–3 and never creates missing fields. It does not infer a Coaches profile or validate a current game save. The names and rank cap are not an official SCS schema or a genuine Coaches fixture.
 
 Level self-review (not independent): table selection is explicit, calculations
 do not change XP until the user applies a level, and the SII edit stays within

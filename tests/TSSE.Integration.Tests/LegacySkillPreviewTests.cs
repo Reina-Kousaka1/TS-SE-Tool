@@ -77,4 +77,47 @@ public sealed class LegacySkillPreviewTests
         Assert.Equal(input, editor.PreviewText);
         Assert.False(editor.CanUndo);
     }
+
+    [Fact]
+    public void CandidateCoachSkillsEditOnlyExistingFieldsAndUndoToExactSource()
+    {
+        string coachFields = " bus_experience_points: 12\n long_duty: 1\n tight_schedule: 3\n satisfaction_decrease: 0\n low_acceleration: 2\n satisfaction_increase: 1\n ecodriving: 3\n";
+        string input = Input.Replace(" experience_points: 0\n", " experience_points: 0\n" + coachFields, StringComparison.Ordinal);
+        var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(input), "e");
+
+        Assert.Equal((byte)3, editor.GetCoachSkill("tight_schedule"));
+        editor.SetCoachSkill("long_duty", 3);
+        Assert.Equal((byte)3, editor.GetCoachSkill("long_duty"));
+        string afterSingleEdit = editor.PreviewText;
+        editor.ResetCoachSkills();
+
+        Assert.All(new[] { "long_duty", "tight_schedule", "satisfaction_decrease", "low_acceleration", "satisfaction_increase", "ecodriving" },
+            skill => Assert.Equal((byte)0, editor.GetCoachSkill(skill)));
+        Assert.Contains("bus_experience_points: 12", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("mod: \"未知\"", editor.PreviewText, StringComparison.Ordinal);
+        Assert.True(editor.Undo());
+        Assert.Equal(afterSingleEdit, editor.PreviewText);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal(afterSingleEdit, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Equal((byte)0, editor.GetCoachSkill("ecodriving"));
+    }
+
+    [Fact]
+    public void CandidateCoachSkillFieldsAreNeverAddedAndInvalidValuesFailBeforeMutation()
+    {
+        var missing = new LegacyProfilePreview(SiiSyntaxDocument.Parse(Input), "e");
+        Assert.Throws<InvalidOperationException>(() => missing.SetCoachSkill("long_duty", 1));
+        Assert.Throws<InvalidOperationException>(() => missing.ResetCoachSkills());
+        Assert.Equal(Input, missing.PreviewText);
+
+        string invalid = Input.Replace(" experience_points: 0\n", " experience_points: 0\n long_duty: 4\n ecodriving: 0\n", StringComparison.Ordinal);
+        var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(invalid), "e");
+        Assert.Throws<InvalidOperationException>(() => editor.ResetCoachSkills());
+        Assert.Equal(invalid, editor.PreviewText);
+        Assert.False(editor.CanUndo);
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.SetCoachSkill("long_duty", 4));
+    }
 }
