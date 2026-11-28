@@ -36,6 +36,10 @@ public sealed class AvaloniaWindowTests
                 box.IsEffectivelyVisible && AutomationProperties.GetName(box) == profile.BalanceLabel);
             TextBox experience = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
                 box.IsEffectivelyVisible && AutomationProperties.GetName(box) == profile.ExperienceLabel);
+            TextBox coachExperience = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), box =>
+                box.IsEffectivelyVisible && AutomationProperties.GetName(box) == profile.CoachExperienceLabel);
+            Button applyCoachExperience = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
+                button.IsEffectivelyVisible && ReferenceEquals(button.DataContext, profile) && Equals(button.CommandParameter, "coach-experience"));
             Button apply = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
                 button.IsEffectivelyVisible && Equals(button.Content, profile.ApplyBothLabel));
             Button undo = Assert.Single(window.GetVisualDescendants().OfType<Button>(), button =>
@@ -51,11 +55,15 @@ public sealed class AvaloniaWindowTests
             Press(apply);
             Assert.Contains("money_account: -42", profile.PreviewText, StringComparison.Ordinal);
             Assert.Contains("experience_points: 42", profile.PreviewText, StringComparison.Ordinal);
+            coachExperience.Text = "1234";
+            Press(applyCoachExperience);
+            Assert.Contains("bus_experience_points: 1234", profile.PreviewText, StringComparison.Ordinal);
             Assert.Contains("demo_unknown: \"preserved\"", profile.PreviewText, StringComparison.Ordinal);
             Press(undo);
-            Assert.Equal(original, profile.PreviewText);
-            Press(redo);
             Assert.Contains("experience_points: 42", profile.PreviewText, StringComparison.Ordinal);
+            Assert.Contains("bus_experience_points: 0", profile.PreviewText, StringComparison.Ordinal);
+            Press(redo);
+            Assert.Contains("bus_experience_points: 1234", profile.PreviewText, StringComparison.Ordinal);
 
             void Press(Button button)
             {

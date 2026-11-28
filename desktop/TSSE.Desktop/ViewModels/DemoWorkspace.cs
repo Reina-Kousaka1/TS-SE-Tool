@@ -12,7 +12,7 @@ public sealed class DemoWorkspace
     private static string CreateFixture() => Fixture
         .Replace("  cargo: cargo.synthetic\n", "  cargo: cargo.synthetic\n  cargo_model_index: 0\n  urgency: 0\n  ferry_time: 0\n  ferry_price: 0\n  source_company: company.demo_source\n  target_company: company.demo_target\n", StringComparison.Ordinal)
         .Replace("  current_job: demo.job\n", "  current_job: demo.job\n  assigned_truck: demo.truck\n  assigned_trailer: demo.trailer\n  trucks: 2\n  trucks[0]: demo.truck\n  trucks[1]: demo.truck2\n  trailers: 2\n  trailers[0]: demo.trailer\n  trailers[1]: demo.trailer2\n", StringComparison.Ordinal)
-        .Replace("  experience_points: 0\n", "  experience_points: 0\n  adr: 0\n  long_dist: 0\n  heavy: 0\n  fragile: 0\n  urgent: 0\n  mechanical: 0\n", StringComparison.Ordinal)
+        .Replace("  experience_points: 0\n", "  experience_points: 0\n  bus_experience_points: 0\n  adr: 0\n  long_dist: 0\n  heavy: 0\n  fragile: 0\n  urgent: 0\n  mechanical: 0\n", StringComparison.Ordinal)
         .Replace("  fuel_relative: 0.5\n",
             "  accessories: 3\n  accessories[0]: demo.accessory\n  accessories[1]: demo.mod\n  accessories[2]: demo.missing\n  license_plate: \"DEMO|synthetic\"\n  odometer: 12345\n  odometer_float_part: &3f000000\n  fuel_relative: 0.5\n", StringComparison.Ordinal)
         .Replace("  cargo_damage: 0.1\n",

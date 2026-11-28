@@ -87,6 +87,14 @@
           <TextBlock Text="{Binding ExperienceDraftNotice}" TextWrapping="Wrap" />
           <Button IsVisible="{Binding IsExperienceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="experience-reviewed" />
           <Button Content="{Binding DiscardExperienceLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-experience" />
+          <TextBlock Text="{Binding CoachExperienceLabel}" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding CoachExperienceInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding CoachExperienceLabel}" />
+            <Button Grid.Column="1" Content="{Binding ApplyLabel}" Command="{Binding ActionCommand}" CommandParameter="coach-experience" />
+          </Grid>
+          <TextBlock Text="{Binding CoachExperienceDraftNotice}" TextWrapping="Wrap" />
+          <Button IsVisible="{Binding IsCoachExperienceStale}" Content="{Binding ApplyReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="coach-experience-reviewed" />
+          <Button Content="{Binding DiscardCoachExperienceLabel}" Command="{Binding ActionCommand}" CommandParameter="discard-coach-experience" />
           <Button Content="{Binding ApplyBothLabel}" Command="{Binding ActionCommand}" CommandParameter="both" />
           <Button IsVisible="{Binding IsEitherStale}" Content="{Binding ApplyBothReviewedLabel}" Command="{Binding ActionCommand}" CommandParameter="both-reviewed" />
           <StackPanel DataContext="{Binding Skills}" Spacing="8">

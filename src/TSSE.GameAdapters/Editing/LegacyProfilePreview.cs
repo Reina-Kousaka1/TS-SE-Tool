@@ -44,11 +44,15 @@ public sealed class LegacyProfilePreview
         {
             SiiSyntaxDocument document = SiiSyntaxDocument.Parse(_session.PreviewText);
             string balance = FindValue(FindBlock(document, "bank", _bankId), "money_account");
-            string experience = FindValue(FindBlock(document, "economy", _economyId), "experience_points");
+            SiiBlock economy = FindBlock(document, "economy", _economyId);
+            string experience = FindValue(economy, "experience_points");
+            string? coachExperience = FindOptionalValue(economy, "bus_experience_points");
             if (!long.TryParse(balance, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long money) ||
-                !uint.TryParse(experience, NumberStyles.None, CultureInfo.InvariantCulture, out uint xp))
+                !uint.TryParse(experience, NumberStyles.None, CultureInfo.InvariantCulture, out uint xp) ||
+                coachExperience is not null && !int.TryParse(coachExperience, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _))
                 throw new InvalidOperationException("Profile values are not supported decimal integers.");
-            return new ProfileValues(money, xp);
+            int? coachXp = coachExperience is null ? null : int.Parse(coachExperience, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+            return new ProfileValues(money, xp, coachXp);
         }
     }
 
@@ -98,6 +102,13 @@ public sealed class LegacyProfilePreview
             changes.Add(new("bank", _bankId, "money_account", values.Balance.ToString(CultureInfo.InvariantCulture)));
         if (values.Experience != current.Experience)
             changes.Add(new("economy", _economyId, "experience_points", values.Experience.ToString(CultureInfo.InvariantCulture)));
+        if (values.CoachExperience is int coachExperience)
+        {
+            if (current.CoachExperience is null)
+                throw new InvalidOperationException("The selected profile has no existing Coaches experience field.");
+            if (values.CoachExperience != current.CoachExperience)
+                changes.Add(new("economy", _economyId, "bus_experience_points", coachExperience.ToString(CultureInfo.InvariantCulture)));
+        }
         _session.Apply(changes);
     }
 
@@ -115,5 +126,16 @@ public sealed class LegacyProfilePreview
     {
         SiiField[] matches = block.Fields.Where(field => field.Name == name).ToArray();
         return matches.Length == 1 ? matches[0].Value : throw new InvalidOperationException("The requested field is missing or ambiguous.");
+    }
+
+    private static string? FindOptionalValue(SiiBlock block, string name)
+    {
+        SiiField[] matches = block.Fields.Where(field => field.Name == name).ToArray();
+        return matches.Length switch
+        {
+            0 => null,
+            1 => matches[0].Value,
+            _ => throw new InvalidOperationException("The requested field is ambiguous.")
+        };
     }
 }

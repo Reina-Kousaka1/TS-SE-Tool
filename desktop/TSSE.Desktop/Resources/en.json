@@ -28,6 +28,8 @@
   "jobDemo.applyBothReviewed": "Apply both after reviewing current values",
   "profileDemo.discardBalance": "Discard balance draft",
   "profileDemo.discardExperience": "Discard experience draft",
+  "profileDemo.coachExperience": "Coach experience (signed 32-bit integer; preview only)",
+  "profileDemo.discardCoachExperience": "Discard coach experience draft",
   "profileDemo.draftDiscarded": "Draft discarded; the preview was not changed.",
   "fixture.description": "Fixed examples only. A syntax result or prefix does not establish game compatibility; no save file is opened.",
   "fixture.selection": "Synthetic example",

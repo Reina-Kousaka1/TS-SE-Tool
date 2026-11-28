@@ -124,4 +124,42 @@ public sealed class ProfileDemoViewModelTests
         demo.ActionCommand.Execute("undo");
         Assert.Equal("0", demo.ExperienceInput);
     }
+
+    [Fact]
+    public void CoachExperienceDemoValidatesInt32AndUsesUndoWithoutOpeningASave()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        Assert.Contains("preview only", demo.CoachExperienceLabel, StringComparison.Ordinal);
+
+        demo.CoachExperienceInput = int.MaxValue.ToString(CultureInfo.InvariantCulture);
+        demo.ActionCommand.Execute("coach-experience");
+        Assert.Contains("bus_experience_points: 2147483647", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("No game file was changed", demo.Message, StringComparison.Ordinal);
+
+        demo.ActionCommand.Execute("undo");
+        Assert.Contains("bus_experience_points: 0", demo.PreviewText, StringComparison.Ordinal);
+        demo.CoachExperienceInput = "2147483648";
+        demo.ActionCommand.Execute("coach-experience");
+        Assert.Contains("Invalid", demo.Message, StringComparison.Ordinal);
+        Assert.Contains("bus_experience_points: 0", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void StaleCoachExperienceDraftRequiresExplicitReview()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        demo.CoachExperienceInput = "10";
+        demo.ActionCommand.Execute("coach-experience");
+        demo.CoachExperienceInput = "20";
+        demo.ActionCommand.Execute("undo");
+        Assert.True(demo.IsCoachExperienceStale);
+
+        demo.ActionCommand.Execute("coach-experience");
+        Assert.Contains("bus_experience_points: 0", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("review", demo.Message, StringComparison.OrdinalIgnoreCase);
+
+        demo.ActionCommand.Execute("coach-experience-reviewed");
+        Assert.Contains("bus_experience_points: 20", demo.PreviewText, StringComparison.Ordinal);
+        Assert.False(demo.IsCoachExperienceStale);
+    }
 }

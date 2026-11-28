@@ -63,4 +63,40 @@ public sealed class LegacyProfilePreviewTests
         Assert.Equal(Synthetic, editor.PreviewText);
         Assert.True(editor.CanRedo);
     }
+
+    [Fact]
+    public void ExistingCoachExperienceIsAnOptionalSignedInt32EditAndUndoable()
+    {
+        string input = Synthetic.Replace("  experience_points: 0005\n", "  experience_points: 0005\n  bus_experience_points: 7\n", StringComparison.Ordinal);
+        var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(input), "e");
+        Assert.Equal(7, editor.Current.CoachExperience);
+
+        editor.Apply(editor.Current with { CoachExperience = int.MaxValue });
+
+        Assert.Contains("  bus_experience_points: 2147483647\n", editor.PreviewText, StringComparison.Ordinal);
+        Assert.Equal("bus_experience_points", Assert.Single(editor.Changes).FieldName);
+        Assert.True(editor.Undo());
+        Assert.Equal(input, editor.PreviewText);
+        Assert.True(editor.Redo());
+        Assert.Contains("  bus_experience_points: 2147483647\n", editor.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CoachExperienceIsNotAddedWhenTheSelectedDocumentDoesNotContainIt()
+    {
+        var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(Synthetic), "e");
+
+        Assert.Null(editor.Current.CoachExperience);
+        Assert.Throws<InvalidOperationException>(() => editor.Apply(editor.Current with { CoachExperience = 1 }));
+        Assert.Equal(Synthetic, editor.PreviewText);
+    }
+
+    [Theory]
+    [InlineData("bus_experience_points: invalid")]
+    [InlineData("bus_experience_points: 2147483648")]
+    public void MalformedCoachExperienceFailsClosed(string field)
+    {
+        string input = Synthetic.Replace("  experience_points: 0005\n", $"  experience_points: 0005\n  {field}\n", StringComparison.Ordinal);
+        Assert.Throws<InvalidOperationException>(() => new LegacyProfilePreview(SiiSyntaxDocument.Parse(input), "e"));
+    }
 }

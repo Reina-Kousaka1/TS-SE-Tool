@@ -1,8 +1,8 @@
 # Editor foundation
 
 The editor session in TSSE.Core is an in-memory foundation. It cannot discover,
-open, serialize, or write a game save. ProfileValues holds only balance and
-experience as detached values; it is not a complete profile or a versioned SII
+open, serialize, or write a game save. ProfileValues holds detached balance,
+truck experience, and optional coach experience; it is not a complete profile or a versioned SII
 mapping. A new session has an original baseline. Valid edits create snapshots,
 undo and redo move through them, and a different edit after undo drops redo.
 The synthetic profile UI can apply balance and XP together after validating
@@ -20,7 +20,7 @@ returns to that baseline. This does not discard undo or redo history. Textual
 changes such as `001` to `1` remain dirty even when numerically equivalent.
 
 The Savegame Explorer offers a clearly labelled temporary profile demo for
-balance and experience, with per-field validation and undo/redo. Its initial
+balance, truck experience and coach experience, with per-field validation and undo/redo. Its initial
 zeroes are scratch values, not data read from a profile. The demo edits and
 displays an embedded synthetic SII document in memory. No loading or saving
 is connected to this demo. The vehicle and job demos also use synthetic data;
@@ -65,6 +65,9 @@ the synthetic profile demo lets users select either table and set the XP just
 below a requested next level, matching the legacy level-setting behavior for
 levels 0–150. It uses wider arithmetic to avoid overflow at UInt32.MaxValue.
 These tables are not verified against current game versions. No file is changed.
+
+The original repository's legacy `Economy.cs` also declares and parses
+`bus_experience_points` as a signed Int32 ([source at pinned commit](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Economy.cs)). The current preview can change that field only when it already exists exactly once. It does not create the field, infer a Coaches profile, or validate a current game save. This is legacy implementation evidence, not a genuine Coaches fixture.
 
 Level self-review (not independent): table selection is explicit, calculations
 do not change XP until the user applies a level, and the SII edit stays within
@@ -276,8 +279,8 @@ field, reject unsupported values instead of truncating bits, and inherit the
 in-memory syntax transaction. UI labels identify the data as synthetic.
 
 `LegacyProfilePreview` resolves an explicitly selected economy block's bank
-reference and maps legacy `money_account` (Int64) and `experience_points`
-(UInt32) fields for in-memory synthetic fixtures. These names and types are
+reference and maps legacy `money_account` (Int64), `experience_points`
+(UInt32), and optional existing `bus_experience_points` (Int32) fields for in-memory synthetic fixtures. These names and types are
 supported by the legacy Bank and Economy implementations, not validated
 against current games. Missing or duplicate targets, invalid numbers and
 unclassified syntax fail closed. Only changed values are replaced, in one batch;

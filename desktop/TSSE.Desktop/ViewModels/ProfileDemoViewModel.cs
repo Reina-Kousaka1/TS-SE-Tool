@@ -13,13 +13,16 @@ public sealed class ProfileDemoViewModel : ObservableObject
     private readonly IUiTextCatalog _text;
     private string _balanceInput = "0";
     private string _experienceInput = "0";
+    private string _coachExperienceInput = "0";
     private string _levelInput = "0";
     private LegacyLevelTable _levelTable = LegacyLevelTable.Ets2;
     private string _message;
     private string _lastBalance = "0";
     private string _lastExperience = "0";
+    private string _lastCoachExperience = "0";
     private string _baseBalance = "0";
     private string _baseExperience = "0";
+    private string _baseCoachExperience = "0";
 
     public ProfileDemoViewModel(IUiTextCatalog text, DemoWorkspace? workspace = null)
     {
@@ -37,11 +40,13 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string Description => _text.Get("profileDemo.description");
     public string BalanceLabel => _text.Get("profileDemo.balance");
     public string ExperienceLabel => _text.Get("profileDemo.experience");
+    public string CoachExperienceLabel => _text.Get("profileDemo.coachExperience");
     public string ApplyLabel => _text.Get("profileDemo.apply");
     public string ApplyBothLabel => _text.Get("profileDemo.applyBoth");
     public string ApplyBothReviewedLabel => _text.Get("profileDemo.applyBothReviewed");
     public string DiscardBalanceLabel => _text.Get("profileDemo.discardBalance");
     public string DiscardExperienceLabel => _text.Get("profileDemo.discardExperience");
+    public string DiscardCoachExperienceLabel => _text.Get("profileDemo.discardCoachExperience");
     public string UndoLabel => _text.Get("profileDemo.undo");
     public string RedoLabel => _text.Get("profileDemo.redo");
     public string RevertAllLabel => _text.Get("editor.revertAll");
@@ -64,11 +69,14 @@ public sealed class ProfileDemoViewModel : ObservableObject
     public string LevelInput { get => _levelInput; set => SetProperty(ref _levelInput, value ?? string.Empty); }
     public string BalanceInput { get => _balanceInput; set { if (_balanceInput == _lastBalance) _baseBalance = _lastBalance; if (SetProperty(ref _balanceInput, value ?? "")) NotifyDrafts(); } }
     public string ExperienceInput { get => _experienceInput; set { if (_experienceInput == _lastExperience) _baseExperience = _lastExperience; if (SetProperty(ref _experienceInput, value ?? "")) NotifyDrafts(); } }
+    public string CoachExperienceInput { get => _coachExperienceInput; set { if (_coachExperienceInput == _lastCoachExperience) _baseCoachExperience = _lastCoachExperience; if (SetProperty(ref _coachExperienceInput, value ?? "")) NotifyDrafts(); } }
     public bool IsBalanceStale => BalanceInput != _lastBalance && _baseBalance != _lastBalance;
     public bool IsExperienceStale => ExperienceInput != _lastExperience && _baseExperience != _lastExperience;
+    public bool IsCoachExperienceStale => CoachExperienceInput != _lastCoachExperience && _baseCoachExperience != _lastCoachExperience;
     public bool IsEitherStale => IsBalanceStale || IsExperienceStale;
     public string BalanceDraftNotice => IsBalanceStale ? _text.Format("editor.staleDraft", _lastBalance) : "";
     public string ExperienceDraftNotice => IsExperienceStale ? _text.Format("editor.staleDraft", _lastExperience) : "";
+    public string CoachExperienceDraftNotice => IsCoachExperienceStale ? _text.Format("editor.staleDraft", _lastCoachExperience) : "";
     public string ApplyReviewedLabel => _text.Get("editor.applyReviewed");
     public string Message { get => _message; private set => SetProperty(ref _message, value); }
     public RelayCommand<string> ActionCommand { get; }
@@ -91,6 +99,14 @@ public sealed class ProfileDemoViewModel : ObservableObject
             Message = _text.Get("profileDemo.draftDiscarded");
             return;
         }
+        if (action == "discard-coach-experience")
+        {
+            _baseCoachExperience = _lastCoachExperience;
+            SetProperty(ref _coachExperienceInput, _lastCoachExperience, nameof(CoachExperienceInput));
+            NotifyDrafts();
+            Message = _text.Get("profileDemo.draftDiscarded");
+            return;
+        }
         if (action is "ets2" or "ats")
         {
             _levelTable = action == "ets2" ? LegacyLevelTable.Ets2 : LegacyLevelTable.Ats;
@@ -98,7 +114,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
             return;
         }
         if ((action == "balance" && IsBalanceStale) || (action == "experience" && IsExperienceStale) ||
-            (action == "both" && IsEitherStale))
+            (action == "both" && IsEitherStale) || (action == "coach-experience" && IsCoachExperienceStale))
         {
             Message = _text.Get("editor.staleBlocked");
             return;
@@ -116,6 +132,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
                     => Apply(current with { Balance = balance }),
                 "experience" or "experience-reviewed" when uint.TryParse(ExperienceInput, NumberStyles.None, CultureInfo.InvariantCulture, out uint experience)
                     => Apply(current with { Experience = experience }),
+                "coach-experience" or "coach-experience-reviewed" when int.TryParse(CoachExperienceInput, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int coachExperience)
+                    => Apply(current with { CoachExperience = coachExperience }),
                 "level" when int.TryParse(LevelInput, NumberStyles.None, CultureInfo.InvariantCulture, out int level) && level <= 150
                     => Apply(current with { Experience = LegacyLevelCalculator.ExperienceForLevelEnd(_levelTable, level) }),
                 "undo" => _session.Undo(),
@@ -139,6 +157,7 @@ public sealed class ProfileDemoViewModel : ObservableObject
             _workspace.NotifyChanged();
             if (action is "balance" or "balance-reviewed" or "both" or "both-reviewed") { _baseBalance = _lastBalance; SetProperty(ref _balanceInput, _lastBalance, nameof(BalanceInput)); }
             if (action is "experience" or "experience-reviewed" or "both" or "both-reviewed") { _baseExperience = _lastExperience; SetProperty(ref _experienceInput, _lastExperience, nameof(ExperienceInput)); }
+            if (action is "coach-experience" or "coach-experience-reviewed") { _baseCoachExperience = _lastCoachExperience; SetProperty(ref _coachExperienceInput, _lastCoachExperience, nameof(CoachExperienceInput)); }
             NotifyDrafts();
         }
     }
@@ -148,10 +167,13 @@ public sealed class ProfileDemoViewModel : ObservableObject
         ProfileValues values = _session.Current;
         string balance = values.Balance.ToString(CultureInfo.InvariantCulture);
         string experience = values.Experience.ToString(CultureInfo.InvariantCulture);
+        string coachExperience = values.CoachExperience?.ToString(CultureInfo.InvariantCulture) ?? "";
         if (BalanceInput == _lastBalance || BalanceInput == balance) { _baseBalance = balance; SetProperty(ref _balanceInput, balance, nameof(BalanceInput)); }
         if (ExperienceInput == _lastExperience || ExperienceInput == experience) { _baseExperience = experience; SetProperty(ref _experienceInput, experience, nameof(ExperienceInput)); }
+        if (CoachExperienceInput == _lastCoachExperience || CoachExperienceInput == coachExperience) { _baseCoachExperience = coachExperience; SetProperty(ref _coachExperienceInput, coachExperience, nameof(CoachExperienceInput)); }
         _lastBalance = balance;
         _lastExperience = experience;
+        _lastCoachExperience = coachExperience;
         OnPropertyChanged(nameof(PreviewText));
         OnPropertyChanged(nameof(ChangeSummary));
         OnPropertyChanged(nameof(LevelProgress));
@@ -165,6 +187,8 @@ public sealed class ProfileDemoViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEitherStale));
         OnPropertyChanged(nameof(BalanceDraftNotice));
         OnPropertyChanged(nameof(ExperienceDraftNotice));
+        OnPropertyChanged(nameof(IsCoachExperienceStale));
+        OnPropertyChanged(nameof(CoachExperienceDraftNotice));
     }
 
     private bool Apply(ProfileValues values)
