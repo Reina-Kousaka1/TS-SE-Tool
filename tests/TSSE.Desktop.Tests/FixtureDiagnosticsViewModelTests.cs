@@ -87,6 +87,19 @@ public sealed class FixtureDiagnosticsViewModelTests
     }
 
     [Fact]
+    public void ExplicitTextImportLabelsHistoricalCoachFieldsWithoutClaimingDlcSupport()
+    {
+        var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        byte[] bytes = "SiiNunit\n{\n economy : e {\n  bus_experience_points: 55\n }\n}\n"u8.ToArray();
+
+        viewModel.InspectSelectedBytes(bytes);
+
+        Assert.Contains("Historical Coaches fields detected", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("schema compatibility unverified", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("current DLC support is unconfirmed", viewModel.ImportResult, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InvalidSelectedBytesReturnControlledFailure()
     {
         var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));

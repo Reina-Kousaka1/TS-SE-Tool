@@ -127,6 +127,7 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
                 {
                     // Format decoding is still useful; profile mapping is deliberately fail-closed.
                 }
+                profile += " " + InspectCoachFields(decoded.TextDocument);
             }
             else if (decoded.Format == SiiPayloadFormat.Binary)
             {
@@ -160,6 +161,26 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
     {
         _importResult = result;
         OnPropertyChanged(nameof(ImportResult));
+    }
+
+    private string InspectCoachFields(SiiSyntaxDocument document)
+    {
+        SiiBlock[] economies = document.Blocks.Where(block => block.Type == "economy").ToArray();
+        if (economies.Length != 1 || string.IsNullOrWhiteSpace(economies[0].Id))
+            return _text.Get("fixture.import.coach.unavailable");
+        int fields = economies[0].Fields.Count(field => field.Name.StartsWith("bus_", StringComparison.Ordinal));
+        if (fields == 0) return _text.Get("fixture.import.coach.unavailable");
+        try
+        {
+            LegacyCoachEconomySnapshot snapshot = new LegacyCoachProfileInspector(document, economies[0].Id!).Snapshot;
+            int metrics = snapshot.Counters.Count(pair => pair.Value.HasValue);
+            return _text.Format("fixture.import.coach.historical", metrics, snapshot.Stops.Count,
+                snapshot.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"));
+        }
+        catch (InvalidOperationException)
+        {
+            return _text.Get("fixture.import.coach.unavailable");
+        }
     }
 
     private static SiiFixtureReport Inspect(string key) => SiiFixtureInspector.Inspect(Encoding.UTF8.GetBytes(ExampleText(key)));
