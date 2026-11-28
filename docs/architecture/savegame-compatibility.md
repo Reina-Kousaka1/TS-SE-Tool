@@ -1,6 +1,6 @@
 # Savegame parser and compatibility status
 
-This document records evidence for the current Phase 2 savegame foundation. It distinguishes generic syntax handling from compatibility with actual ETS2/ATS files. No genuine game save or Coaches DLC fixture is present in the repository; the checked-in `tests/fixtures/synthetic/sample.sii` explicitly identifies itself as synthetic.
+This document records evidence for the current Phase 2 savegame foundation. It distinguishes generic syntax handling from compatibility with actual ETS2/ATS files. No genuine game save or Coaches DLC fixture is checked into the repository; the checked-in `tests/fixtures/synthetic/sample.sii` explicitly identifies itself as synthetic. A small number of user-supplied ETS2 copies have been inspected read-only, as detailed below.
 
 ## Compatibility matrix
 
@@ -18,7 +18,7 @@ This document records evidence for the current Phase 2 savegame foundation. It d
 | Profiles | No profile discovery or profile hierarchy reader is active. | Repository source and UI gates; no profile fixtures. | **Not tested; disabled.** |
 | Money and XP editing | `LegacyProfilePreview` and `LegacyBinaryProfilePreview` follow the existing economy-to-bank reference and edit only observed money, XP, and optional Coaches XP scalars in memory. Binary previews support observed signed Int32 and unsigned UInt32 Coaches XP representations. Plain-text previews can export a validated SII copy to a new path; the writer refuses overwrites, structural changes, and unsupported containers. There is no profile discovery or ScsC/BSII reconstruction. | Synthetic copy-writer regression tests plus read-only user-supplied ETS2 text and ScsC/BSII saves. In-memory money/XP previews, undo/redo, and unchanged source hashes were verified on one of each format. | **Text copy export implemented; one-sample parsing and preview confirmed. Game acceptance is unverified; binary-container export unsupported.** |
 | Trucks and trailers | No game-specific vehicle or trailer save models are implemented. | Repository model inventory; no real fixtures. | **Not tested; unsupported.** |
-| Coaches DLC | In-memory previews support existing historical `economy.bus_experience_points` values and candidate coach-skill fields; missing fields are never added. BSII coach XP and candidate skills accept the observed UInt32 type while preserving that type, and edits/reset are undoable. Candidate ranks remain limited to 0–3 based on a community schema reference, not an official SCS schema. Text saves also expose real `player_bus_job`, `player_bus_job_stage`, `player_bus_passenger` and coach-log blocks, but these job/passenger structures are not yet modeled as editable data. | Pinned original [`Economy.cs`](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Economy.cs), [`Bus_stop.cs`](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Bus_stop.cs), [`Bus_job_Log.cs`](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Bus_job_Log.cs), a genuine user-supplied binary save and two text autosaves. The samples contain six candidate skill fields; the binary sample uses UInt32, and the text sample contains one bus job, three stages, and 33 passengers. | **Real structure/decode evidence confirmed for these samples. Full Coaches support, skill cap, other versions, and game behavior remain unverified.** |
+| Coaches DLC | In-memory previews support existing historical `economy.bus_experience_points` values and candidate coach-skill fields; missing fields are never added. BSII coach XP and candidate skills accept the observed UInt32 type while preserving that type, and edits/reset are undoable. Candidate ranks remain limited to 0–3 based on a community schema reference, not an official SCS schema. A read-only inspector now models observed job, stage and passenger references and retains each raw source block; it assigns no semantics to their fields and permits no edits. | Pinned original [`Economy.cs`](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Economy.cs), [`Bus_stop.cs`](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Bus_stop.cs), [`Bus_job_Log.cs`](https://github.com/LIPtoH/TS-SE-Tool/blob/d97025f6a0a31b5952e5b524b50e0e0def630928/TS%20SE%20Tool/CustomClasses/Save/Items/Bus_job_Log.cs), a genuine user-supplied binary save and two text autosaves. The samples contain six candidate skill fields; the binary sample uses UInt32. One text sample's observed job references resolve to three stage blocks and 33 passenger blocks. | **These raw structures and references are confirmed in the supplied sample. Editable Coaches semantics, skill cap, other versions, and in-game behavior remain unverified.** |
 | Encoding and save containers | Read-only in-memory decoding accepts plain `SiiN`, raw BSII v1/v2/v3, the documented six-byte-header `3nK\x01` XOR wrapper, and `ScsC` AES-CBC/zlib payloads, including a `3nK` payload inside `ScsC`, under strict input/output limits. `ScsC` HMAC authentication is not checked; no container reconstruction or BSII serialization exists. | Synthetic byte-level tests and one genuine user-supplied ScsC/BSII save decoded into 19,354 blocks after two stable reads. `3nK` behavior follows the third-party reverse-engineered [`scs_tools/FORMAT.md`](https://github.com/Wilps93/scs_tools/blob/main/FORMAT.md#91-3nk). | **ScsC/BSII decode confirmed for one real sample; authentication, other versions, reconstruction, and game compatibility unverified.** |
 
 The in-memory fixture report counts repeated non-null block IDs across types
@@ -42,6 +42,10 @@ file was changed, copied into the repository, or written back.
   `player_bus_passenger` blocks, and Coaches economy skill fields.
 - A second 6,851,323-byte plain-text autosave parsed into 20,081 blocks and
   contained Coaches economy skill fields and two coach-job-log entries.
+- In the text autosave containing an active job, its stage and passenger arrays
+  resolved to the observed `player_bus_job_stage` and `player_bus_passenger`
+  blocks (3 and 33 respectively). The read-only inspector retains raw fields;
+  route, passenger, payment, and progression semantics are not inferred.
 - A separate `game.sii` in the selected slot was empty (0 bytes) and was
   rejected. No recovery or replacement was attempted.
 - Existing money/XP previews succeeded in memory on the BSII backup and one
@@ -53,9 +57,10 @@ file was changed, copied into the repository, or written back.
 These observations verify parsing and preview behavior for the supplied files,
 not game acceptance. The candidate skill rank cap was not independently proven
 by these samples (all six stored binary ranks were zero). The active Coaches
-job/passenger structures are identified but not yet represented by a typed
-model. The validated plain-text copy writer was also run against the supplied
-autosave in a temporary directory: the output reparsed with the previewed
+job/passenger structures are represented only as raw-block-preserving,
+read-only snapshots with resolved-reference status. The validated plain-text
+copy writer was also run against the supplied autosave in a temporary
+directory: the output reparsed with the previewed
 syntax, the temporary copy was removed, and the source hash remained unchanged.
 This does not show that the game accepts the copy. ScsC/BSII serialization and
 in-game load testing are still unimplemented.
@@ -284,7 +289,7 @@ game-specific semantics. It covers the published string/token, scalar/list numer
 ordinal, reference and fixed-size vector/placement value codes, with placement
 widths determined by the file version. All counts and lengths are bounded, unknown versions/types
 and incomplete streams fail closed, and no partial result is returned. The
-reader still does not decode the outer save container, serialize BSII, connect
+reader decodes the outer ScsC save container but does not serialize BSII, connect
 to the desktop or read profile paths. The format description below was
 independently implemented from the published
 [SCS save-game format notes](https://github.com/Istarlabs/istar-truckdata/blob/78c382a72dcae02a50cbd175a45d6230409d721a/docs/save-game-format.md),
@@ -464,8 +469,22 @@ and an unchanged byte comparison is reported separately from parsing. A clean
 report is not a complete SII grammar check, a game-version assessment or an
 in-game load test. Fixture provenance, privacy and licensing remain necessary.
 
-Before claiming ETS2, ATS, mods, a save version, or Coaches DLC compatibility, add safely sourced genuine fixtures with provenance and licensing, implement the relevant container decoding and version-aware validation, and demonstrate unchanged roundtrips plus in-game or authoritative format checks. Keep profile scanning and writes disabled until those checks exist and the security gates are separately reviewed.
+Before claiming general ETS2, ATS, mods, save-version, or Coaches DLC compatibility, add safely sourced fixtures with provenance and licensing, verify unchanged container roundtrips plus version-aware validation, and perform in-game or authoritative format checks. Keep ScsC/BSII writes and profile scanning disabled until those checks exist and the security gates are separately reviewed.
 
 ### Architecture self-review — candidate binary Coaches skill type report
 
 No Architect tool is available. This is the implementation agent's self-review, not an independent review. Matrix run [46108816132](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46108816132) failed compilation on all seven targets before their tests started. All seven logs report the same CS8600 at `LegacyCoachProfileInspector.cs:68`: the nullable dictionary lookup result was assigned to a non-nullable local. The fix makes the lookup nullable and explicitly treats a missing or null raw record as absent; it does not infer a field value or change parser behavior. Regression coverage uses only a synthetic BSII record and asserts that a present candidate field's raw type code is surfaced without interpreting its value. The raw code is not proof of Coaches semantics, and genuine save validation remains outstanding.
+
+### Architecture self-review — Coaches job structure inspection
+
+No Architect tool is available; this is an implementation self-review, not an
+independent review. The new inspector reads only an existing parsed document,
+requires unique target IDs, validates counted array indices, retains each raw
+source block, and represents unresolved or wrong-type references explicitly.
+Tests cover known references and raw-field retention, absent and malformed
+arrays, and unresolved references. The desktop diagnostic reports counts and
+resolution status only. A user-supplied plain-text sample confirmed one job,
+three resolved stage references and 33 resolved passenger references. This
+does not establish field meanings, editability, game-version compatibility,
+or in-game acceptance. The .NET 10 test suite has not run locally because only
+.NET SDK 8.0.425 is installed; branch CI remains required.

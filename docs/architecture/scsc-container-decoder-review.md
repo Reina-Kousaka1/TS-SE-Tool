@@ -7,20 +7,22 @@ independent review**. No Architect tool is available in this session.
 
 ## Evidence
 
-- The repository currently decodes plain-text SII bytes and raw BSII payloads
-  in memory, but does not decode the outer game-save container.
+- The repository decodes plain-text SII bytes, raw BSII payloads, and the outer
+  `ScsC` container in memory. One user-supplied ETS2 copy was read-only decoded
+  into 19,354 BSII blocks; this confirms that sample only.
 - Published community [format notes](https://github.com/Istarlabs/istar-truckdata/blob/78c382a72dcae02a50cbd175a45d6230409d721a/docs/save-game-format.md)
   describe `ScsC` as an AES-256-CBC payload containing a zlib stream, with the
   inflated byte length in the header. The corresponding
   [reference reader](https://github.com/Istarlabs/istar-truckdata/blob/a5e0c39d3eaae1e1905b8fd7bea19b726af772c2/src/truckdata/savegame/savegamefile.cpp)
   supplies the shared key and explicitly does not verify the HMAC.
-- No approved genuine save copy is available. Container tests must therefore
-  use synthetic plaintext, compression, IV and encrypted bytes only.
+- One explicitly supplied genuine ETS2 backup was inspected read-only. Its
+  `ScsC` HMAC was not verified and it was not copied into the repository.
+  Synthetic tests remain the only evidence for container edge cases.
 
 ## Proposed boundary
 
-- Accept a caller-supplied byte span only; do not open, enumerate or modify
-  files.
+- Keep file access outside this decoder; the caller supplied a file copy for
+  read-only validation, and the decoder operates on in-memory bytes.
 - Decode known `ScsC` inputs in memory; pass raw `BSII` payloads to the
   bounded BSII reader and `SiiN` text to the strict text parser in a separate
   composition step. Reject unknown signatures and unsupported legacy forms.
@@ -31,9 +33,10 @@ independent review**. No Architect tool is available in this session.
   padding bytes. Do not treat those bytes as part of the SII payload.
 - Report container authentication as **unverified**. CBC is unauthenticated in
   this reader and the HMAC is not checked; decoded bytes remain untrusted.
-- Keep the component disconnected from profile discovery, editor write paths,
-  recovery execution and Avalonia until real-copy validation and a separate
-  security review exist.
+- Keep `ScsC` reconstruction and binary editor export disabled. The real-copy
+  decode does not verify HMAC, test unchanged container roundtrips, establish
+  game compatibility, or satisfy an independent security review. The desktop
+  may show read-only structural diagnostics without authorizing writes.
 
 ## Risks and open questions
 
@@ -41,9 +44,10 @@ independent review**. No Architect tool is available in this session.
   to attacker-controlled bytes. Bounds, zlib checks and downstream syntax
   checks limit resource and parsing risk but do not prove origin or integrity.
 - The shared game key and container description come from unofficial community
-  sources; there is no vendor specification or genuine fixture available here.
-- Exact compatibility with current ETS2/ATS releases, Coaches saves and the
-  game's HMAC verification behavior remains unverified.
+  sources; there is no vendor specification and the genuine fixture is not
+  checked into this repository.
+- Exact compatibility with other ETS2/ATS releases, Coaches binary saves and
+  the game's HMAC verification behavior remains unverified.
 - No encryption, container reconstruction or save write is in scope for this
   read-only stage.
 

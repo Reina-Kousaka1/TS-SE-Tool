@@ -181,14 +181,36 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             LegacyCoachEconomySnapshot snapshot = new LegacyCoachProfileInspector(document, economies[0].Id!).Snapshot;
             int metrics = snapshot.Counters.Count(pair => pair.Value.HasValue);
             int coachSkills = snapshot.CoachSkills.Count(pair => pair.Value.HasValue);
-            return _text.Format("fixture.import.coach.historical", metrics, snapshot.Stops.Count,
+            string historical = _text.Format("fixture.import.coach.historical", metrics, snapshot.Stops.Count,
                 snapshot.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"),
                 coachSkills, FormatCandidateCoachSkills(snapshot.CoachSkills));
+            LegacyCoachJobInspection jobs = new LegacyCoachJobInspector(document, snapshot.Player?.Id).Snapshot;
+            return historical + " " + FormatCoachJobStructure(jobs);
         }
         catch (InvalidOperationException)
         {
             return _text.Get("fixture.import.coach.unavailable");
         }
+    }
+
+    private string FormatCoachJobStructure(LegacyCoachJobInspection inspection)
+    {
+        static string ReferenceCounts(IEnumerable<LegacyCoachUnitReference> references, string expectedType, IUiTextCatalog text)
+        {
+            LegacyCoachUnitReference[] items = references.ToArray();
+            int resolved = items.Count(reference => reference.State == LegacyCoachReferenceState.Resolved && reference.ResolvedType == expectedType);
+            return text.Format("fixture.import.coach.referenceCounts", resolved, items.Length - resolved);
+        }
+
+        IReadOnlyList<LegacyCoachJobStageSnapshot>?[] stageArrays = inspection.Jobs.Select(job => job.Stages).ToArray();
+        IReadOnlyList<LegacyCoachPassengerSnapshot>?[] passengerArrays = inspection.Jobs.Select(job => job.Passengers).ToArray();
+        string stages = stageArrays.All(array => array is null)
+            ? _text.Get("fixture.import.profile.noCoachField")
+            : ReferenceCounts(stageArrays.Where(array => array is not null).SelectMany(array => array!).Select(stage => stage.Reference), "player_bus_job_stage", _text);
+        string passengers = passengerArrays.All(array => array is null)
+            ? _text.Get("fixture.import.profile.noCoachField")
+            : ReferenceCounts(passengerArrays.Where(array => array is not null).SelectMany(array => array!).Select(passenger => passenger.Reference), "player_bus_passenger", _text);
+        return _text.Format("fixture.import.coach.jobStructures", inspection.Jobs.Count, stages, passengers);
     }
 
     private string FormatCandidateCoachSkills(IReadOnlyDictionary<string, int?> skills)

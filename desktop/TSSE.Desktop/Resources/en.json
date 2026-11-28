@@ -42,6 +42,8 @@
   "fixture.import.coach.unavailable": "No unambiguous historical Coaches structure found; current DLC support is unconfirmed.",
   "fixture.import.coach.binaryCounters": "Historical BSII Coaches counters only (legacy schema; DLC compatibility unverified): XP {0}; distance {1}; completed jobs {2}; cancelled jobs {3}; passengers {4}; stops {5}; game time {6}; play time {7}.",
   "fixture.import.coach.binarySkillTypes": "Raw BSII type codes for candidate skill fields (values uninterpreted): {0}.",
+  "fixture.import.coach.jobStructures": "Observed Coaches job structures (field semantics unverified): {0} jobs; stage references {1}; passenger references {2}.",
+  "fixture.import.coach.referenceCounts": "{0} resolved, {1} unresolved or unexpected type",
   "fixture.import.failure": "Could not decode the selected file: {0}. No data was changed.",
   "fixture.import.failure.generic": "Could not decode the selected file. No data was changed.",
   "fixture.import.readFailure": "Could not read the selected file. No data was changed.",
