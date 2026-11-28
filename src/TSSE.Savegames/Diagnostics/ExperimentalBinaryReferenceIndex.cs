@@ -31,7 +31,7 @@ public sealed class ExperimentalBinaryReferenceIndex
     public ExperimentalReferenceMatch Inspect(ExperimentalBinaryReference reference)
     {
         ArgumentNullException.ThrowIfNull(reference);
-        if (reference.TypeCode is not (0x39 or 0x3a or 0x3b or 0x3c or 0x3d or 0x3e) || reference.RawParts is null)
+        if (reference.TypeCode is not (0x39 or 0x3a or 0x3b or 0x3c or 0x3d) || reference.RawParts is null)
             return new(ExperimentalReferenceMatchKind.Unsupported, null);
         if (reference.RawParts.Count != (reference.Marker == 0xff ? 1 : reference.Marker))
             return new(ExperimentalReferenceMatchKind.Unsupported, null);

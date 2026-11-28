@@ -6,7 +6,7 @@ using System.Text;
 namespace TSSE.Savegames.Diagnostics;
 
 /// <summary>
-/// Bounded read-only BSII v2/v3 decoder for in-memory bytes. It does not open
+/// Bounded read-only BSII v1/v2/v3 decoder for in-memory bytes. It does not open
 /// files, decode the outer encrypted container, write, or establish game
 /// compatibility. Known values are retained as typed values and exact raw bytes.
 /// </summary>
@@ -23,7 +23,7 @@ public static class ExperimentalBinarySiiReader
         var cursor = new Cursor(input);
         if (!cursor.Take(4).SequenceEqual("BSII"u8)) throw cursor.Error(ExperimentalBinarySiiError.InvalidHeader);
         uint version = cursor.UInt32();
-        if (version is not (2 or 3)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedVersion);
+        if (version is not (1 or 2 or 3)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedVersion);
         var structures = new Dictionary<uint, Structure>();
         var blocks = new List<ExperimentalBinaryBlock>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -36,12 +36,9 @@ public static class ExperimentalBinarySiiReader
                 byte valid = cursor.Byte();
                 if (valid == 0)
                 {
-                    if (cursor.End)
-                    {
-                        if (blocks.Count == 0) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
-                        return blocks.AsReadOnly();
-                    }
-                    continue;
+                    if (blocks.Count == 0) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
+                    if (!cursor.End) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
+                    return blocks.AsReadOnly();
                 }
                 if (valid != 1) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
                 if (structures.Count >= MaximumStructures) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
@@ -54,7 +51,7 @@ public static class ExperimentalBinarySiiReader
                 {
                     uint type = cursor.UInt32();
                     if (type == 0) break;
-                    if (!IsKnownType(type, version)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
+                    if (!IsKnownType(type)) throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     if (fields.Count >= MaximumFieldsPerStructure) throw cursor.Error(ExperimentalBinarySiiError.LimitExceeded);
                     string field = cursor.Name();
                     if (!fieldNames.Add(field)) throw cursor.Error(ExperimentalBinarySiiError.Ambiguous);
@@ -131,15 +128,15 @@ public static class ExperimentalBinarySiiReader
                         case 0x35: booleans.Add(field.Name, new ExperimentalBinaryBool(cursor.Byte())); break;
                         case 0x36: booleanArrays.Add(field.Name, cursor.BoolArray()); break;
                         case 0x07: case 0x09: case 0x11: case 0x17: case 0x19:
-                            cursor.Skip(FixedValueSize(field.Type)); break;
-                        case 0x08: case 0x0a: case 0x12: case 0x18: case 0x1a:
-                            cursor.SkipFixedArray(FixedValueSize(field.Type - 1)); break;
+                            cursor.Skip(FixedValueSize(field.Type, version)); break;
+                        case 0x0a: case 0x12: case 0x18: case 0x1a:
+                            cursor.SkipFixedArray(FixedValueSize(field.Type, version)); break;
                         case 0x2b: shortValues.Add(field.Name, cursor.UInt16()); break;
                         case 0x2c: shortArrays.Add(field.Name, cursor.UInt16Array()); break;
                         case 0x2f: plainUnsignedValues.Add(field.Name, cursor.UInt32()); break;
                         case 0x37: ordinals.Add(field.Name, new ExperimentalBinaryOrdinal(cursor.UInt32(), field.OrdinalValues)); break;
                         case 0x39 or 0x3b or 0x3d: references.Add(field.Name, cursor.Reference(field.Type)); break;
-                        case 0x3a or 0x3c or 0x3e: referenceArrays.Add(field.Name, cursor.ReferenceArray(field.Type)); break;
+                        case 0x3a or 0x3c: referenceArrays.Add(field.Name, cursor.ReferenceArray(field.Type)); break;
                         default: throw cursor.Error(ExperimentalBinarySiiError.UnsupportedType);
                     }
                     rawFields.Add(field.Name, new ExperimentalBinaryRawField(field.Type, valueStart, cursor.CopyRange(valueStart, cursor.Position)));
@@ -175,26 +172,22 @@ public static class ExperimentalBinarySiiReader
             }
         }
         if (blocks.Count == 0) throw cursor.Error(ExperimentalBinarySiiError.InvalidStructure);
-        if (version == 2) throw cursor.Error(ExperimentalBinarySiiError.Truncated);
-        return blocks.AsReadOnly();
+        throw cursor.Error(ExperimentalBinarySiiError.Truncated);
     }
 
     private static readonly IReadOnlyDictionary<uint, string> EmptyOrdinalValues = new ReadOnlyDictionary<uint, string>(new Dictionary<uint, string>());
-    private static bool IsKnownType(uint type, uint version)
+    private static bool IsKnownType(uint type) => type is
+        0x01 or 0x02 or 0x03 or 0x04 or 0x05 or 0x06 or
+        0x07 or 0x09 or 0x0a or 0x11 or 0x12 or 0x17 or 0x18 or 0x19 or 0x1a or
+        0x25 or 0x26 or 0x27 or 0x28 or 0x2b or 0x2c or 0x2f or
+        0x31 or 0x32 or 0x33 or 0x34 or 0x35 or 0x36 or 0x37 or
+        0x39 or 0x3a or 0x3b or 0x3c or 0x3d;
+    private static int FixedValueSize(uint type, uint version) => type switch
     {
-        bool establishedLegacyType = type is 0x01 or 0x02 or 0x03 or 0x04 or 0x05 or 0x06 or
-            0x25 or 0x26 or 0x27 or 0x28 or 0x31 or 0x32 or 0x33 or 0x34 or
-            0x35 or 0x36 or 0x39 or 0x3a or 0x3b or 0x3c or 0x3d;
-        if (establishedLegacyType) return true;
-        return version == 3 && type is (0x07 or 0x08 or 0x09 or 0x0a or 0x11 or 0x12 or
-            0x17 or 0x18 or 0x19 or 0x1a or 0x2b or 0x2c or 0x2f or 0x37 or 0x3e);
-    }
-    private static int FixedValueSize(uint type) => type switch
-    {
-        0x07 or 0x08 => 8,
+        0x07 => 8,
         0x09 or 0x0a or 0x11 or 0x12 => 12,
         0x17 or 0x18 => 16,
-        0x19 or 0x1a => 32,
+        0x19 or 0x1a => version == 1 ? 28 : 32,
         _ => throw new ArgumentOutOfRangeException(nameof(type))
     };
     private sealed record Field(string Name, uint Type, IReadOnlyDictionary<uint, string> OrdinalValues);

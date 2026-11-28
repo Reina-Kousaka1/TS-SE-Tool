@@ -5,7 +5,7 @@ using TSSE.Savegames.Diagnostics;
 namespace TSSE.Savegames.Editing;
 
 /// <summary>
-/// In-memory, fixed-width scalar edits for already parsed BSII v2/v3 bytes.
+/// In-memory, fixed-width scalar edits for already parsed BSII v1/v2/v3 bytes.
 /// This does not encode a ScsC container, access files, or validate game semantics.
 /// </summary>
 public sealed class ExperimentalBinaryScalarEditSession
