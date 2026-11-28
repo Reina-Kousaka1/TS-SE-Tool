@@ -51,6 +51,18 @@ public sealed class SiiSaveContainerDecoderTests
     }
 
     [Fact]
+    public void DecryptsScsCWrappedBinaryPayloadThroughTheBoundedBsiiReader()
+    {
+        byte[] payload = MinimalBinaryFixture();
+        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(EncryptContainer(payload));
+
+        Assert.Equal(SiiPayloadFormat.Binary, decoded.Format);
+        Assert.True(decoded.ContainerAuthenticationUnverified);
+        Assert.Equal(payload, decoded.Payload.ToArray());
+        Assert.Equal(3u, Assert.Single(decoded.BinaryBlocks!).BinaryVersion);
+    }
+
+    [Fact]
     public void RejectsMalformedAndOutOfBoundsContainers()
     {
         Assert.Equal(SiiSaveContainerError.UnsupportedPayload,
