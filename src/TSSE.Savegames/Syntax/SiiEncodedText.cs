@@ -8,7 +8,7 @@ namespace TSSE.Savegames.Syntax;
 /// </summary>
 public sealed class SiiEncodedText
 {
-    public const int MaximumBytes = 8 * 1024 * 1024;
+    public const int MaximumBytes = 32 * 1024 * 1024;
     private readonly Encoding _encoding;
     private readonly byte[] _preamble;
 

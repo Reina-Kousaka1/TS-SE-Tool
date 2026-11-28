@@ -50,4 +50,20 @@ public sealed class SiiEncodedTextTests
         Assert.Throws<InvalidDataException>(() => document.WithFieldValue("economy", "synthetic", "value", "\ud800"));
         Assert.Equal(original, document.ToBytes());
     }
+
+    [Fact]
+    public void ParsesAndRoundTripsTextLargerThanNineMiB()
+    {
+        var builder = new StringBuilder("SiiNunit\n{\n test : synthetic {\n");
+        string comment = "#" + new string('x', 1022) + "\n";
+        for (int index = 0; index < 9_220; index++) builder.Append(comment);
+        builder.Append(" value: 1\n }\n}\n");
+        byte[] source = Encoding.UTF8.GetBytes(builder.ToString());
+
+        Assert.True(source.Length > 9 * 1024 * 1024);
+        SiiEncodedText parsed = SiiEncodedText.Parse(source);
+
+        Assert.Equal(source, parsed.ToBytes());
+        Assert.Equal("1", Assert.Single(Assert.Single(parsed.Syntax.Blocks).Fields).Value);
+    }
 }

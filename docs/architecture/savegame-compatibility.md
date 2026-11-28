@@ -23,7 +23,7 @@ The in-memory fixture report counts repeated non-null block IDs across types
 and repeated exact field names within each block. Indexed names are compared
 literally. These are diagnostic hints, not schema validation; unclassified
 syntax can make the counts incomplete. Counts are unavailable when parsing fails.
-| Encoding and save containers | The in-memory plain-text wrapper accepts strict UTF-8 (with or without BOM) and BOM-marked UTF-16 LE/BE. It does not decode game compression or reconstruct binary containers. | Synthetic byte-level roundtrips only. | **Actual game-save encoding and containers unverified.** |
+| Encoding and save containers | The in-memory plain-text wrapper accepts strict UTF-8 (with or without BOM) and BOM-marked UTF-16 LE/BE. An experimental BSII v2/v3 reader parses bounded raw binary payloads but does not decrypt/decompress `ScsC`, reconstruct containers, or serialize BSII. | Synthetic byte-level tests only; the managed decoder has no real save fixture. | **Outer game-save containers and compatibility unverified.** |
 
 ## Roundtrip guarantees
 
@@ -35,7 +35,7 @@ No canonical serializer or format normalization is defined. The plain-text wrapp
 
 ## Bounded input and diagnostics
 
-The parser applies configurable limits for total characters, lines, line length, blocks, fields, and nesting depth. `ParseReader` reads at most one character beyond the configured total-character budget and rejects an overlong line while scanning. Stable `SiiSyntaxErrorCode` values accompany parse exceptions, with line and column data when available. The default limits are defensive resource bounds; they have not been calibrated against genuine game saves.
+The parser applies configurable limits for total characters, lines, line length, blocks, fields, and nesting depth. `ParseReader` reads at most one character beyond the configured total-character budget and rejects an overlong line while scanning. Stable `SiiSyntaxErrorCode` values accompany parse exceptions, with line and column data when available. The encoded-text byte ceiling is 32 MiB; a synthetic 9 MiB document roundtrip guards against the previous 8 MiB ceiling. This covers the scale of a real ETS2 1.62 text dump reported in the external [format notes](https://github.com/Istarlabs/istar-truckdata/blob/78c382a72dcae02a50cbd175a45d6230409d721a/docs/save-game-format.md), but the managed parser has not been run against that save. The BSII decoder allows 32 MiB, 65,536 blocks, 65,536 items per array and 1,000,000 total block field values. Those limits exceed the cited example's 28,493 units; they remain defensive caps, not a claim that every real or modded save fits.
 
 The parser rejects unbalanced braces, blocks without headers, empty block identifiers, unclosed quoted values, input over configured bounds, and documents without blocks. Syntax that cannot be classified is retained and surfaced through `OpaqueLines`; a field edit is refused when such lines exist. The parser is a syntax foundation, not a complete SII grammar or game validator. The plain-text wrapper assumes BOM-less input is UTF-8, rejects invalid sequences, UTF-32 and NUL characters, and does not determine game-save encoding.
 
@@ -146,10 +146,12 @@ For an eight-byte BSII header the report exposes the little-endian container
 format version as a hint. Versions 1–3 are only the historical set described
 in [SII Decrypt's format notes](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/Documents/Binary%20SII%20-%20Format.txt);
 that document itself describes the format as unofficial and incomplete. A
-short header is reported as incomplete and other values as unrecognized. All
-BSII inputs remain unsupported: a header is not container validation, a game
-version, or permission to decode. No source code from the MPL-2.0 project was
-incorporated. Its [test-data notice](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/TestFiles/readme.txt)
+short header is reported as incomplete and other values as unrecognized.
+`SiiFixtureInspector` still does not parse BSII: a header is not container
+validation, a game version, or permission to decode. The separate managed
+in-memory reader now supports bounded raw BSII v2/v3 payloads but remains
+disconnected from this inspector and from encrypted/compressed game containers.
+No source code from the MPL-2.0 project was incorporated. Its [test-data notice](https://github.com/TheLazyTomcat/SII_Decrypt/blob/d1cd7921d4667de895288c7227c58df43b63bd21/TestFiles/readme.txt)
 states that player saves were withheld, so it provides no genuine fixture here.
 The original `MethodsDecodeSave.cs` calls `SII_Decrypt.dll` twice and sets
 `FileDecoded` after the second call without checking its result. The new
@@ -157,8 +159,8 @@ The original `MethodsDecodeSave.cs` calls `SII_Decrypt.dll` twice and sets
 codes and conservative size limits, then only reports syntax evidence after
 rejecting malformed, opaque or ambiguous output. The size contract has been
 partially probed with one synthetic native input as described below, but remains
-unverified for genuine saves. No decoder is
-registered or enabled; these checks do not grant file-read or write permission.
+unverified for genuine saves. No decoder is registered with the application or
+enabled for profile access; these checks do not grant file-read or write permission.
 The separate size-query check can be called before allocation and returns a
 bounded integer only on a successful query with a nonzero size within the
 existing text limit. This does not invoke the native decoder.
@@ -228,27 +230,37 @@ across builds. Any future application integration needs explicit isolation,
 completeness checks, real approved fixtures and separate security review.
 
 Managed binary-reader design self-review (not independent): the Windows-only
-legacy DLL cannot serve the other target platforms. A separate, read-only
-in-memory experiment is limited to the documented historical v2 structure,
-nameless and supported encoded IDs and a small set of integer and string fields. It will enforce input, block, field and name
-limits, reject unknown versions/types and trailing or incomplete data, and
-return no partial result. It will not be registered with any adapter, wired to
-profile scanning or the desktop, or provide a binary serializer. This narrow
-synthetic subset is not a full BSII implementation and cannot establish game
-compatibility; real fixtures and a security review remain necessary. The design
-uses the format facts in the linked unofficial specification without importing
-its code or example bytes.
+legacy DLL cannot serve the other target platforms. The managed reader now
+parses the previously exercised historical v2 subset and documented BSII v3
+in-memory payloads. For each field it retains
+the exact encoded value bytes and the ordered field definition; vectors and
+placements remain opaque raw payloads rather than being dropped. It covers the
+documented string/token, scalar/list numeric, bool, ordinal, reference and
+fixed-size vector/placement value codes. All counts and lengths are bounded,
+unknown versions/types fail closed, and no partial result is returned. The
+reader still does not decode the outer save container, serialize BSII, connect
+to the desktop or read profile paths. The format description below was
+independently implemented from the published
+[SCS save-game format notes](https://github.com/Istarlabs/istar-truckdata/blob/78c382a72dcae02a50cbd175a45d6230409d721a/docs/save-game-format.md),
+which report checks against real ETS2/ATS 2026 saves. That external evidence
+does not validate this managed implementation. No source code or example save
+bytes were imported. The notes' repository is LGPL-3.0-or-later; this project
+uses the format description as a reference and does not incorporate its code.
 
-`ExperimentalBinarySiiReader` implements that narrow plan for in-memory bytes.
-It returns typed Int32, UInt32, Int64, UInt64, Float32 and strict UTF-8 string values only when the entire supported document, including
-its end marker, is valid. Duplicate structures, field names and nameless IDs,
-unknown structure references, unsupported types or identifiers, trailing data,
-and every truncated prefix fail without a partial result. Its synthetic fixture
-uses an overlapping independently constructed structure and values with the
-native x86 probe; each test validates its own result, without claiming complete decoder
-equivalence. Unsupported data is rejected rather than discarded. No binary
-reader is registered for real saves, no profile access is enabled, and no
-roundtrip or game compatibility is claimed.
+`ExperimentalBinarySiiReader` accepts in-memory BSII versions 2 and 3. V2 is
+restricted to the historical field types already covered by the legacy
+synthetic probe; the expanded type table is enabled for v3. It
+returns values only after a complete parse; block order, per-block field order,
+field definitions, ordinal names, and each field's exact bytes are retained.
+Types without an application-level interpretation (vectors, quaternions and
+placements) are exposed as raw encoded data, not skipped. Version 3 may end at
+EOF after a complete block; the historical synthetic v2 path retains its
+explicit terminator behavior. Duplicate structure IDs, field names, ordinal
+values and block identities, unresolved structure IDs, invalid UTF-8, unknown
+types, oversized arrays, malformed identifiers and truncation fail without
+partial output. Synthetic tests exercise the documented type codes and payload
+sizes, but do not establish compatibility with actual saves or complete
+container-level decoding. No binary writer or real profile access is enabled.
 
 For historical type `0x27`, the original native decoder renders the raw value
 `0xffffffff` as `nil` rather than a number. The managed value retains those raw
@@ -291,14 +303,15 @@ the masked high bit or between an encoded name and a nameless rendering. This
 is a conservative ambiguity check, not a claim that the historical text form
 proves game identity. The bundled x86 decoder and managed reader both accept a
 constructed two-part named block, and managed tests cover collision and truncated
-input. Real saves remain unverified. The reader also accepts synthetic reference arrays of historical types `0x3a` and `0x3c`,
+input. Real saves remain unverified. The reader also accepts synthetic reference arrays of types `0x3a`, `0x3c` and `0x3e`,
 retaining order, duplicates and each element's raw marker and parts. A count
-over 4,096 or truncated data fails before an array is returned. Empty and mixed
-arrays are covered by both the managed tests and the bundled x86 DLL probe;
-this does not validate reference targets, real saves or game compatibility.
+over 65,536 or truncated data fails before an array is returned. Empty and mixed
+arrays of `0x3a`/`0x3c` are covered by the managed tests and bundled x86 DLL
+probe; the newly documented `0x3e` type has managed synthetic coverage only.
+This does not validate reference targets, real saves or game compatibility.
 
 `ExperimentalBinaryReferenceIndex` provides an in-memory diagnostic over at
-most 4,096 already parsed blocks. It snapshots raw identifiers and reports an
+most 65,536 already parsed blocks. It snapshots raw identifiers and reports an
 index only for one exact raw identity. Missing, null, unsupported, ambiguous,
 and legacy-text-only references have distinct outcomes without a target index.
 Matching identifiers do not establish field meaning, ownership, game version,
@@ -314,7 +327,7 @@ Historical types `0x05` and `0x06` expose individual Float32 values and bounded
 arrays. The original IEEE-754 bits are retained independently of the floating
 point view, including negative zero and NaN payloads; `IsFinite` is diagnostic
 only and does not assert that a value is valid for fuel, wear or any game field.
-The array limit is 4,096 entries, checked before allocation. Finite synthetic
+The array limit is 65,536 entries, checked before allocation. Finite synthetic
 values and negative zero are compared with the bundled x86 decoder; NaN and
 infinity bit-preservation tests exercise only the managed reader. No semantic
 game validation, binary writing or real-save support follows from these tests.
@@ -335,7 +348,7 @@ UInt64 array examples. A separate synthetic Int64-array example returned the
 generic native error `-1` during its size query, both for integer boundary
 values and for small values; the cause is not established. Int64-array support
 therefore has managed synthetic tests only and remains unconfirmed against the
-native decoder or game data. All numeric arrays are bounded to 4,096 entries
+native decoder or game data. All numeric arrays are bounded to 65,536 entries
 and reject truncation before allocating their result.
 
 The upstream [change from 1.5.2 to 1.5.3](https://github.com/TheLazyTomcat/SII_Decrypt/commit/d1cd7921d4667de895288c7227c58df43b63bd21)

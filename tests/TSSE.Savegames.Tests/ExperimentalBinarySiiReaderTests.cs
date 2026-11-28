@@ -48,7 +48,7 @@ public sealed class ExperimentalBinarySiiReaderTests
             writer.Write((uint)name.Length);
             writer.Write(name);
             writer.Write(0u);
-            for (ulong id = 1; id <= 4097; id++)
+            for (ulong id = 1; id <= (ulong)ExperimentalBinarySiiReader.MaximumBlocks + 1; id++)
             {
                 writer.Write(1u);
                 writer.Write((byte)0xff);
@@ -75,7 +75,7 @@ public sealed class ExperimentalBinarySiiReaderTests
             writer.Write((byte)1);
             writer.Write(1u);
             WriteName(writer, "synthetic");
-            for (var index = 0; index < 257; index++)
+            for (var index = 0; index < 513; index++)
             {
                 writer.Write(0x25u);
                 WriteName(writer, $"field_{index}");
@@ -232,6 +232,8 @@ public sealed class ExperimentalBinarySiiReaderTests
         var anonymous = new ExperimentalBinaryReference(0x39, 0xff, new ulong[] { 0x1234 });
         Assert.Equal(0, index.Inspect(anonymous).TargetIndex);
         Assert.Equal(ExperimentalReferenceMatchKind.ExactRawIdentity, index.Inspect(anonymous).Kind);
+        Assert.Equal(ExperimentalReferenceMatchKind.ExactRawIdentity,
+            index.Inspect(new ExperimentalBinaryReference(0x3e, 0xff, new ulong[] { 0x1234 })).Kind);
         var named = new ExperimentalBinaryReference(0x39, 2, new ulong[] { Encode("_nameless"), Encode("1234") });
         var collision = index.Inspect(named);
         Assert.Equal(ExperimentalReferenceMatchKind.LegacyTextOnly, collision.Kind);
@@ -242,7 +244,7 @@ public sealed class ExperimentalBinarySiiReaderTests
         };
         Assert.Equal(ExperimentalReferenceMatchKind.Ambiguous,
             new ExperimentalBinaryReferenceIndex([block, namedBlock]).Inspect(anonymous).Kind);
-        Assert.Throws<ArgumentException>(() => new ExperimentalBinaryReferenceIndex(new ExperimentalBinaryBlock[4097]));
+        Assert.Throws<ArgumentException>(() => new ExperimentalBinaryReferenceIndex(new ExperimentalBinaryBlock[ExperimentalBinarySiiReader.MaximumBlocks + 1]));
         Assert.Throws<ArgumentException>(() => new ExperimentalBinaryReferenceIndex([new ExperimentalBinaryBlock("example", null, new Dictionary<string, int>())]));
     }
 
@@ -274,27 +276,27 @@ public sealed class ExperimentalBinarySiiReaderTests
     [Fact]
     public void FloatArrayCountIsBoundedBeforeAllocation()
     {
-        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(floatArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(floatArrayCount: 65_537)).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(floatArrayCount: uint.MaxValue)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(floatArrayCount: 4096)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(floatArrayCount: 65_536)).Error);
         Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(floatBits: []))).Float32ArrayFields["wear"]);
     }
 
     [Fact]
     public void IntegerArraysRejectExcessiveOrTruncatedLengths()
     {
-        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(integerArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(integerArrayCount: 65_537)).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(integerArrayCount: uint.MaxValue)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(integerArrayCount: 4096)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(integerArrayCount: 65_536)).Error);
         Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(integerArrayCount: 0))).Int32ArrayFields["signed_values"]);
     }
 
     [Fact]
     public void BooleanArraysRejectExcessiveOrTruncatedLengths()
     {
-        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(boolArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(boolArrayCount: 65_537)).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(boolArrayCount: uint.MaxValue)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(boolArrayCount: 4096)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(boolArrayCount: 65_536)).Error);
         Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(boolArrayCount: 0))).BoolArrayFields["flags"]);
     }
 
@@ -321,8 +323,8 @@ public sealed class ExperimentalBinarySiiReaderTests
     [Fact]
     public void StringArraysRejectExcessiveCountsAndInvalidUtf8()
     {
-        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(stringArrayCount: 4097)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(stringArrayCount: 4096)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(stringArrayCount: 65_537)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(stringArrayCount: 65_536)).Error);
         Assert.Empty(Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(stringArrayCount: 0))).StringArrayFields["labels"]);
         Assert.Equal(ExperimentalBinarySiiError.InvalidStringEncoding, Reject(Fixture(arrayStringBytes: [0xc3, 0x28])).Error);
         Assert.Equal("世界 😀", Assert.Single(ExperimentalBinarySiiReader.Read(Fixture(arrayStringBytes: Encoding.UTF8.GetBytes("世界 😀")))).StringArrayFields["labels"][1]);
@@ -349,13 +351,55 @@ public sealed class ExperimentalBinarySiiReaderTests
     }
 
     [Fact]
-    public void UnsupportedVersionTypeIdentifierAndTrailingBytesFailClosed()
+    public void UnsupportedVersionTypeIdentifierAndIncompletePayloadFailClosed()
     {
-        Assert.Equal(ExperimentalBinarySiiError.UnsupportedVersion, Reject(Fixture(version: 3)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedVersion, Reject(Fixture(version: 4)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x3f)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedType, Reject(Fixture(fieldType: 0x07)).Error);
         Assert.Equal(ExperimentalBinarySiiError.UnsupportedIdentifier, Reject(Fixture(idKind: 0)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.TrailingData, Reject([.. Fixture(), 0]).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject([.. Fixture(), 0]).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(new byte[ExperimentalBinarySiiReader.MaximumBytes + 1]).Error);
+    }
+
+    [Fact]
+    public void V3ReadsOrdinalAndAllDocumentedOpaqueAndShortValueTypesLosslessly()
+    {
+        var block = Assert.Single(ExperimentalBinarySiiReader.Read(ModernFixture()));
+
+        Assert.Equal(3u, block.BinaryVersion);
+        Assert.Equal((ushort)513, block.UInt16Fields["small"]);
+        Assert.Equal(new ushort[] { 1, ushort.MaxValue }, block.UInt16ArrayFields["small_list"]);
+        Assert.Equal(uint.MaxValue, block.UInt32PlainFields["wide32"]);
+        Assert.Equal(2u, block.OrdinalFields["mode"].Raw);
+        Assert.Equal("two", block.OrdinalFields["mode"].Name);
+        Assert.Null((block.OrdinalFields["mode"] with { Raw = 99 }).Name);
+        Assert.Equal("vector2", block.FieldDefinitions[0].Name);
+        Assert.Equal("mode", block.FieldDefinitions[^2].Name);
+        Assert.Equal(new byte[] { 0, 0, 0x80, 0x3f, 0, 0, 0, 0x40 }, block.RawFields["vector2"].Bytes);
+        Assert.Equal((uint)0x07, block.RawFields["vector2"].TypeCode);
+        Assert.Equal(12, block.RawFields["vector3"].Bytes.Count);
+        Assert.Equal(16, block.RawFields["vector3_list"].Bytes.Count);
+        Assert.Equal(12, block.RawFields["int_vector3"].Bytes.Count);
+        Assert.Equal(16, block.RawFields["int_vector3_list"].Bytes.Count);
+        Assert.Equal(16, block.RawFields["quaternion"].Bytes.Count);
+        Assert.Equal(20, block.RawFields["quaternion_list"].Bytes.Count);
+        Assert.Equal(32, block.RawFields["placement"].Bytes.Count);
+        Assert.Equal(36, block.RawFields["placements"].Bytes.Count);
+        Assert.Equal(4, block.RawFields["small_list"].Bytes.Count);
+        Assert.Equal(13, block.RawFields["refs"].Bytes.Count);
+        Assert.Equal(0x3eu, Assert.Single(block.ReferenceArrayFields["refs"]).TypeCode);
+    }
+
+    [Fact]
+    public void V3AcceptsEofAfterACompleteBlockAndBoundsOpaqueArraysBeforeSkipping()
+    {
+        byte[] complete = ModernFixture();
+        Assert.Single(ExperimentalBinarySiiReader.Read(complete[..^5]));
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded,
+            Reject(ModernFixture(vector2ArrayCount: 65_537, writeVector2ArrayData: false)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated,
+            Reject(ModernFixture(vector2ArrayCount: 65_536, writeVector2ArrayData: false, stopAfterVector2ArrayCount: true)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Ambiguous, Reject(ModernFixture(duplicateOrdinalValues: true)).Error);
     }
 
     [Fact]
@@ -368,13 +412,84 @@ public sealed class ExperimentalBinarySiiReaderTests
     [Fact]
     public void ExcessiveReferenceArrayCountIsRejectedBeforeAllocation()
     {
-        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(referenceArrayCount: 4097)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(referenceArrayCount: 65_537)).Error);
         Assert.Equal(ExperimentalBinarySiiError.LimitExceeded, Reject(Fixture(referenceArrayCount: uint.MaxValue)).Error);
-        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(referenceArrayCount: 4096)).Error);
+        Assert.Equal(ExperimentalBinarySiiError.Truncated, Reject(Fixture(referenceArrayCount: 65_536)).Error);
     }
 
     private static ExperimentalBinarySiiException Reject(byte[] input) =>
         Assert.Throws<ExperimentalBinarySiiException>(() => ExperimentalBinarySiiReader.Read(input));
+
+    private static byte[] ModernFixture(
+        uint? vector2ArrayCount = null,
+        bool writeVector2ArrayData = true,
+        bool stopAfterVector2ArrayCount = false,
+        bool duplicateOrdinalValues = false)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+        void Name(string value)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes(value);
+            writer.Write((uint)bytes.Length);
+            writer.Write(bytes);
+        }
+        void Field(uint type, string name)
+        {
+            writer.Write(type);
+            Name(name);
+        }
+
+        writer.Write("BSII"u8);
+        writer.Write(3u);
+        writer.Write(0u);
+        writer.Write((byte)1);
+        writer.Write(1u);
+        Name("modern");
+        Field(0x07, "vector2");
+        Field(0x08, "vector2_list");
+        Field(0x09, "vector3");
+        Field(0x0a, "vector3_list");
+        Field(0x11, "int_vector3");
+        Field(0x12, "int_vector3_list");
+        Field(0x17, "quaternion");
+        Field(0x18, "quaternion_list");
+        Field(0x19, "placement");
+        Field(0x1a, "placements");
+        Field(0x2b, "small");
+        Field(0x2c, "small_list");
+        Field(0x2f, "wide32");
+        Field(0x37, "mode");
+        writer.Write(duplicateOrdinalValues ? 3u : 2u);
+        writer.Write(1u); Name("one");
+        writer.Write(2u); Name("two");
+        if (duplicateOrdinalValues) { writer.Write(1u); Name("duplicate"); }
+        Field(0x3e, "refs");
+        writer.Write(0u);
+
+        writer.Write(1u);
+        writer.Write((byte)0xff);
+        writer.Write(0x77ul);
+        writer.Write(0x3f800000u); writer.Write(0x40000000u);
+        writer.Write(vector2ArrayCount ?? 1);
+        if (stopAfterVector2ArrayCount) return stream.ToArray();
+        if (writeVector2ArrayData) { writer.Write(0x40400000u); writer.Write(0x40800000u); }
+        writer.Write(0x3f800000u); writer.Write(0x40000000u); writer.Write(0x40400000u);
+        writer.Write(1u); writer.Write(0x3f800000u); writer.Write(0x40000000u); writer.Write(0x40400000u);
+        writer.Write(1); writer.Write(2); writer.Write(3);
+        writer.Write(1u); writer.Write(1); writer.Write(2); writer.Write(3);
+        writer.Write(0x3f800000u); writer.Write(0x40000000u); writer.Write(0x40400000u); writer.Write(0x40800000u);
+        writer.Write(1u); writer.Write(0x3f800000u); writer.Write(0x40000000u); writer.Write(0x40400000u); writer.Write(0x40800000u);
+        writer.Write(Enumerable.Range(0, 32).Select(value => (byte)value).ToArray());
+        writer.Write(1u); writer.Write(Enumerable.Range(0, 32).Select(value => (byte)(31 - value)).ToArray());
+        writer.Write((ushort)513);
+        writer.Write(2u); writer.Write((ushort)1); writer.Write(ushort.MaxValue);
+        writer.Write(uint.MaxValue);
+        writer.Write(2u);
+        writer.Write(1u); writer.Write(11ul);
+        writer.Write(0u); writer.Write((byte)0);
+        return stream.ToArray();
+    }
 
     private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null, uint? boolArrayCount = null, uint? stringArrayCount = null, byte[]? arrayStringBytes = null)
     {
