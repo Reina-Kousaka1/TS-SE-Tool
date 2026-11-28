@@ -28,8 +28,9 @@ public sealed class LegacyProfilePreviewTests
         editor.Apply(new ProfileValues(long.MinValue, 5));
         string changed = Synthetic.Replace("money_account: -42", "money_account: -9223372036854775808", StringComparison.Ordinal);
         Assert.Equal(changed, editor.PreviewText);
-        editor.Apply(new ProfileValues(long.MinValue, uint.MaxValue));
-        Assert.Equal(uint.MaxValue, editor.Current.Experience);
+        Assert.Throws<ArgumentOutOfRangeException>(() => editor.Apply(new ProfileValues(long.MinValue, uint.MaxValue)));
+        Assert.Equal(5u, editor.Current.Experience);
+        Assert.Equal(changed, editor.PreviewText);
         Assert.True(editor.Undo());
         Assert.Equal(changed, editor.PreviewText);
         Assert.True(editor.Undo());
@@ -43,6 +44,7 @@ public sealed class LegacyProfilePreviewTests
     [InlineData("bank: b", "bank: nil")]
     [InlineData("bank: b", "bank: missing")]
     [InlineData("experience_points: 0005", "experience_points: 4294967296")]
+    [InlineData("experience_points: 0005", "experience_points: 4294967295")]
     [InlineData("money_account: -42", "money_account: invalid")]
     [InlineData("unknown: nil", "unknown: nil\n  money_account: 1")]
     public void InvalidOrAmbiguousInputFailsBeforeEditing(string from, string to)

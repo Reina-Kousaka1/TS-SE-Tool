@@ -49,6 +49,7 @@ public sealed class LegacyProfilePreview
             string? coachExperience = FindOptionalValue(economy, "bus_experience_points");
             if (!long.TryParse(balance, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out long money) ||
                 !uint.TryParse(experience, NumberStyles.None, CultureInfo.InvariantCulture, out uint xp) ||
+                xp == uint.MaxValue ||
                 coachExperience is not null && !int.TryParse(coachExperience, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _))
                 throw new InvalidOperationException("Profile values are not supported decimal integers.");
             int? coachXp = coachExperience is null ? null : int.Parse(coachExperience, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
@@ -96,6 +97,8 @@ public sealed class LegacyProfilePreview
     public void Apply(ProfileValues values)
     {
         ArgumentNullException.ThrowIfNull(values);
+        if (values.Experience == uint.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(values), "The UInt32 nil sentinel is not a valid experience value.");
         ProfileValues current = Current;
         var changes = new List<SiiFieldEdit>();
         if (values.Balance != current.Balance)
