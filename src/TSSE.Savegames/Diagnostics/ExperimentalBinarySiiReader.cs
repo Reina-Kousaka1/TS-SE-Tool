@@ -138,6 +138,7 @@ public static class ExperimentalBinarySiiReader
                         case 0x05: floats.Add(field.Name, new ExperimentalBinaryFloat32(cursor.UInt32())); break;
                         case 0x06: floatArrays.Add(field.Name, cursor.FloatArray()); break;
                         case 0x07: vector2Fields.Add(field.Name, cursor.FloatVector2()); break;
+                        case 0x08: vector2Arrays.Add(field.Name, cursor.FloatVector2Array()); break;
                         case 0x09: vector3Fields.Add(field.Name, cursor.FloatVector3()); break;
                         case 0x0a: vector3Arrays.Add(field.Name, cursor.FloatVector3Array()); break;
                         case 0x11: int32Vector3Fields.Add(field.Name, cursor.Int32Vector3()); break;
