@@ -31,7 +31,7 @@
   "profileDemo.coachExperience": "Coach-Erfahrung (vorzeichenbehaftete 32-Bit-Ganzzahl; nur Vorschau)",
   "profileDemo.discardCoachExperience": "Coach-Erfahrungsentwurf verwerfen",
   "profileDemo.draftDiscarded": "Entwurf verworfen; die Vorschau wurde nicht geändert.",
-  "fixture.description": "Synthetische Beispiele und ausdrücklich ausgewählte Dateien. Kein Spielstand wird automatisch geöffnet. Ein Syntax- oder Formatbefund belegt keine Spielkompatibilität; Import erfolgt nur lesend und verändert keine Datei.",
+  "fixture.description": "Synthetische Beispiele und ausdrücklich ausgewählte Dateien. Es wird kein Spielstand automatisch geöffnet. Ein Syntax- oder Formatbefund belegt keine Spielkompatibilität; Import erfolgt nur lesend und verändert keine Datei.",
   "fixture.import.button": "Eine ausgewählte Spielstandkopie prüfen (nur lesend)",
   "fixture.import.none": "Keine Datei geprüft. Auswahl manuell, nur lesend und auf 32 MiB begrenzt.",
   "fixture.import.success": "Nutzdaten dekodiert ({0}; {1}); {2} geparste Blöcke. Dies ist nur ein Formatbefund, kein Spielkompatibilitätsnachweis. ScsC-Authentifizierung wird nicht geprüft.",
