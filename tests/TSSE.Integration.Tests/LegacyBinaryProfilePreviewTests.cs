@@ -107,7 +107,7 @@ public sealed class LegacyBinaryProfilePreviewTests
         preview.ResetCoachSkills();
 
         Assert.Equal((byte)0, preview.CoachSkills["long_duty"]);
-        Assert.Equal(2, preview.Changes.Count);
+        Assert.Single(preview.Changes);
         Assert.True(preview.Undo());
         Assert.Equal((byte)3, preview.CoachSkills["long_duty"]);
         Assert.True(preview.Undo());
