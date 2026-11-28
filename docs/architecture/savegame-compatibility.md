@@ -250,10 +250,14 @@ uses the format description as a reference and does not incorporate its code.
 
 `ExperimentalBinarySiiReader` accepts in-memory BSII versions 1, 2 and 3. The
 versioned placement size is 7 floats in v1 and 8 in v2/v3. It accepts the
-documented active type codes. Codes `0x08` and `0x3e` are listed as unknown and
-their experimental support is marked inactive in the historical type notes,
-so this reader rejects them as unsupported and now includes the numeric type,
-structure, field and byte offset in the exception for those structure declarations.
+documented active type codes. Independent implementations document `0x08` as
+an array of two-float vectors and `0x3e` as an ID-reference array. The managed
+reader now retains these values with bounded parsing and raw-field capture.
+Vector components retain exact IEEE-754 bits; references retain the type code
+and raw identity parts. This support is based on the published
+[`sii-decode-rs` parser](https://github.com/fangyi-zhou/sii-decode-rs/blob/main/src/bsii_parse.rs)
+and [`sii-decrypt-ts` type reference](https://github.com/Trucky/sii-decrypt-ts/blob/main/DOCS.md#complete-data-type-reference),
+not an official SCS schema specification.
 It returns values only after a complete parse and requires the
 explicit end marker. Block order, per-block field order, field definitions,
 ordinal names, and each field's exact bytes are retained. Types without an
@@ -262,7 +266,8 @@ encoded data. Duplicate structure IDs, field names, ordinal values and block
 identities, unresolved structure IDs, invalid UTF-8, unknown types, oversized
 arrays, malformed identifiers, missing terminators, trailing bytes and
 truncation fail without partial output. Synthetic fixtures cover versioned
-placement widths and selected documented types; this is not a genuine-save
+placement widths, type `0x08` vector arrays and type `0x3e` reference arrays;
+this is not a genuine-save
 compatibility claim. No binary writer or real profile access is enabled. The
 type table and version rule are based on the independently reverse-engineered
 [`scs_tools` format notes](https://github.com/Wilps93/scs_tools/blob/main/FORMAT.md#93-bsii),

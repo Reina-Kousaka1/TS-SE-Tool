@@ -136,9 +136,13 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("a.b", arrayText);
         Assert.Equal(refs[2].RawParts, refs[3].RawParts);
         Assert.Equal(0x3cu, refs[2].TypeCode);
+        Assert.Equal(0x3eu, Assert.Single(block.ReferenceArrayFields["extended_refs"]).TypeCode);
         Assert.Equal(0x3f000000u, block.Float32Fields["fuel"].RawBits);
         Assert.Equal(0.5f, block.Float32Fields["fuel"].Value);
         Assert.Equal(new uint[] { 0x3f000000, 0x3fa00000, 0x80000000 }, block.Float32ArrayFields["wear"].Select(value => value.RawBits));
+        var vector2 = Assert.Single(block.Float32Vector2ArrayFields["vector2s"]);
+        Assert.Equal(0x3f800000u, vector2.X.RawBits);
+        Assert.Equal(0xc0200000u, vector2.Y.RawBits);
         Assert.Equal(new[] { int.MinValue, int.MaxValue }, block.Int32ArrayFields["signed_values"]);
         Assert.Equal(new uint[] { 0, uint.MaxValue, uint.MaxValue - 1 }, block.UInt32ArrayFields["unsigned_values"].Select(value => value.Raw));
         Assert.True(block.UInt32ArrayFields["unsigned_values"][1].IsLegacyNil);
@@ -560,10 +564,12 @@ public sealed class ExperimentalBinarySiiReaderTests
                 writer.Write((byte)0xff); writer.Write(0x9876ul);
                 for (int i = 0; i < 2; i++) { writer.Write((byte)2); writer.Write(referencePart); writer.Write(12ul); }
             }
+            writer.Write((uint)1); writer.Write((byte)2); writer.Write(referencePart); writer.Write(12ul);
             writer.Write(0x3f000000u);
             uint[] floats = floatBits ?? [0x3f000000, 0x3fa00000, 0x80000000];
             writer.Write(floatArrayCount ?? (uint)floats.Length);
             if (floatArrayCount is null) foreach (uint bits in floats) writer.Write(bits);
+            writer.Write(1u); writer.Write(0x3f800000u); writer.Write(0xc0200000u);
             writer.Write(integerArrayCount ?? 2);
             if (integerArrayCount is null) { writer.Write(int.MinValue); writer.Write(int.MaxValue); }
             writer.Write((uint)3); writer.Write(0u); writer.Write(uint.MaxValue); writer.Write(uint.MaxValue - 1);
@@ -600,8 +606,10 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((uint)0x3b); Name("named_ref");
         writer.Write((uint)0x3a); Name("empty_refs");
         writer.Write((uint)0x3c); Name("refs");
+        writer.Write((uint)0x3e); Name("extended_refs");
         writer.Write((uint)0x05); Name("fuel");
         writer.Write((uint)0x06); Name("wear");
+        writer.Write((uint)0x08); Name("vector2s");
         writer.Write((uint)0x26); Name("signed_values");
         writer.Write((uint)0x28); Name("unsigned_values");
         writer.Write((uint)0x32); Name("long_values");
