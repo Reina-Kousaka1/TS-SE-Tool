@@ -399,6 +399,15 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Null((block.OrdinalFields["mode"] with { Raw = 99 }).Name);
         Assert.Equal("vector2", block.FieldDefinitions[0].Name);
         Assert.Equal("mode", block.FieldDefinitions[^1].Name);
+        Assert.Equal(0x3f800000u, block.Float32Vector2Fields["vector2"].X.RawBits);
+        Assert.Equal(0x40000000u, block.Float32Vector2Fields["vector2"].Y.RawBits);
+        Assert.Equal(0x40400000u, block.Float32Vector3Fields["vector3"].Z.RawBits);
+        Assert.Equal(new ExperimentalBinaryFloat32Vector3(new(0x40400000), new(0x40800000), new(0x40a00000)),
+            Assert.Single(block.Float32Vector3ArrayFields["vector3_list"]));
+        Assert.Equal(new ExperimentalBinaryInt32Vector3(1, 2, 3), block.Int32Vector3Fields["int_vector3"]);
+        Assert.Equal(new ExperimentalBinaryInt32Vector3(1, 2, 3), Assert.Single(block.Int32Vector3ArrayFields["int_vector3_list"]));
+        Assert.Equal(0x40800000u, block.Float32Vector4Fields["quaternion"].W.RawBits);
+        Assert.Equal(0x40800000u, Assert.Single(block.Float32Vector4ArrayFields["quaternion_list"]).W.RawBits);
         Assert.Equal(new byte[] { 0, 0, 0x80, 0x3f, 0, 0, 0, 0x40 }, block.RawFields["vector2"].Bytes);
         Assert.Equal((uint)0x07, block.RawFields["vector2"].TypeCode);
         Assert.Equal(12, block.RawFields["vector3"].Bytes.Count);

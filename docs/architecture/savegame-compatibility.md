@@ -233,11 +233,12 @@ completeness checks, real approved fixtures and separate security review.
 Managed binary-reader design self-review (not independent): the Windows-only
 legacy DLL cannot serve the other target platforms. The managed reader now
 accepts documented BSII v1/v2/v3 in-memory payloads. For each field it retains
-the exact encoded value bytes and the ordered field definition; vectors and
-placements remain opaque raw payloads rather than being dropped. It covers the
-published string/token, scalar/list numeric, bool, ordinal, reference and
-fixed-size vector/placement value codes, with placement widths determined by
-the file version. All counts and lengths are bounded, unknown versions/types
+the exact encoded value bytes and the ordered field definition. It exposes
+typed, bit-preserving values for scalar `0x07`/`0x09`/`0x11`/`0x17` vectors
+and arrays `0x08`/`0x0a`/`0x12`/`0x18`; versioned placement values remain raw
+payloads. It covers the published string/token, scalar/list numeric, bool,
+ordinal, reference and fixed-size vector/placement value codes, with placement
+widths determined by the file version. All counts and lengths are bounded, unknown versions/types
 and incomplete streams fail closed, and no partial result is returned. The
 reader still does not decode the outer save container, serialize BSII, connect
 to the desktop or read profile paths. The format description below was
@@ -266,7 +267,7 @@ paths; it represents the legacy `nil` sentinel, not an editable XP total.
 It returns values only after a complete parse and requires the
 explicit end marker. Block order, per-block field order, field definitions,
 ordinal names, and each field's exact bytes are retained. Types without an
-application-level interpretation (vectors and placements) are exposed as raw
+application-level interpretation (versioned placements) are exposed as raw
 encoded data. Duplicate structure IDs, field names, ordinal values and block
 identities, unresolved structure IDs, invalid UTF-8, unknown types, oversized
 arrays, malformed identifiers, missing terminators, trailing bytes and
