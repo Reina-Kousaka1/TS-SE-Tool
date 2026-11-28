@@ -5,15 +5,16 @@ using TSSE.Savegames.Syntax;
 namespace TSSE.Savegames.Diagnostics;
 
 /// <summary>
-/// Inspects caller-supplied plain-text bytes in memory. It performs no file
-/// access and makes no claim about game versions, containers or game validity.
+/// Inspects caller-supplied SII bytes in memory. It performs no file access,
+/// emits no field values, and makes no claim about game compatibility.
 /// </summary>
 public static class SiiFixtureInspector
 {
     /// <summary>
     /// Inspects an explicitly supplied stream, reading at most the byte limit
     /// plus one detection byte. The caller retains ownership of the stream.
-    /// No file discovery, writes, decompression, or game validation is performed.
+    /// No file discovery, writes, or game validation is performed. Known binary
+    /// wrappers are passed through the bounded read-only container decoder.
     /// </summary>
     public static SiiFixtureReport Inspect(Stream stream)
     {
@@ -48,13 +49,88 @@ public static class SiiFixtureInspector
         string hash = Convert.ToHexString(SHA256.HashData(bytes));
         if (hint is SiiSignatureHint.EncryptedPrefix or SiiSignatureHint.BinaryPrefix or SiiSignatureHint.ThreeNkPrefix)
         {
-            uint? binaryVersion = hint == SiiSignatureHint.BinaryPrefix && bytes.Length >= 8
+            uint? headerVersion = hint == SiiSignatureHint.BinaryPrefix && bytes.Length >= 8
                 ? BinaryPrimitives.ReadUInt32LittleEndian(bytes[4..8]) : null;
-            BinarySiiHeaderHint binaryHeader = hint != SiiSignatureHint.BinaryPrefix ? BinarySiiHeaderHint.NotInspected :
-                binaryVersion is null ? BinarySiiHeaderHint.Incomplete :
-                binaryVersion is 1 or 2 or 3 ? BinarySiiHeaderHint.LegacyDocumentedVersion : BinarySiiHeaderHint.UnrecognizedVersion;
-            return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
-                null, null, null, null) { SignatureHint = hint, BinaryHeader = binaryHeader, BinaryFormatVersion = binaryVersion };
+            BinarySiiHeaderHint headerHint = hint != SiiSignatureHint.BinaryPrefix ? BinarySiiHeaderHint.NotInspected :
+                headerVersion is null ? BinarySiiHeaderHint.Incomplete :
+                headerVersion is 1 or 2 or 3 ? BinarySiiHeaderHint.LegacyDocumentedVersion : BinarySiiHeaderHint.UnrecognizedVersion;
+            try
+            {
+                using SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(bytes);
+                if (decoded.Format == SiiPayloadFormat.Binary)
+                {
+                    IReadOnlyList<ExperimentalBinaryBlock> blocks = decoded.BinaryBlocks!;
+                    uint? version = blocks.Count == 0 ? null : blocks[0].BinaryVersion;
+                    return new(SiiFixtureStatus.DecodedBinaryStructureOnly, bytes.Length, hash, null, null,
+                        blocks.Count, null, null, null)
+                    {
+                        SignatureHint = hint,
+                        BinaryHeader = headerHint,
+                        BinaryFormatVersion = version,
+                        PayloadFormat = SiiPayloadFormat.Binary,
+                        ContainerAuthenticationUnverified = decoded.ContainerAuthenticationUnverified,
+                        ThreeNkDecoded = decoded.ThreeNkDecoded
+                    };
+                }
+
+                SiiSyntaxDocument syntax = decoded.TextDocument!;
+                return new(SiiFixtureStatus.DecodedContainerTextOnly, bytes.Length, hash, null, null,
+                    syntax.Blocks.Count, syntax.OpaqueLines.Count, null, null)
+                {
+                    SignatureHint = hint,
+                    BinaryHeader = headerHint,
+                    PayloadFormat = SiiPayloadFormat.Text,
+                    ContainerAuthenticationUnverified = decoded.ContainerAuthenticationUnverified,
+                    ThreeNkDecoded = decoded.ThreeNkDecoded
+                };
+            }
+            catch (SiiSaveContainerException exception)
+            {
+                return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
+                    null, null, null, null)
+                {
+                    SignatureHint = hint,
+                    BinaryHeader = headerHint,
+                    BinaryFormatVersion = headerVersion,
+                    ContainerError = exception.Error,
+                    ContainerAuthenticationUnverified = hint == SiiSignatureHint.EncryptedPrefix
+                };
+            }
+            catch (ExperimentalBinarySiiException exception)
+            {
+                return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
+                    null, null, null, null)
+                {
+                    SignatureHint = hint,
+                    BinaryHeader = headerHint,
+                    BinaryFormatVersion = headerVersion,
+                    BinaryError = exception.Error,
+                    ContainerAuthenticationUnverified = hint == SiiSignatureHint.EncryptedPrefix
+                };
+            }
+            catch (SiiSyntaxException exception)
+            {
+                return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
+                    null, null, exception.ErrorCode, exception.LineNumber)
+                {
+                    SignatureHint = hint,
+                    BinaryHeader = headerHint,
+                    BinaryFormatVersion = headerVersion,
+                    ErrorColumn = exception.ColumnNumber,
+                    ContainerAuthenticationUnverified = hint == SiiSignatureHint.EncryptedPrefix
+                };
+            }
+            catch (InvalidDataException)
+            {
+                return new(SiiFixtureStatus.UnsupportedTextOrContainer, bytes.Length, hash, null, null,
+                    null, null, null, null)
+                {
+                    SignatureHint = hint,
+                    BinaryHeader = headerHint,
+                    BinaryFormatVersion = headerVersion,
+                    ContainerAuthenticationUnverified = hint == SiiSignatureHint.EncryptedPrefix
+                };
+            }
         }
         try
         {
@@ -98,15 +174,17 @@ public static class SiiFixtureInspector
     }
 }
 
-/// <summary>A four-byte hint only, never proof that a container is valid or decodable.</summary>
+/// <summary>A four-byte hint only, never proof by itself that a container is valid or decodable.</summary>
 public enum SiiSignatureHint { Unknown, TextPrefix, EncryptedPrefix, BinaryPrefix, ThreeNkPrefix }
 
-/// <summary>Header hint based on historical documentation; never validates or decodes a container.</summary>
+/// <summary>Historical BSII version classification; the hint alone never proves decoding or compatibility.</summary>
 public enum BinarySiiHeaderHint { NotInspected, Incomplete, LegacyDocumentedVersion, UnrecognizedVersion }
 
 public enum SiiFixtureStatus
 {
     ParsedSyntaxOnly,
+    DecodedContainerTextOnly,
+    DecodedBinaryStructureOnly,
     UnclassifiedSyntax,
     ByteMismatch,
     InvalidSyntax,
@@ -130,7 +208,7 @@ public sealed record SiiFixtureReport(
     public bool ByteLengthIsLowerBound { get; init; }
     public SiiSignatureHint SignatureHint { get; init; }
     public BinarySiiHeaderHint BinaryHeader { get; init; }
-    /// <summary>Raw BSII header version, not the game or save version.</summary>
+    /// <summary>Raw BSII payload version, not the game or save version.</summary>
     public uint? BinaryFormatVersion { get; init; }
     /// <summary>One-based parser column when available; otherwise unknown.</summary>
     public int? ErrorColumn { get; init; }
@@ -140,4 +218,11 @@ public sealed record SiiFixtureReport(
     public int? DuplicateFieldOccurrences { get; init; }
     /// <summary>Whether all syntax lines were classified; not a semantic validity guarantee.</summary>
     public bool? DuplicateInspectionComplete => OpaqueLineCount is int count ? count == 0 : null;
+    /// <summary>Decoded payload encoding; null for plain syntax and undecoded inputs.</summary>
+    public SiiPayloadFormat? PayloadFormat { get; init; }
+    /// <summary>True when a ScsC HMAC was not checked.</summary>
+    public bool ContainerAuthenticationUnverified { get; init; }
+    public bool ThreeNkDecoded { get; init; }
+    public SiiSaveContainerError? ContainerError { get; init; }
+    public ExperimentalBinarySiiError? BinaryError { get; init; }
 }

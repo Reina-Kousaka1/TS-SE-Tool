@@ -82,6 +82,8 @@
   "fixture.example.threenk": "Bytes mit 3nK-Präfix",
   "fixture.status": "Syntaxstatus: {0}",
   "fixture.status.ParsedSyntaxOnly": "nur Syntax geparst",
+  "fixture.status.DecodedContainerTextOnly": "verpackter Text dekodiert; Spielgültigkeit ungeprüft",
+  "fixture.status.DecodedBinaryStructureOnly": "Binärstruktur dekodiert; Feldwerte und Spielgültigkeit ungeprüft",
   "fixture.status.UnclassifiedSyntax": "nicht klassifizierte Syntax",
   "fixture.status.ByteMismatch": "Byte-Roundtrip abweichend",
   "fixture.status.InvalidSyntax": "ungültige oder unvollständige Syntax",

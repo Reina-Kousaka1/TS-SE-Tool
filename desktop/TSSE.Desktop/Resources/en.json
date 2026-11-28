@@ -82,6 +82,8 @@
   "fixture.example.threenk": "3nK-prefix bytes",
   "fixture.status": "Syntax status: {0}",
   "fixture.status.ParsedSyntaxOnly": "parsed syntax only",
+  "fixture.status.DecodedContainerTextOnly": "wrapped text decoded; game validity unverified",
+  "fixture.status.DecodedBinaryStructureOnly": "binary structure decoded; field values and game validity unverified",
   "fixture.status.UnclassifiedSyntax": "unclassified syntax",
   "fixture.status.ByteMismatch": "byte roundtrip mismatch",
   "fixture.status.InvalidSyntax": "invalid or incomplete syntax",

@@ -59,8 +59,25 @@ independent review**. No Architect tool is available in this session.
   position bias and omit its packed component in the text representation.
   Those transformations need cross-implementation and game-load validation.
   Therefore all file export and save-edit UI gates remain disabled.
-- The implementation is experimental and has not passed CI for the current
-  change yet. The architecture self-review is not an independent review.
+- The experimental converter and its synthetic parser/format tests passed the
+  seven-target GitHub Actions matrix on commit `baeac8e` (run `46135418631`).
+  This verifies only the tested synthetic cases; it does not replace comparison
+  against an independent decoder or an in-game load. The architecture
+  self-review is not an independent review.
+
+## Bounded fixture-inspector integration
+
+- `SiiFixtureInspector` now invokes the existing bounded read-only decoder for
+  recognized `ScsC`, `BSII`, and `3nK` inputs. It reports only aggregate format,
+  version, block-count, and authentication-state metadata; it does not return
+  field values or enable writes. Malformed wrappers and binary payloads remain
+  explicit unsupported reports with categorized errors.
+- Synthetic tests cover an encrypted ScsC-wrapped BSII document and a truncated
+  ScsC prefix. The prior inspector run against the user-authorized `save/1`
+  files reported the 448,952-byte backup as unsupported and the 0-byte primary
+  file as invalid syntax. That exposed this inspector gap; a run against the
+  next committed build is still required to verify this integration against the
+  real copy. Neither file was modified.
 
 ## Risks and open questions
 
