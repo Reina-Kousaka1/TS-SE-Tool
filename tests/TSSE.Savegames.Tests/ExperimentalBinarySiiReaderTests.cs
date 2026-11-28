@@ -488,12 +488,12 @@ public sealed class ExperimentalBinarySiiReaderTests
     }
 
     [Fact]
-    public void ExperimentalTextConversionRejectsFieldNamesThatReparseDifferently()
+    public void ExperimentalTextConversionRejectsUnsupportedFieldNamesBeforeSerialization()
     {
-        ExperimentalBinaryTextSerializationException exception = Assert.Throws<ExperimentalBinaryTextSerializationException>(
+        ExperimentalBinarySiiException exception = Assert.Throws<ExperimentalBinarySiiException>(
             () => ExperimentalBinarySiiTextSerializer.Serialize(Fixture(firstFieldName: "value:shadow")));
 
-        Assert.Equal("SyntaxValidationFailed", exception.Error);
+        Assert.Equal(ExperimentalBinarySiiError.UnsupportedName, exception.Error);
     }
 
     [Theory]
