@@ -77,9 +77,12 @@ independent review**. No Architect tool is available in this session.
   `46136419118`). A hash-verified copy of that build's inspector was run against
   the user-authorized `save/1` files: the 448,952-byte ScsC backup reported
   version 3 and 19,354 binary blocks after two reads with matching size and
-  SHA-256; the report explicitly says authentication was unverified and writing
-  disabled. The 0-byte primary file reported invalid syntax. Neither file was
-  modified.
+  SHA-256. Experimental conversion of that real BSII payload also completed
+  and its generated text passed the SII syntax parser. The report explicitly
+  says ScsC authentication was unverified and writing disabled. The 0-byte
+  primary file reported invalid syntax. Neither file was modified. This checks
+  syntax coverage only; binary/text semantic equivalence and game acceptance
+  remain unverified.
 
 ## Risks and open questions
 
