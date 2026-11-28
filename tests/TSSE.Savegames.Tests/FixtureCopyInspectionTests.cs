@@ -177,7 +177,7 @@ public sealed class FixtureCopyInspectionTests
     }
 
     [Fact]
-    public void UnsupportedContainerIsReportedWithoutDecoding()
+    public void MalformedContainerIsReportedAsUnsupported()
     {
         string path = Path.GetTempFileName();
         try
@@ -195,5 +195,89 @@ public sealed class FixtureCopyInspectionTests
             Assert.Equal(bytes, File.ReadAllBytes(path));
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void BinaryProfilePreviewExercisesMoneyXpAndExistingCoachSkillWithoutWritingTheCopy()
+    {
+        string path = Path.GetTempFileName();
+        byte[] original = BinaryProfileFixture();
+        try
+        {
+            File.WriteAllBytes(path, original);
+            using var output = new StringWriter();
+
+            Assert.Equal(0, FixtureCopyInspection.Run(["--exercise-binary-profile-preview", path], output));
+
+            string reportText = output.ToString();
+            Assert.DoesNotContain(path, reportText, StringComparison.Ordinal);
+            Assert.DoesNotContain("money_account", reportText, StringComparison.Ordinal);
+            using JsonDocument json = JsonDocument.Parse(reportText);
+            JsonElement report = json.RootElement;
+            Assert.True(report.GetProperty("ProfileScalarsChangedOnlyInMemory").GetBoolean());
+            Assert.True(report.GetProperty("MoneyXpUndoRedoRestoredExactPayload").GetBoolean());
+            Assert.Equal(1, report.GetProperty("ExistingCoachSkillCount").GetInt32());
+            Assert.True(report.GetProperty("ExistingCoachSkillUndoRedoRestoredExactPayload").GetBoolean());
+            Assert.True(report.GetProperty("SourceBytesStableAcrossPreview").GetBoolean());
+            Assert.False(report.GetProperty("GameCompatibilityEstablished").GetBoolean());
+            Assert.False(report.GetProperty("SaveWritingEnabled").GetBoolean());
+            Assert.Equal(original, File.ReadAllBytes(path));
+        }
+        finally { File.Delete(path); }
+    }
+
+    private static byte[] BinaryProfileFixture()
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+        writer.Write("BSII"u8);
+        writer.Write(3u);
+
+        Structure(writer, 1, "bank", (0x31, "money_account"), (0x01, "mod_blob"));
+        writer.Write(1u);
+        WriteIdentity(writer, 0x77);
+        writer.Write(123456789L);
+        WriteString(writer, "preserve bank unknown field");
+
+        Structure(writer, 2, "economy", (0x3b, "bank"), (0x27, "experience_points"),
+            (0x27, "bus_experience_points"), (0x27, "long_duty"), (0x01, "mod_blob"));
+        writer.Write(2u);
+        WriteIdentity(writer, 0x88);
+        WriteIdentity(writer, 0x77);
+        writer.Write(42u);
+        writer.Write(7u);
+        writer.Write(2u);
+        WriteString(writer, "preserve economy unknown field");
+
+        writer.Write(0u);
+        writer.Write((byte)0);
+        return stream.ToArray();
+    }
+
+    private static void Structure(BinaryWriter writer, uint id, string name, params (uint Type, string Name)[] fields)
+    {
+        writer.Write(0u);
+        writer.Write((byte)1);
+        writer.Write(id);
+        WriteString(writer, name);
+        foreach ((uint type, string fieldName) in fields)
+        {
+            writer.Write(type);
+            WriteString(writer, fieldName);
+        }
+        writer.Write(0u);
+    }
+
+    private static void WriteIdentity(BinaryWriter writer, ulong rawValue)
+    {
+        writer.Write((byte)0xff);
+        writer.Write(rawValue);
+    }
+
+    private static void WriteString(BinaryWriter writer, string value)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(value);
+        writer.Write((uint)bytes.Length);
+        writer.Write(bytes);
     }
 }
