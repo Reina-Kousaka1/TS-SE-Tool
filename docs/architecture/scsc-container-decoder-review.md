@@ -38,6 +38,30 @@ independent review**. No Architect tool is available in this session.
   game compatibility, or satisfy an independent security review. The desktop
   may show read-only structural diagnostics without authorizing writes.
 
+## Experimental BSII-to-text conversion
+
+- `ExperimentalBinarySiiTextSerializer` now converts the decoder's supported
+  BSII v1-v3 value types to a plain `SiiNunit` text representation in memory.
+  It consumes every declared field's raw bytes, rejects invalid references,
+  unresolved ordinals, unsupported string values, trailing field bytes, and
+  unsupported types, then reparses the entire output and verifies block and
+  field-line counts. It does not create files or serialize a ScsC container.
+- The type formatting was cross-checked against public implementations and
+  format notes: [avoinescu/ets2-decrypt](https://github.com/avoinescu/ets2-decrypt)
+  documents a decoder tested against real 1.61/1.62 saves, and
+  [scs_tools FORMAT.md](https://github.com/Wilps93/scs_tools/blob/main/FORMAT.md)
+  documents the packed placement bias and SII text conventions. These are
+  community sources, not an SCS specification. This repository has not yet
+  compared generated output byte-for-byte or semantically against either
+  implementation on the supplied sample.
+- This conversion is not yet evidence of lossless game semantics. Boolean
+  bytes are rendered as `true`/`false`; v2/v3 placements apply the documented
+  position bias and omit its packed component in the text representation.
+  Those transformations need cross-implementation and game-load validation.
+  Therefore all file export and save-edit UI gates remain disabled.
+- The implementation is experimental and has not passed CI for the current
+  change yet. The architecture self-review is not an independent review.
+
 ## Risks and open questions
 
 - Without checking the header HMAC, a crafted or damaged container may decrypt

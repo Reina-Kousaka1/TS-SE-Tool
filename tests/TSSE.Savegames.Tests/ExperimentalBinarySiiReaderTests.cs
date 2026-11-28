@@ -1,5 +1,6 @@
 using System.Text;
 using TSSE.Savegames.Diagnostics;
+using TSSE.Savegames.Syntax;
 using Xunit;
 
 namespace TSSE.Savegames.Tests;
@@ -434,6 +435,56 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal(ExperimentalBinarySiiError.Truncated,
             Reject(ModernFixture(vector3ArrayCount: 65_536, writeVector3ArrayData: false, stopAfterVector3ArrayCount: true)).Error);
         Assert.Equal(ExperimentalBinarySiiError.Ambiguous, Reject(ModernFixture(duplicateOrdinalValues: true)).Error);
+    }
+
+    [Fact]
+    public void ExperimentalTextConversionKeepsEverySupportedFieldAndArrayInOrder()
+    {
+        byte[] text = ExperimentalBinarySiiTextSerializer.Serialize(Fixture());
+        SiiSyntaxDocument document = SiiEncodedText.Parse(text).Syntax;
+        SiiBlock block = Assert.Single(document.Blocks);
+
+        Assert.Equal("synthetic", block.Type);
+        Assert.Equal("_nameless.1234", block.Id);
+        Assert.Contains(block.Fields, field => field.Name == "value");
+        Assert.Equal("nil", Assert.Single(block.Fields.Where(field => field.Name == "xp")).Value.Trim());
+        Assert.Equal("-9223372036854775808", Assert.Single(block.Fields.Where(field => field.Name == "balance")).Value.Trim());
+        Assert.Equal("\"route demo\"", Assert.Single(block.Fields.Where(field => field.Name == "label")).Value.Trim());
+        Assert.Equal("3", Assert.Single(block.Fields.Where(field => field.Name == "labels")).Value.Trim());
+        Assert.Equal("\"\"", Assert.Single(block.Fields.Where(field => field.Name == "labels[0]")).Value.Trim());
+        Assert.Equal("true", Assert.Single(block.Fields.Where(field => field.Name == "flags[3]")).Value.Trim());
+        Assert.Empty(document.OpaqueLines);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void ExperimentalTextConversionHandlesOrdinalVectorsAndVersionedPlacement(uint version)
+    {
+        SiiSyntaxDocument document = SiiEncodedText.Parse(
+            ExperimentalBinarySiiTextSerializer.Serialize(ModernFixture(version: version))).Syntax;
+        SiiBlock block = Assert.Single(document.Blocks);
+
+        Assert.Equal("mode", block.Fields[^1].Name);
+        Assert.Equal("two", block.Fields[^1].Value.Trim());
+        Assert.Contains(block.Fields, field => field.Name == "placement" && field.Value.Contains(") (", StringComparison.Ordinal));
+        Assert.Single(block.Fields.Where(field => field.Name == "placements[0]"));
+        Assert.Equal("&3f800000",
+            Assert.Single(block.Fields.Where(field => field.Name == "vector3")).Value.Trim().TrimStart('(').Split(',')[0]);
+        Assert.Empty(document.OpaqueLines);
+    }
+
+    [Fact]
+    public void ExperimentalTextConversionFailsClosedOnUnrepresentableValues()
+    {
+        ExperimentalBinaryTextSerializationException invalidReference = Assert.Throws<ExperimentalBinaryTextSerializationException>(
+            () => ExperimentalBinarySiiTextSerializer.Serialize(Fixture(referencePart: 38)));
+        Assert.Equal("InvalidReference", invalidReference.Error);
+
+        ExperimentalBinaryTextSerializationException nul = Assert.Throws<ExperimentalBinaryTextSerializationException>(
+            () => ExperimentalBinarySiiTextSerializer.Serialize(Fixture(textBytes: [0])));
+        Assert.Equal("UnsupportedStringCharacter", nul.Error);
     }
 
     [Theory]
