@@ -110,6 +110,7 @@ public sealed class ExperimentalBinaryScalarEditSession
 
         byte[] candidate = (byte[])_history.Current.Clone();
         var targets = new List<ExperimentalBinaryScalarEdit>(edits.Count);
+        var patches = new List<BinaryPatch>(edits.Count);
         foreach (ExperimentalBinaryScalarEdit edit in edits)
         {
             ArgumentNullException.ThrowIfNull(edit);
@@ -128,11 +129,15 @@ public sealed class ExperimentalBinaryScalarEditSession
 
             ExperimentalBinaryRawField field = FindField(candidate, edit.BlockType, edit.Identifier,
                 edit.FieldName, edit.TypeCode, expectedLength);
-            edit.EncodedValue.Span.CopyTo(candidate.AsSpan(field.ByteOffset, expectedLength));
+            byte[] value = edit.EncodedValue.ToArray();
+            value.AsSpan().CopyTo(candidate.AsSpan(field.ByteOffset, expectedLength));
+            patches.Add(new BinaryPatch(field.ByteOffset, value));
             targets.Add(edit);
         }
 
         if (_history.Current.AsSpan().SequenceEqual(candidate)) return;
+        if (!OnlyRequestedValueSpansChanged(_history.Current, candidate, patches))
+            throw new InvalidOperationException("The edited BSII payload changed bytes outside the selected scalar values.");
         if (!_history.TryApply(candidate))
             throw new InvalidOperationException("The edited BSII payload did not pass complete revalidation.");
     }
@@ -179,6 +184,29 @@ public sealed class ExperimentalBinaryScalarEditSession
         }
     }
 
+    private static bool OnlyRequestedValueSpansChanged(
+        byte[] original,
+        byte[] candidate,
+        IReadOnlyList<BinaryPatch> patches)
+    {
+        if (original.Length != candidate.Length) return false;
+        BinaryPatch[] ordered = patches.OrderBy(patch => patch.Offset).ToArray();
+        int unchangedStart = 0;
+        foreach (BinaryPatch patch in ordered)
+        {
+            if (patch.Offset < unchangedStart || patch.Offset > original.Length - patch.Value.Length)
+                return false;
+            if (!original.AsSpan(unchangedStart, patch.Offset - unchangedStart)
+                    .SequenceEqual(candidate.AsSpan(unchangedStart, patch.Offset - unchangedStart)) ||
+                !candidate.AsSpan(patch.Offset, patch.Value.Length).SequenceEqual(patch.Value))
+                return false;
+            unchangedStart = patch.Offset + patch.Value.Length;
+        }
+        return original.AsSpan(unchangedStart).SequenceEqual(candidate.AsSpan(unchangedStart));
+    }
+
+    private sealed record BinaryPatch(int Offset, byte[] Value);
+
     private static bool SameIdentifier(ExperimentalBinaryBlockIdentifier? left, ExperimentalBinaryBlockIdentifier right)
         => left is not null && left.Marker == right.Marker && left.RawParts.SequenceEqual(right.RawParts);
 }
@@ -217,5 +245,5 @@ public sealed class ExperimentalBinaryScalarEdit
     public ExperimentalBinaryBlockIdentifier Identifier { get; }
     public string FieldName { get; }
     public uint TypeCode { get; }
-    public ReadOnlyMemory<byte> EncodedValue => _encodedValue;
+    public ReadOnlyMemory<byte> EncodedValue => new((byte[])_encodedValue.Clone());
 }

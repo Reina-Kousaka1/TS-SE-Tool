@@ -43,6 +43,28 @@ public sealed class ExperimentalBinaryScalarEditSessionTests
     }
 
     [Fact]
+    public void ChangesOnlyRequestedScalarBytesAcrossTheWholeBinaryPayload()
+    {
+        byte[] original = ProfileFixture();
+        IReadOnlyList<ExperimentalBinaryBlock> blocks = ExperimentalBinarySiiReader.Read(original);
+        ExperimentalBinaryBlock bank = Assert.Single(blocks, block => block.Type == "bank");
+        ExperimentalBinaryBlock economy = Assert.Single(blocks, block => block.Type == "economy");
+        int moneyOffset = bank.RawFields["money_account"].ByteOffset;
+        int experienceOffset = economy.RawFields["experience_points"].ByteOffset;
+        byte[] expected = (byte[])original.Clone();
+        BinaryPrimitives.WriteInt64LittleEndian(expected.AsSpan(moneyOffset, sizeof(long)), -987654321);
+        BinaryPrimitives.WriteUInt32LittleEndian(expected.AsSpan(experienceOffset, sizeof(uint)), 1234567890);
+
+        var session = new ExperimentalBinaryScalarEditSession(original);
+        session.SetInt64("bank", bank.Identifier!, "money_account", -987654321);
+        session.SetUInt32("economy", economy.Identifier!, "experience_points", 1234567890);
+
+        Assert.Equal(expected, session.PreviewBytes);
+        Assert.Equal(original, session.OriginalBytes);
+        Assert.Equal(original.Length, session.PreviewBytes.Length);
+    }
+
+    [Fact]
     public void RejectsMissingFieldsWrongTypesAndChangedIdentifiersWithoutMutation()
     {
         var session = new ExperimentalBinaryScalarEditSession(ProfileFixture());

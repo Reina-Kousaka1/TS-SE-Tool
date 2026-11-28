@@ -493,3 +493,14 @@ below is the validation evidence.
 The first CI run for this commit, [46131806391](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46131806391), reached compilation on four .NET 10 targets and failed on CS8602 nullable dereferences in the new test file. The assertions were changed to capture the selected snapshots in local variables before dereferencing. This is a compile-time test fix; rerun CI is still required.
 
 The follow-up CI run, [46131968392](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46131968392), compiled but exposed four faulty fixture mutations: they relied on exact indentation and did not remove or replace the raw-array lines. The tests now remove array fields by line pattern before inserting malformed or unresolved examples. The corrected run, [46132194248](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46132194248), passed all seven jobs, including the full .NET 10 solution tests on Windows x64/ARM64, Linux x64/ARM64 and macOS x64, plus Fedora RPM jobs on x64/ARM64. This review is a documented implementation self-review, not an independent architecture review.
+
+### Architecture self-review — BSII scalar byte-span guard
+
+The in-memory scalar edit session now records the exact fixed-width spans it
+was asked to change and rejects a candidate if any byte outside those spans
+differs, if spans overlap, or if candidate values do not match the requested
+bytes. A regression test constructs the complete expected payload after
+money/XP edits and compares every byte, including structure definitions,
+identifiers and opaque mod fields. This constrains in-memory BSII edits only;
+it does not serialize a container, write a file, authenticate ScsC, or prove
+that the game accepts an edited copy. The test awaits the next CI run.
