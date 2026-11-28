@@ -197,6 +197,21 @@ public sealed class SiiEditSessionTests
         Assert.Equal(original, session.PreviewText);
         Assert.False(session.CanUndo);
     }
+
+    [Fact]
+    public void EditsMultiMegabyteDocumentWithinBoundAndKeepsUndoExact()
+    {
+        string filler = string.Concat(Enumerable.Repeat("#" + new string('x', 60_000) + "\n", 50));
+        string original = "root {\n value: 0\n}\n" + filler;
+        Assert.InRange(original.Length, 2 * 1024 * 1024 + 1, SiiEditSession.MaximumPreviewCharacters);
+        var session = new SiiEditSession(SiiSyntaxDocument.Parse(original));
+
+        session.Apply([new("root", null, "value", "1")]);
+
+        Assert.StartsWith("root {\n value: 1\n}\n", session.PreviewText, StringComparison.Ordinal);
+        Assert.True(session.Undo());
+        Assert.Equal(original, session.PreviewText);
+    }
     private const string Original = "SiiNunit\r\n{\r\n bank : a {\r\n  money_account: 42\r\n  mod_extra: \"未知\"\r\n }\r\n economy : b {\r\n  experience_points: 5\r\n }\r\n}\r\n";
 
     [Fact]

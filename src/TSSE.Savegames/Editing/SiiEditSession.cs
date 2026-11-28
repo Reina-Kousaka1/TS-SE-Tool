@@ -4,13 +4,14 @@ using TSSE.Savegames.Syntax;
 namespace TSSE.Savegames.Editing;
 
 /// <summary>
-/// In-memory syntax editing for synthetic fixtures. This does not locate, load,
+/// Bounded in-memory syntax editing for explicitly supplied parsed documents. This does not locate, load,
 /// validate for any game version, or write a save file.
 /// </summary>
 public sealed class SiiEditSession
 {
-    public const int MaximumPreviewCharacters = 2 * 1024 * 1024;
+    public const int MaximumPreviewCharacters = 8 * 1024 * 1024;
     public const int MaximumHistoryStates = 16;
+    public const int MaximumHistoryCharacters = 32 * 1024 * 1024;
     private readonly EditHistory<SiiSyntaxDocument> _history;
     private readonly SiiSyntaxDocument _original;
     private readonly Action<SiiSyntaxDocument>? _validateCandidate;
@@ -24,12 +25,19 @@ public sealed class SiiEditSession
     internal SiiEditSession(SiiSyntaxDocument initial, Action<SiiSyntaxDocument>? validateCandidate)
     {
         ArgumentNullException.ThrowIfNull(initial);
-        if (initial.ToText().Length > MaximumPreviewCharacters)
+        int initialCharacterCount = initial.ToText().Length;
+        if (initialCharacterCount > MaximumPreviewCharacters)
             throw new ArgumentException("The document exceeds the in-memory preview limit.", nameof(initial));
         _original = initial;
         _validateCandidate = validateCandidate;
         _validateCandidate?.Invoke(initial);
-        _history = new EditHistory<SiiSyntaxDocument>(initial, static doc => doc.ToText().Length <= MaximumPreviewCharacters, MaximumHistoryStates);
+        int historyStateLimit = Math.Clamp(
+            MaximumHistoryCharacters / Math.Max(initialCharacterCount, 1),
+            2,
+            MaximumHistoryStates);
+        _history = new EditHistory<SiiSyntaxDocument>(initial,
+            static doc => doc.ToText().Length <= MaximumPreviewCharacters,
+            historyStateLimit);
     }
 
     public string PreviewText => _history.Current.ToText();

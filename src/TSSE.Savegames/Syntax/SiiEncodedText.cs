@@ -3,8 +3,8 @@ using System.Text;
 namespace TSSE.Savegames.Syntax;
 
 /// <summary>
-/// Strict, in-memory plain-text SII decoding for synthetic fixtures. This is
-/// not a game-container decoder and cannot access or write files.
+/// Strict, in-memory plain-text SII decoding. This is not a game-container
+/// decoder and cannot access or write files.
 /// </summary>
 public sealed class SiiEncodedText
 {
@@ -77,6 +77,14 @@ public sealed class SiiEncodedText
     public SiiEncodedText WithFieldValue(string blockType, string? blockId, string fieldName, string rawValue)
     {
         SiiSyntaxDocument candidate = Syntax.WithFieldValue(blockType, blockId, fieldName, rawValue);
+        return WithSyntax(candidate);
+    }
+
+    /// <summary>Encodes a validated syntax snapshot using the original supported text encoding.</summary>
+    public SiiEncodedText WithSyntax(SiiSyntaxDocument syntax)
+    {
+        ArgumentNullException.ThrowIfNull(syntax);
+        SiiSyntaxDocument candidate = syntax;
         if (candidate.ToText().Contains('\0'))
             throw new InvalidDataException("NUL characters are not supported in SII text.");
         var result = new SiiEncodedText(_encoding, _preamble, candidate);
