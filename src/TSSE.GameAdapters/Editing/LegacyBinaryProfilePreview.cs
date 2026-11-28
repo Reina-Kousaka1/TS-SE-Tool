@@ -6,8 +6,8 @@ using TSSE.Savegames.Editing;
 namespace TSSE.GameAdapters.Editing;
 
 /// <summary>
-/// In-memory profile scalar preview for explicitly selected legacy-shaped BSII blocks.
-/// It is synthetic-only evidence and does not discover profiles or encode ScsC containers.
+/// In-memory profile scalar preview for explicitly selected BSII blocks with an existing bank link.
+/// It does not discover profiles, verify container authentication, encode ScsC, or validate game semantics.
 /// </summary>
 public sealed class LegacyBinaryProfilePreview
 {
@@ -15,6 +15,7 @@ public sealed class LegacyBinaryProfilePreview
     private readonly ExperimentalBinaryBlockIdentifier _economyId;
     private readonly ExperimentalBinaryBlockIdentifier _bankId;
     private readonly bool _hasCoachExperience;
+    private readonly uint? _coachExperienceTypeCode;
 
     public LegacyBinaryProfilePreview(ReadOnlySpan<byte> binaryPayload, ExperimentalBinaryBlockIdentifier economyId)
     {
@@ -40,9 +41,10 @@ public sealed class LegacyBinaryProfilePreview
 
         if (economy.RawFields.TryGetValue("bus_experience_points", out ExperimentalBinaryRawField? coachField))
         {
-            if (coachField is null || coachField.TypeCode != 0x25 || coachField.Bytes.Count != sizeof(int))
+            if (coachField is null || coachField.TypeCode is not (0x25 or 0x27) || coachField.Bytes.Count != sizeof(uint))
                 throw new InvalidOperationException("The existing Coaches experience field has an unsupported type or width.");
             _hasCoachExperience = true;
+            _coachExperienceTypeCode = coachField.TypeCode;
         }
 
         _ = Current;
@@ -57,12 +59,16 @@ public sealed class LegacyBinaryProfilePreview
             if (!economy.UInt32Fields.TryGetValue("experience_points", out ExperimentalBinaryUInt32 experience) || experience.IsLegacyNil)
                 throw new InvalidOperationException("The selected experience value is missing, ambiguous, or encoded as nil.");
 
-            int? coachExperience = null;
+            long? coachExperience = null;
             if (_hasCoachExperience)
             {
-                if (!economy.Int32Fields.TryGetValue("bus_experience_points", out int coachValue))
-                    throw new InvalidOperationException("The selected Coaches experience value is missing or ambiguous.");
-                coachExperience = coachValue;
+                coachExperience = _coachExperienceTypeCode switch
+                {
+                    0x25 when economy.Int32Fields.TryGetValue("bus_experience_points", out int signedValue) => signedValue,
+                    0x27 when economy.UInt32Fields.TryGetValue("bus_experience_points", out ExperimentalBinaryUInt32 unsignedValue) && !unsignedValue.IsLegacyNil => unsignedValue.Raw,
+                    0x27 => null,
+                    _ => throw new InvalidOperationException("The selected Coaches experience value is missing or ambiguous.")
+                };
             }
 
             long balance = _session.GetInt64("bank", _bankId, "money_account");
@@ -75,6 +81,49 @@ public sealed class LegacyBinaryProfilePreview
     public bool IsDirty => _session.IsDirty;
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;
+
+    /// <summary>Reads present candidate Coaches skill fields only when their BSII values match the observed UInt32 representation.</summary>
+    public IReadOnlyDictionary<string, byte> CoachSkills
+    {
+        get
+        {
+            IReadOnlyList<ExperimentalBinaryBlock> blocks = ExperimentalBinarySiiReader.Read(_session.PreviewBytes);
+            ExperimentalBinaryBlock economy = FindBlock(blocks, "economy", _economyId);
+            var skills = new Dictionary<string, byte>(StringComparer.Ordinal);
+            foreach (string name in LegacyCoachSkillCatalog.FieldNames)
+            {
+                if (!economy.RawFields.TryGetValue(name, out ExperimentalBinaryRawField? raw)) continue;
+                if (raw is null || raw.TypeCode != 0x27 || raw.Bytes.Count != sizeof(uint) ||
+                    !economy.UInt32Fields.TryGetValue(name, out ExperimentalBinaryUInt32 value) || value.IsLegacyNil ||
+                    value.Raw > LegacyCoachSkillCatalog.MaximumRank)
+                    throw new InvalidOperationException($"The existing binary Coaches skill '{name}' has an unsupported representation or value.");
+                skills.Add(name, checked((byte)value.Raw));
+            }
+            return new System.Collections.ObjectModel.ReadOnlyDictionary<string, byte>(skills);
+        }
+    }
+
+    /// <summary>Changes a present candidate Coaches skill in the in-memory preview; it never adds a field.</summary>
+    public void SetCoachSkill(string name, byte rank)
+    {
+        if (!LegacyCoachSkillCatalog.FieldNames.Contains(name, StringComparer.Ordinal))
+            throw new ArgumentException("Unknown candidate Coaches skill.", nameof(name));
+        if (rank > LegacyCoachSkillCatalog.MaximumRank)
+            throw new ArgumentOutOfRangeException(nameof(rank));
+        if (!CoachSkills.ContainsKey(name))
+            throw new InvalidOperationException("The selected profile does not contain this Coaches skill field.");
+        _session.SetUInt32("economy", _economyId, name, rank);
+    }
+
+    /// <summary>Resets existing candidate Coaches skill fields to zero as one undoable in-memory batch.</summary>
+    public void ResetCoachSkills()
+    {
+        IReadOnlyDictionary<string, byte> current = CoachSkills;
+        var edits = current.Where(pair => pair.Value != 0)
+            .Select(pair => new ExperimentalBinaryScalarEdit("economy", _economyId, pair.Key, 0x27, EncodeUInt32(0)))
+            .ToArray();
+        _session.Apply(edits);
+    }
 
     public void Apply(ProfileValues values)
     {
@@ -90,8 +139,20 @@ public sealed class LegacyBinaryProfilePreview
             edits.Add(new("bank", _bankId, "money_account", 0x31, EncodeInt64(values.Balance)));
         if (values.Experience != current.Experience)
             edits.Add(new("economy", _economyId, "experience_points", 0x27, EncodeUInt32(values.Experience)));
-        if (_hasCoachExperience && values.CoachExperience is int coachExperience && coachExperience != current.CoachExperience)
-            edits.Add(new("economy", _economyId, "bus_experience_points", 0x25, EncodeInt32(coachExperience)));
+        if (_hasCoachExperience && values.CoachExperience is long coachExperience && coachExperience != current.CoachExperience)
+        {
+            switch (_coachExperienceTypeCode)
+            {
+                case 0x25 when coachExperience is >= int.MinValue and <= int.MaxValue:
+                    edits.Add(new("economy", _economyId, "bus_experience_points", 0x25, EncodeInt32((int)coachExperience)));
+                    break;
+                case 0x27 when coachExperience is >= 0 and < uint.MaxValue:
+                    edits.Add(new("economy", _economyId, "bus_experience_points", 0x27, EncodeUInt32((uint)coachExperience)));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(values), "The Coaches experience value is outside the existing field's supported range.");
+            }
+        }
         _session.Apply(edits);
     }
 

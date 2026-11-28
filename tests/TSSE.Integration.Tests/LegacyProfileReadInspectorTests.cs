@@ -16,7 +16,7 @@ public sealed class LegacyProfileReadInspectorTests
 
         Assert.Equal(-42, values.Balance);
         Assert.Equal(5u, values.Experience);
-        Assert.Equal(-2, values.CoachExperience);
+        Assert.Equal(-2L, values.CoachExperience);
         Assert.Single(document.OpaqueLines);
         Assert.Contains("unknown syntax retained", document.ToText(), StringComparison.Ordinal);
         Assert.Contains("mod: \"kept\"", document.ToText(), StringComparison.Ordinal);

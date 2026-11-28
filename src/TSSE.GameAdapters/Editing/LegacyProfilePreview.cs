@@ -1,12 +1,13 @@
 using System.Globalization;
 using TSSE.Core.Editing;
+using TSSE.Savegames.Diagnostics;
 using TSSE.Savegames.Editing;
 using TSSE.Savegames.Syntax;
 
 namespace TSSE.GameAdapters.Editing;
 
 /// <summary>
-/// Experimental in-memory legacy-shaped profile editing for synthetic fixtures.
+/// In-memory legacy-shaped profile editing for an explicitly supplied parsed text document.
 /// This does not establish compatibility with any ETS2 or ATS save version.
 /// It never opens or writes files.
 /// </summary>
@@ -64,6 +65,13 @@ public sealed class LegacyProfilePreview
     public bool IsDirty => _session.IsDirty;
     public bool CanUndo => _session.CanUndo;
     public bool CanRedo => _session.CanRedo;
+
+    /// <summary>Exports edited plain-text SII to a new path; the source and existing destinations are never replaced.</summary>
+    public SiiTextSaveCopyResult SaveNewTextCopy(string sourcePath, string destinationPath)
+        => SiiTextSaveCopyWriter.WriteNewCopy(
+            sourcePath,
+            destinationPath,
+            SiiSyntaxDocument.Parse(_session.PreviewText));
 
     /// <summary>Reads one explicitly selected legacy-shaped skill from synthetic SII.</summary>
     public byte GetSkill(string name)
@@ -151,10 +159,12 @@ public sealed class LegacyProfilePreview
             changes.Add(new("bank", _bankId, "money_account", values.Balance.ToString(CultureInfo.InvariantCulture)));
         if (values.Experience != current.Experience)
             changes.Add(new("economy", _economyId, "experience_points", values.Experience.ToString(CultureInfo.InvariantCulture)));
-        if (values.CoachExperience is int coachExperience)
+        if (values.CoachExperience is long coachExperience)
         {
             if (current.CoachExperience is null)
                 throw new InvalidOperationException("The selected profile has no existing Coaches experience field.");
+            if (coachExperience is < int.MinValue or > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(values), "The text Coaches experience field only supports the observed signed Int32 range.");
             if (values.CoachExperience != current.CoachExperience)
                 changes.Add(new("economy", _economyId, "bus_experience_points", coachExperience.ToString(CultureInfo.InvariantCulture)));
         }

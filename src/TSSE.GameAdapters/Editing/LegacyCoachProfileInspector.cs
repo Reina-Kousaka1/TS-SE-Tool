@@ -31,15 +31,15 @@ public sealed class LegacyCoachProfileInspector
 
     public LegacyCoachEconomySnapshot Snapshot { get; }
 
-    /// <summary>Reads only the historical Int32 Coaches counters from one explicitly decoded BSII economy block.</summary>
-    public static IReadOnlyDictionary<string, int?> InspectBinaryCounters(IReadOnlyList<ExperimentalBinaryBlock> blocks)
+    /// <summary>Reads present historical Coaches counters from one decoded BSII economy block using declared signed or unsigned scalar types.</summary>
+    public static IReadOnlyDictionary<string, long?> InspectBinaryCounters(IReadOnlyList<ExperimentalBinaryBlock> blocks)
     {
         ArgumentNullException.ThrowIfNull(blocks);
         ExperimentalBinaryBlock[] matches = blocks.Where(block => block.Type == "economy").ToArray();
         if (matches.Length != 1)
             throw new InvalidOperationException("The binary economy block is missing or ambiguous.");
         ExperimentalBinaryBlock economy = matches[0];
-        var counters = new Dictionary<string, int?>(StringComparer.Ordinal);
+        var counters = new Dictionary<string, long?>(StringComparer.Ordinal);
         foreach (string name in Counters)
         {
             if (!economy.RawFields.ContainsKey(name))
@@ -47,11 +47,19 @@ public sealed class LegacyCoachProfileInspector
                 counters.Add(name, null);
                 continue;
             }
-            if (!economy.Int32Fields.TryGetValue(name, out int value))
-                throw new InvalidOperationException($"The historical binary Coaches counter '{name}' has an unsupported representation.");
-            counters.Add(name, value);
+            if (economy.Int32Fields.TryGetValue(name, out int signedValue))
+            {
+                counters.Add(name, signedValue);
+                continue;
+            }
+            if (economy.UInt32Fields.TryGetValue(name, out ExperimentalBinaryUInt32 unsignedValue))
+            {
+                counters.Add(name, unsignedValue.IsLegacyNil ? null : unsignedValue.Raw);
+                continue;
+            }
+            throw new InvalidOperationException($"The historical binary Coaches counter '{name}' has an unsupported representation.");
         }
-        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, int?>(counters);
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, long?>(counters);
     }
 
     /// <summary>Reports only raw BSII type codes for present candidate skill fields; it assigns no meaning to their values.</summary>

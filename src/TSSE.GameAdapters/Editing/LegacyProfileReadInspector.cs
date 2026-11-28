@@ -21,7 +21,7 @@ public static class LegacyProfileReadInspector
             !uint.TryParse(Value(economy, "experience_points"), NumberStyles.None, CultureInfo.InvariantCulture, out uint experience) ||
             experience == uint.MaxValue)
             throw new InvalidDataException("Known profile scalars are missing or not supported decimal integers.");
-        int? coachExperience = null;
+        long? coachExperience = null;
         SiiField[] coachFields = economy.Fields.Where(field => field.Name == "bus_experience_points").ToArray();
         if (coachFields.Length > 1 || coachFields.Length == 1 &&
             !int.TryParse(coachFields[0].Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _))
@@ -44,12 +44,18 @@ public static class LegacyProfileReadInspector
         if (!economy.UInt32Fields.TryGetValue("experience_points", out ExperimentalBinaryUInt32 experience) || experience.IsLegacyNil ||
             !bank.Int64Fields.TryGetValue("money_account", out long balance))
             throw new InvalidDataException("Known profile scalars are missing, nil, or not supported by the binary reader.");
-        int? coachExperience = null;
+        long? coachExperience = null;
         if (economy.RawFields.ContainsKey("bus_experience_points"))
         {
-            if (!economy.Int32Fields.TryGetValue("bus_experience_points", out int coachValue))
+            ExperimentalBinaryRawField raw = economy.RawFields["bus_experience_points"];
+            if (raw.TypeCode == 0x25 && economy.Int32Fields.TryGetValue("bus_experience_points", out int signedCoachValue))
+                coachExperience = signedCoachValue;
+            else if (raw.TypeCode == 0x27 && economy.UInt32Fields.TryGetValue("bus_experience_points", out ExperimentalBinaryUInt32 unsignedCoachValue) && !unsignedCoachValue.IsLegacyNil)
+                coachExperience = unsignedCoachValue.Raw;
+            else if (raw.TypeCode == 0x27 && economy.UInt32Fields.TryGetValue("bus_experience_points", out unsignedCoachValue) && unsignedCoachValue.IsLegacyNil)
+                coachExperience = null;
+            else
                 throw new InvalidDataException("The optional historical Coaches experience scalar has an unsupported representation.");
-            coachExperience = coachValue;
         }
         return new ProfileValues(balance, experience.Raw, coachExperience);
     }

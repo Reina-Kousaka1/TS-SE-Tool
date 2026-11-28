@@ -45,4 +45,4 @@ public sealed class ProfileEditSession
 }
 
 /// <summary>Values for an isolated editor session, not a complete game profile.</summary>
-public sealed record ProfileValues(long Balance, uint Experience, int? CoachExperience = null);
+public sealed record ProfileValues(long Balance, uint Experience, long? CoachExperience = null);

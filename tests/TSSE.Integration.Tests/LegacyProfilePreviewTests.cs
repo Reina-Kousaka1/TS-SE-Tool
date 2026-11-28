@@ -69,7 +69,7 @@ public sealed class LegacyProfilePreviewTests
     {
         string input = Synthetic.Replace("  experience_points: 0005\n", "  experience_points: 0005\n  bus_experience_points: 7\n", StringComparison.Ordinal);
         var editor = new LegacyProfilePreview(SiiSyntaxDocument.Parse(input), "e");
-        Assert.Equal(7, editor.Current.CoachExperience);
+        Assert.Equal(7L, editor.Current.CoachExperience);
 
         editor.Apply(editor.Current with { CoachExperience = int.MaxValue });
 
