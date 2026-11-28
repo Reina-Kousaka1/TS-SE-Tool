@@ -148,7 +148,11 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         {
             SetImportResult(_text.Format("fixture.import.failure", _text.Get("fixture.import.error." + ex.Error)));
         }
-        catch (Exception ex) when (ex is InvalidDataException or SiiSyntaxException or ExperimentalBinarySiiException or ArgumentException)
+        catch (ExperimentalBinarySiiException)
+        {
+            SetImportResult(_text.Format("fixture.import.failure", _text.Get("fixture.import.error.UnsupportedPayload")));
+        }
+        catch (Exception ex) when (ex is InvalidDataException or SiiSyntaxException or ArgumentException)
         {
             SetImportResult(_text.Get("fixture.import.failure.generic"));
         }
