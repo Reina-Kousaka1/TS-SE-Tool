@@ -54,6 +54,30 @@ public sealed class LegacyCoachProfileInspector
         return new System.Collections.ObjectModel.ReadOnlyDictionary<string, int?>(counters);
     }
 
+    /// <summary>Reports only raw BSII type codes for present candidate skill fields; it assigns no meaning to their values.</summary>
+    public static IReadOnlyDictionary<string, uint?> InspectBinaryCandidateSkillTypeCodes(IReadOnlyList<ExperimentalBinaryBlock> blocks)
+    {
+        ArgumentNullException.ThrowIfNull(blocks);
+        ExperimentalBinaryBlock[] matches = blocks.Where(block => block.Type == "economy").ToArray();
+        if (matches.Length != 1)
+            throw new InvalidOperationException("The binary economy block is missing or ambiguous.");
+        ExperimentalBinaryBlock economy = matches[0];
+        var types = new Dictionary<string, uint?>(StringComparer.Ordinal);
+        foreach (string name in LegacyCoachSkillCatalog.FieldNames)
+        {
+            if (!economy.RawFields.TryGetValue(name, out ExperimentalBinaryRawField raw))
+            {
+                types.Add(name, null);
+                continue;
+            }
+            ExperimentalBinaryFieldDefinition[] definitions = economy.FieldDefinitions.Where(field => field.Name == name).ToArray();
+            if (definitions.Length != 1 || definitions[0].TypeCode != raw.TypeCode)
+                throw new InvalidOperationException($"The binary candidate Coaches skill field '{name}' has ambiguous type metadata.");
+            types.Add(name, raw.TypeCode);
+        }
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<string, uint?>(types);
+    }
+
     private LegacyCoachEconomySnapshot ReadSnapshot()
     {
         Dictionary<string, int?> counters = Counters.ToDictionary(

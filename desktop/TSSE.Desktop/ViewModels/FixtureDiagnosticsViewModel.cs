@@ -199,19 +199,27 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
         return summary.Length == 0 ? _text.Get("fixture.coach.skills.none") : summary;
     }
 
+    private string FormatCandidateCoachSkillTypes(IReadOnlyDictionary<string, uint?> types)
+    {
+        string summary = string.Join(", ", LegacyCoachSkillCatalog.FieldNames
+            .Where(name => types[name].HasValue)
+            .Select(name => $"{name}=0x{types[name]!.Value:x8}"));
+        return summary.Length == 0 ? _text.Get("fixture.coach.skills.none") : summary;
+    }
+
     private string InspectBinaryCoachCounters(IReadOnlyList<ExperimentalBinaryBlock> blocks)
     {
         try
         {
             IReadOnlyDictionary<string, int?> counters = LegacyCoachProfileInspector.InspectBinaryCounters(blocks);
-            if (!counters.Values.Any(value => value.HasValue))
-                return _text.Get("fixture.import.coach.unavailable");
             string Number(string name) => counters[name]?.ToString(CultureInfo.InvariantCulture)
                 ?? _text.Get("fixture.import.profile.noCoachField");
-            return _text.Format("fixture.import.coach.binaryCounters",
+            string countersText = _text.Format("fixture.import.coach.binaryCounters",
                 Number("bus_experience_points"), Number("bus_total_distance"), Number("bus_finished_job_count"),
                 Number("bus_cancelled_job_count"), Number("bus_total_passengers"), Number("bus_total_stops"),
                 Number("bus_game_time"), Number("bus_playing_time"));
+            IReadOnlyDictionary<string, uint?> types = LegacyCoachProfileInspector.InspectBinaryCandidateSkillTypeCodes(blocks);
+            return countersText + " " + _text.Format("fixture.import.coach.binarySkillTypes", FormatCandidateCoachSkillTypes(types));
         }
         catch (InvalidOperationException)
         {

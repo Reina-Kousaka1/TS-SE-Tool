@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using TSSE.Desktop.Services;
 using TSSE.Desktop.ViewModels;
 using Xunit;
@@ -114,6 +115,17 @@ public sealed class FixtureDiagnosticsViewModelTests
     }
 
     [Fact]
+    public void ExplicitBinaryImportShowsCandidateCoachSkillTypeCodeWithoutInterpretingItsValue()
+    {
+        var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+
+        viewModel.InspectSelectedBytes(BinaryCoachSkillFixture());
+
+        Assert.Contains("Raw BSII type codes for candidate skill fields (values uninterpreted): long_duty=0x00000025", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("DLC compatibility unverified", viewModel.ImportResult, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InvalidSelectedBytesReturnControlledFailure()
     {
         var viewModel = new FixtureDiagnosticsViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("de")));
@@ -133,5 +145,27 @@ public sealed class FixtureDiagnosticsViewModelTests
 
         Assert.Contains("nicht unterstützte oder ungültige Nutzdaten", viewModel.ImportResult, StringComparison.Ordinal);
         Assert.Contains("keine Daten geändert", viewModel.ImportResult, StringComparison.Ordinal);
+    }
+
+    private static byte[] BinaryCoachSkillFixture()
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+        static void Name(BinaryWriter output, string value)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes(value);
+            output.Write((uint)bytes.Length);
+            output.Write(bytes);
+        }
+        writer.Write("BSII"u8);
+        writer.Write(3u);
+        writer.Write(0u); writer.Write((byte)1); writer.Write(1u); Name(writer, "economy");
+        writer.Write(0x25u); Name(writer, "bus_experience_points");
+        writer.Write(0x25u); Name(writer, "long_duty");
+        writer.Write(0u);
+        writer.Write(1u); writer.Write((byte)0xff); writer.Write(7ul);
+        writer.Write(55); writer.Write(2);
+        writer.Write(0u); writer.Write((byte)0);
+        return stream.ToArray();
     }
 }

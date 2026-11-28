@@ -31,6 +31,18 @@ public sealed class LegacyBinaryProfilePreviewTests
     }
 
     [Fact]
+    public void BinaryCandidateCoachSkillInspectionReportsOnlyRawFieldTypeCodes()
+    {
+        IReadOnlyList<ExperimentalBinaryBlock> blocks = ExperimentalBinarySiiReader.Read(BinaryProfileFixture(includeCoachSkill: true));
+
+        IReadOnlyDictionary<string, uint?> types = LegacyCoachProfileInspector.InspectBinaryCandidateSkillTypeCodes(blocks);
+
+        Assert.Equal(0x25u, types["long_duty"]);
+        Assert.Null(types["tight_schedule"]);
+        Assert.Equal(6, types.Count);
+    }
+
+    [Fact]
     public void EditsSyntheticBinaryProfileScalarsAsOneUndoableChangeAndRetainsUnknownBytes()
     {
         byte[] original = BinaryProfileFixture();
@@ -83,6 +95,7 @@ public sealed class LegacyBinaryProfilePreviewTests
 
     private static byte[] BinaryProfileFixture(
         bool includeCoachExperience = true,
+        bool includeCoachSkill = false,
         uint experience = 42)
     {
         using var stream = new MemoryStream();
@@ -103,6 +116,8 @@ public sealed class LegacyBinaryProfilePreviewTests
         };
         if (includeCoachExperience)
             economyFields.Add((0x25, "bus_experience_points"));
+        if (includeCoachSkill)
+            economyFields.Add((0x25, "long_duty"));
         economyFields.Add((0x01, "mod_blob"));
         Structure(writer, 2, "economy", economyFields.ToArray());
         writer.Write(2u);
@@ -111,6 +126,8 @@ public sealed class LegacyBinaryProfilePreviewTests
         writer.Write(experience);
         if (includeCoachExperience)
             writer.Write(7);
+        if (includeCoachSkill)
+            writer.Write(2);
         WriteString(writer, "preserve economy unknown field");
 
         writer.Write(0u);
