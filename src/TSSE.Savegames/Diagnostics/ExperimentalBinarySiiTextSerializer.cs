@@ -74,11 +74,13 @@ public static class ExperimentalBinarySiiTextSerializer
         try
         {
             SiiSyntaxDocument parsed = SiiEncodedText.Parse(result).Syntax;
-            if (parsed.OpaqueLines.Count != 0 || parsed.Blocks.Count != blocks.Count)
+            // The syntax model represents the SiiNunit container as the outermost block.
+            if (parsed.OpaqueLines.Count != 0 || parsed.Blocks.Count != blocks.Count + 1 ||
+                parsed.Blocks[0].Type != "SiiNunit" || parsed.Blocks[0].Id is not null)
                 throw new ExperimentalBinaryTextSerializationException("SyntaxValidationFailed");
             for (int i = 0; i < blocks.Count; i++)
             {
-                SiiBlock parsedBlock = parsed.Blocks[i];
+                SiiBlock parsedBlock = parsed.Blocks[i + 1];
                 if (parsedBlock.Type != blocks[i].Type || parsedBlock.Id != FormatBlockIdentifier(blocks[i].Identifier) ||
                     parsedBlock.Fields.Count != expectedFieldLineCounts[i])
                     throw new ExperimentalBinaryTextSerializationException("SyntaxValidationFailed");
