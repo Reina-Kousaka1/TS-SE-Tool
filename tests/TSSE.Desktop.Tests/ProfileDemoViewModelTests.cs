@@ -37,8 +37,8 @@ public sealed class ProfileDemoViewModelTests
         demo.ActionCommand.Execute("both");
 
         Assert.Equal(original, demo.PreviewText);
-        Assert.Equal("0", demo.BalanceInput);
-        Assert.Equal("0", demo.ExperienceInput);
+        Assert.Equal("99", demo.BalanceInput);
+        Assert.Equal(uint.MaxValue.ToString(CultureInfo.InvariantCulture), demo.ExperienceInput);
     }
 
     [Fact]
