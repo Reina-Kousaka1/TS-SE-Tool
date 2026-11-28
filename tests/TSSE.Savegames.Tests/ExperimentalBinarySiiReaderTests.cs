@@ -464,7 +464,7 @@ public sealed class ExperimentalBinarySiiReaderTests
     {
         SiiSyntaxDocument document = SiiEncodedText.Parse(
             ExperimentalBinarySiiTextSerializer.Serialize(ModernFixture(version: version))).Syntax;
-        SiiBlock block = Assert.Single(document.Blocks, candidate => candidate.Type == "synthetic");
+        SiiBlock block = Assert.Single(document.Blocks, candidate => candidate.Type == "modern");
 
         Assert.Equal("mode", block.Fields[^1].Name);
         Assert.Equal("two", block.Fields[^1].Value.Trim());
