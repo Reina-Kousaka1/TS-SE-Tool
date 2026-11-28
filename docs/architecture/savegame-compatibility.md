@@ -261,6 +261,8 @@ and [`sii-decrypt-ts` type reference](https://github.com/Trucky/sii-decrypt-ts/b
 not an official SCS schema specification.
 The `Int16` and `UInt16` value models expose their documented maximum-value
 nil sentinel separately from their raw numeric bits, including array entries.
+The profile preview also rejects UInt32 maximum as XP in both text and binary
+paths; it represents the legacy `nil` sentinel, not an editable XP total.
 It returns values only after a complete parse and requires the
 explicit end marker. Block order, per-block field order, field definitions,
 ordinal names, and each field's exact bytes are retained. Types without an

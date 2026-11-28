@@ -16,14 +16,29 @@ public sealed class ProfileDemoViewModelTests
         demo.ExperienceInput = "4294967296";
         demo.ActionCommand.Execute("both");
         Assert.Equal(original, demo.PreviewText);
-        demo.ExperienceInput = uint.MaxValue.ToString(CultureInfo.InvariantCulture);
+        demo.ExperienceInput = "42";
         demo.ActionCommand.Execute("both");
         Assert.Contains("money_account: -9223372036854775808", demo.PreviewText, StringComparison.Ordinal);
-        Assert.Contains("experience_points: 4294967295", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("experience_points: 42", demo.PreviewText, StringComparison.Ordinal);
         demo.ActionCommand.Execute("undo");
         Assert.Equal(original, demo.PreviewText);
         demo.ActionCommand.Execute("redo");
-        Assert.Contains("experience_points: 4294967295", demo.PreviewText, StringComparison.Ordinal);
+        Assert.Contains("experience_points: 42", demo.PreviewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CombinedEditRejectsTheUInt32NilSentinelWithoutChangingEitherValue()
+    {
+        var demo = new ProfileDemoViewModel(new UiTextCatalog(CultureInfo.GetCultureInfo("en")));
+        string original = demo.PreviewText;
+        demo.BalanceInput = "99";
+        demo.ExperienceInput = uint.MaxValue.ToString(CultureInfo.InvariantCulture);
+
+        demo.ActionCommand.Execute("both");
+
+        Assert.Equal(original, demo.PreviewText);
+        Assert.Equal("0", demo.BalanceInput);
+        Assert.Equal("0", demo.ExperienceInput);
     }
 
     [Fact]

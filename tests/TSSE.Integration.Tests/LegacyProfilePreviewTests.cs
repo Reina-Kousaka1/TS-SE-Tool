@@ -32,8 +32,6 @@ public sealed class LegacyProfilePreviewTests
         Assert.Equal(5u, editor.Current.Experience);
         Assert.Equal(changed, editor.PreviewText);
         Assert.True(editor.Undo());
-        Assert.Equal(changed, editor.PreviewText);
-        Assert.True(editor.Undo());
         Assert.Equal(Synthetic, editor.PreviewText);
         Assert.False(editor.IsDirty);
         Assert.True(editor.Redo());

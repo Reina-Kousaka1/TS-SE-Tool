@@ -147,6 +147,10 @@ public sealed class ProfileDemoViewModel : ObservableObject
             Message = _text.Get("editor.historyLimit");
             return;
         }
+        catch (ArgumentOutOfRangeException)
+        {
+            success = false;
+        }
         catch (InvalidOperationException)
         {
             success = false;
