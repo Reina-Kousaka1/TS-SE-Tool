@@ -73,11 +73,13 @@ independent review**. No Architect tool is available in this session.
   field values or enable writes. Malformed wrappers and binary payloads remain
   explicit unsupported reports with categorized errors.
 - Synthetic tests cover an encrypted ScsC-wrapped BSII document and a truncated
-  ScsC prefix. The prior inspector run against the user-authorized `save/1`
-  files reported the 448,952-byte backup as unsupported and the 0-byte primary
-  file as invalid syntax. That exposed this inspector gap; a run against the
-  next committed build is still required to verify this integration against the
-  real copy. Neither file was modified.
+  ScsC prefix. CI passed on all seven targets on commit `6d65357` (run
+  `46136419118`). A hash-verified copy of that build's inspector was run against
+  the user-authorized `save/1` files: the 448,952-byte ScsC backup reported
+  version 3 and 19,354 binary blocks after two reads with matching size and
+  SHA-256; the report explicitly says authentication was unverified and writing
+  disabled. The 0-byte primary file reported invalid syntax. Neither file was
+  modified.
 
 ## Risks and open questions
 
