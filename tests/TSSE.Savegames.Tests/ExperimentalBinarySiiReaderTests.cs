@@ -487,6 +487,15 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Equal("UnsupportedStringCharacter", nul.Error);
     }
 
+    [Fact]
+    public void ExperimentalTextConversionRejectsFieldNamesThatReparseDifferently()
+    {
+        ExperimentalBinaryTextSerializationException exception = Assert.Throws<ExperimentalBinaryTextSerializationException>(
+            () => ExperimentalBinarySiiTextSerializer.Serialize(Fixture(firstFieldName: "value:shadow")));
+
+        Assert.Equal("SyntaxValidationFailed", exception.Error);
+    }
+
     [Theory]
     [InlineData(1, 28, 32)]
     [InlineData(2, 32, 36)]
@@ -608,7 +617,7 @@ public sealed class ExperimentalBinarySiiReaderTests
         return stream.ToArray();
     }
 
-    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null, uint? boolArrayCount = null, uint? stringArrayCount = null, byte[]? arrayStringBytes = null)
+    private static byte[] Fixture(uint version = 2, uint fieldType = 0x25, byte idKind = 0xff, bool duplicateField = false, bool duplicateBlock = false, byte[]? textBytes = null, ulong referencePart = 0x800000000000000bul, uint? referenceArrayCount = null, uint[]? floatBits = null, uint? floatArrayCount = null, uint? integerArrayCount = null, ulong[]? namedBlockParts = null, ulong[]? secondNamedBlockParts = null, uint? boolArrayCount = null, uint? stringArrayCount = null, byte[]? arrayStringBytes = null, string firstFieldName = "value")
     {
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -663,7 +672,7 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write("BSII"u8);
         writer.Write(version);
         writer.Write((uint)0); writer.Write((byte)1); writer.Write((uint)1); Name("synthetic");
-        writer.Write(fieldType); Name("value");
+        writer.Write(fieldType); Name(firstFieldName);
         if (duplicateField) { writer.Write((uint)0x25); Name("value"); }
         writer.Write((uint)0x27); Name("xp");
         writer.Write((uint)0x27); Name("xp_value");
