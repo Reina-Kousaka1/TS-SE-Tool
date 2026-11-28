@@ -485,6 +485,7 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write((ushort)513);
         writer.Write(2u); writer.Write((ushort)1); writer.Write(ushort.MaxValue);
         writer.Write(uint.MaxValue);
+        writer.Write(2u);
         writer.Write(1u);
         writer.Write((byte)1); writer.Write(11ul);
         writer.Write(0u); writer.Write((byte)0);
