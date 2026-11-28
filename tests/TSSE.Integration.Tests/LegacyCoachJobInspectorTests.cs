@@ -25,10 +25,10 @@ public sealed class LegacyCoachJobInspectorTests
             Assert.NotNull(stage.Source);
         });
         Assert.Contains(job.Stages, stage => stage.Source!.Fields.Any(field => field.Name == "source_bus_stop"));
-        Assert.Single(job.Passengers!);
-        Assert.Equal("player_bus_passenger", job.Passengers[0].Reference.ResolvedType);
-        Assert.NotNull(job.Passengers[0].Source);
-        Assert.Contains(job.Passengers[0].Source.Fields, field => field.Name == "unknown_passenger_field");
+        LegacyCoachPassengerSnapshot passenger = Assert.Single(job.Passengers!);
+        Assert.Equal("player_bus_passenger", passenger.Reference.ResolvedType);
+        Assert.NotNull(passenger.Source);
+        Assert.Contains(passenger.Source!.Fields, field => field.Name == "unknown_passenger_field");
         Assert.Contains(job.Source.Fields, field => field.Name == "future_coach_field" && field.Value == "preserved");
         Assert.Equal(original, document.ToText());
     }
@@ -49,10 +49,12 @@ public sealed class LegacyCoachJobInspectorTests
         LegacyCoachJobSnapshot job = Assert.Single(new LegacyCoachJobInspector(
             SiiSyntaxDocument.Parse(input), "player-id").Snapshot.Jobs);
 
-        Assert.Equal(LegacyCoachReferenceState.Unresolved, Assert.Single(job.Stages!).Reference.State);
-        Assert.Null(job.Stages[0].Source);
-        Assert.Equal(LegacyCoachReferenceState.Unresolved, Assert.Single(job.Passengers!).Reference.State);
-        Assert.Null(job.Passengers[0].Source);
+        LegacyCoachJobStageSnapshot stage = Assert.Single(job.Stages!);
+        Assert.Equal(LegacyCoachReferenceState.Unresolved, stage.Reference.State);
+        Assert.Null(stage.Source);
+        LegacyCoachPassengerSnapshot passenger = Assert.Single(job.Passengers!);
+        Assert.Equal(LegacyCoachReferenceState.Unresolved, passenger.Reference.State);
+        Assert.Null(passenger.Source);
         Assert.Equal("future_job", new LegacyCoachJobInspector(
             SiiSyntaxDocument.Parse(Fixture.Replace("player_bus_job : job-a", "future_job : job-a", StringComparison.Ordinal)),
             "player-id").Snapshot.CurrentJob!.ResolvedType);

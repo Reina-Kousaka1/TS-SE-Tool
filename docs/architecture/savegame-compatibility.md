@@ -488,3 +488,5 @@ three resolved stage references and 33 resolved passenger references. This
 does not establish field meanings, editability, game-version compatibility,
 or in-game acceptance. The .NET 10 test suite has not run locally because only
 .NET SDK 8.0.425 is installed; branch CI remains required.
+
+The first CI run for this commit, [46131806391](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46131806391), reached compilation on four .NET 10 targets and failed on CS8602 nullable dereferences in the new test file. The assertions were changed to capture the selected snapshots in local variables before dereferencing. This is a compile-time test fix; rerun CI is still required.
