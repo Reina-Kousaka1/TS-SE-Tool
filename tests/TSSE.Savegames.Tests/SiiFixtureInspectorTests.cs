@@ -93,6 +93,8 @@ public sealed class SiiFixtureInspectorTests
         Assert.Equal(1, report.BlockCount);
         Assert.Null(report.OpaqueLineCount);
         Assert.Null(report.ByteRoundTripEqual);
+        Assert.True(report.BinaryTextSyntaxValidated);
+        Assert.Null(report.BinaryTextConversionError);
     }
 
     [Fact]

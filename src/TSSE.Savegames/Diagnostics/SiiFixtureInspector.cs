@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using TSSE.Savegames.Syntax;
 
 namespace TSSE.Savegames.Diagnostics;
@@ -61,6 +62,25 @@ public static class SiiFixtureInspector
                 {
                     IReadOnlyList<ExperimentalBinaryBlock> blocks = decoded.BinaryBlocks!;
                     uint? version = blocks.Count == 0 ? null : blocks[0].BinaryVersion;
+                    bool? textSyntaxValidated = null;
+                    string? textConversionError = null;
+                    ReadOnlyMemory<byte> payloadSnapshot = decoded.Payload;
+                    try
+                    {
+                        byte[] converted = ExperimentalBinarySiiTextSerializer.Serialize(payloadSnapshot.Span);
+                        CryptographicOperations.ZeroMemory(converted);
+                        textSyntaxValidated = true;
+                    }
+                    catch (ExperimentalBinaryTextSerializationException exception)
+                    {
+                        textSyntaxValidated = false;
+                        textConversionError = exception.Error;
+                    }
+                    finally
+                    {
+                        if (MemoryMarshal.TryGetArray(payloadSnapshot, out ArraySegment<byte> snapshot) && snapshot.Array is not null)
+                            CryptographicOperations.ZeroMemory(snapshot.Array.AsSpan(snapshot.Offset, snapshot.Count));
+                    }
                     return new(SiiFixtureStatus.DecodedBinaryStructureOnly, bytes.Length, hash, null, null,
                         blocks.Count, null, null, null)
                     {
@@ -69,7 +89,9 @@ public static class SiiFixtureInspector
                         BinaryFormatVersion = version,
                         PayloadFormat = SiiPayloadFormat.Binary,
                         ContainerAuthenticationUnverified = decoded.ContainerAuthenticationUnverified,
-                        ThreeNkDecoded = decoded.ThreeNkDecoded
+                        ThreeNkDecoded = decoded.ThreeNkDecoded,
+                        BinaryTextSyntaxValidated = textSyntaxValidated,
+                        BinaryTextConversionError = textConversionError
                     };
                 }
 
@@ -225,4 +247,7 @@ public sealed record SiiFixtureReport(
     public bool ThreeNkDecoded { get; init; }
     public SiiSaveContainerError? ContainerError { get; init; }
     public ExperimentalBinarySiiError? BinaryError { get; init; }
+    /// <summary>True only when experimental conversion produced text that passed syntax reparse; never a semantic compatibility claim.</summary>
+    public bool? BinaryTextSyntaxValidated { get; init; }
+    public string? BinaryTextConversionError { get; init; }
 }
