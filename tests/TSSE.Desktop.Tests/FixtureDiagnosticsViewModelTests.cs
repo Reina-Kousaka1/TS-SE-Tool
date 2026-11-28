@@ -95,8 +95,8 @@ public sealed class FixtureDiagnosticsViewModelTests
         viewModel.InspectSelectedBytes(bytes);
 
         Assert.Contains("Historical Coaches fields detected", viewModel.ImportResult, StringComparison.Ordinal);
-        Assert.Contains("schema compatibility unverified", viewModel.ImportResult, StringComparison.Ordinal);
-        Assert.Contains("current DLC support is unconfirmed", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("legacy schema only", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("DLC compatibility unverified", viewModel.ImportResult, StringComparison.Ordinal);
     }
 
     [Fact]

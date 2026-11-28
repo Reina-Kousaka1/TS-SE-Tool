@@ -38,7 +38,7 @@
   "fixture.import.profile.values": "Bekannte Profilwerte (nur lesend, Legacy-Zuordnung ungeprüft): Guthaben {0}; XP {1}; Coach-XP {2}.",
   "fixture.import.profile.noCoachField": "Feld nicht vorhanden",
   "fixture.import.profile.unavailable": "Bekannte Profilwerte nicht eindeutig zuordenbar; keine Werte geändert.",
-  "fixture.import.coach.historical": "Historische Coaches-Felder erkannt (Schema-Kompatibilität ungeprüft): {0} bekannte Zähler, {1} Stopps, {2} Auftragslog-Einträge.",
+  "fixture.import.coach.historical": "Historische Coaches-Felder erkannt (nur Legacy-Schema; DLC-Kompatibilität ungeprüft): {0} bekannte Zähler, {1} Stopps, {2} Auftragslog-Einträge.",
   "fixture.import.coach.unavailable": "Keine eindeutig lesbare historische Coaches-Struktur erkannt; aktuelle DLC-Unterstützung ist nicht bestätigt.",
   "fixture.import.failure": "Ausgewählte Datei konnte nicht dekodiert werden: {0}. Es wurden keine Daten geändert.",
   "fixture.import.failure.generic": "Ausgewählte Datei konnte nicht dekodiert werden. Es wurden keine Daten geändert.",

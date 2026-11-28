@@ -38,7 +38,7 @@
   "fixture.import.profile.values": "Known profile values (read-only, legacy mapping unverified): balance {0}; XP {1}; coach XP {2}.",
   "fixture.import.profile.noCoachField": "field absent",
   "fixture.import.profile.unavailable": "Known profile values could not be mapped unambiguously; nothing was changed.",
-  "fixture.import.coach.historical": "Historical Coaches fields detected (schema compatibility unverified): {0} known counters, {1} stops, {2} job-log entries.",
+  "fixture.import.coach.historical": "Historical Coaches fields detected (legacy schema only; DLC compatibility unverified): {0} known counters, {1} stops, {2} job-log entries.",
   "fixture.import.coach.unavailable": "No unambiguous historical Coaches structure found; current DLC support is unconfirmed.",
   "fixture.import.failure": "Could not decode the selected file: {0}. No data was changed.",
   "fixture.import.failure.generic": "Could not decode the selected file. No data was changed.",
