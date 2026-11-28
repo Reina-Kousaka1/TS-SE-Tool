@@ -300,6 +300,24 @@ updated text as a visibly labelled preview. The adapter and syntax session stay
 in memory; no feature gate is changed. Test evidence must cover validation,
 undo/redo and preservation of an unknown field in the displayed preview.
 
+`LegacyBinaryProfilePreview` now exercises the same legacy scalar mapping over
+synthetic BSII v3. It resolves `economy.bank` by the raw reference marker and
+parts, requires the original bank and economy identities to be unique, and only
+edits existing fields whose BSII type codes match Int64, UInt32, or optional
+Int32. `ExperimentalBinaryScalarEditSession` patches equal-width values in a
+copy of the input, reparses the complete candidate, and adds a batch as one
+undoable state. Tests cover numeric boundaries, wrong and missing fields,
+unknown-field preservation, and undo/redo. It does not re-encode `ScsC`, open or
+write files, or connect to a production profile view.
+
+Binary profile architecture self-review (not independent): the adapter follows
+the exact existing bank reference rather than constructing one; the byte
+patcher rejects absent fields, unexpected type codes, duplicate batch targets,
+and malformed candidate documents. Fixed-width replacement keeps every other
+input byte in place. This is synthetic-only evidence; real profile layouts,
+game acceptance, container authentication, and independent architecture review
+remain unverified.
+
 ## Experimental vehicle mapping
 
 The legacy vehicle and trailer models declare `license_plate` as `SCS_String`.
