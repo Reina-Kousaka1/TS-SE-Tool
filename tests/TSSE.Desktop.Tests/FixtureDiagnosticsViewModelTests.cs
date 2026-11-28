@@ -27,7 +27,8 @@ public sealed class FixtureDiagnosticsViewModelTests
         Assert.Contains("bus references: 1", demo.CoachSummary, StringComparison.Ordinal);
         Assert.Contains("current bus-job reference: resolved", demo.CoachSummary, StringComparison.Ordinal);
         Assert.Contains("vehicle modes my/assigned: truck/coach", demo.CoachSummary, StringComparison.Ordinal);
-        Assert.Contains("candidate skill fields present: 6", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("candidate skill ranks: long_duty=2", demo.CoachSummary, StringComparison.Ordinal);
+        Assert.Contains("ecodriving=2", demo.CoachSummary, StringComparison.Ordinal);
         demo.Selected = demo.Examples.Single(item => item.Key == "opaque");
         Assert.Contains("unclassified syntax", demo.Status, StringComparison.Ordinal);
         Assert.Contains("Incomplete", demo.Duplicates, StringComparison.Ordinal);
@@ -108,7 +109,7 @@ public sealed class FixtureDiagnosticsViewModelTests
 
         viewModel.InspectSelectedBytes(bytes);
 
-        Assert.Contains("2 candidate skill fields", viewModel.ImportResult, StringComparison.Ordinal);
+        Assert.Contains("2 candidate skill fields (long_duty=2, ecodriving=3)", viewModel.ImportResult, StringComparison.Ordinal);
         Assert.Contains("DLC compatibility unverified", viewModel.ImportResult, StringComparison.Ordinal);
     }
 

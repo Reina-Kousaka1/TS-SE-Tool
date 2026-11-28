@@ -98,8 +98,8 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
                 ?? _text.Get("fixture.coach.metricUnavailable");
             string myVehiclesMode = sample.Player?.MyVehiclesMode ?? _text.Get("fixture.coach.metricUnavailable");
             string assignedVehiclesMode = sample.Player?.AssignedVehiclesMode ?? _text.Get("fixture.coach.metricUnavailable");
-            int coachSkillCount = sample.CoachSkills.Count(pair => pair.Value.HasValue);
-            return _text.Format("fixture.coach.summary", xp, stops, entries, busCount, jobState, myVehiclesMode, assignedVehiclesMode, coachSkillCount);
+            string coachSkills = FormatCandidateCoachSkills(sample.CoachSkills);
+            return _text.Format("fixture.coach.summary", xp, stops, entries, busCount, jobState, myVehiclesMode, assignedVehiclesMode, coachSkills);
         }
     }
 
@@ -183,12 +183,20 @@ public sealed class FixtureDiagnosticsViewModel : ObservableObject
             int coachSkills = snapshot.CoachSkills.Count(pair => pair.Value.HasValue);
             return _text.Format("fixture.import.coach.historical", metrics, snapshot.Stops.Count,
                 snapshot.JobLogEntryCount?.ToString(CultureInfo.InvariantCulture) ?? _text.Get("fixture.import.profile.noCoachField"),
-                coachSkills);
+                coachSkills, FormatCandidateCoachSkills(snapshot.CoachSkills));
         }
         catch (InvalidOperationException)
         {
             return _text.Get("fixture.import.coach.unavailable");
         }
+    }
+
+    private string FormatCandidateCoachSkills(IReadOnlyDictionary<string, int?> skills)
+    {
+        string summary = string.Join(", ", LegacyCoachSkillCatalog.FieldNames
+            .Where(name => skills[name].HasValue)
+            .Select(name => $"{name}={skills[name]!.Value.ToString(CultureInfo.InvariantCulture)}"));
+        return summary.Length == 0 ? _text.Get("fixture.coach.skills.none") : summary;
     }
 
     private string InspectBinaryCoachCounters(IReadOnlyList<ExperimentalBinaryBlock> blocks)
