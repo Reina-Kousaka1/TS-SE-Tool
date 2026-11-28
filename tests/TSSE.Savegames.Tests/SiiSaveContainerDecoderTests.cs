@@ -36,6 +36,48 @@ public sealed class SiiSaveContainerDecoderTests
         Assert.Null(decodedBinary.TextDocument);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DecodesThreeNkWrappedTextAndReportsTheWrapper(bool alsoScsCWrapped)
+    {
+        byte[] wrapped = EncodeThreeNk(Encoding.UTF8.GetBytes(TextSave), seed: 251);
+        if (alsoScsCWrapped)
+            wrapped = EncryptContainer(wrapped);
+
+        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(wrapped);
+
+        Assert.Equal(SiiPayloadFormat.Text, decoded.Format);
+        Assert.True(decoded.ThreeNkDecoded);
+        Assert.Equal(alsoScsCWrapped, decoded.ContainerAuthenticationUnverified);
+        Assert.Equal(TextSave, decoded.TextDocument!.ToText());
+        Assert.Equal(Encoding.UTF8.GetBytes(TextSave), decoded.Payload.ToArray());
+    }
+
+    [Fact]
+    public void DecodesThreeNkWrappedBinaryPayload()
+    {
+        byte[] expected = MinimalBinaryFixture();
+
+        SiiDecodedSave decoded = SiiSaveContainerDecoder.Decode(EncodeThreeNk(expected, seed: 17));
+
+        Assert.Equal(SiiPayloadFormat.Binary, decoded.Format);
+        Assert.True(decoded.ThreeNkDecoded);
+        Assert.False(decoded.ContainerAuthenticationUnverified);
+        Assert.Equal(expected, decoded.Payload.ToArray());
+        Assert.Equal(3u, Assert.Single(decoded.BinaryBlocks!).BinaryVersion);
+    }
+
+    [Fact]
+    public void RejectsTruncatedOrUnsupportedThreeNkPayloads()
+    {
+        Assert.Equal(SiiSaveContainerError.Truncated,
+            Assert.Throws<SiiSaveContainerException>(() => SiiSaveContainerDecoder.Decode("3nK\u0001"u8)).Error);
+        Assert.Equal(SiiSaveContainerError.UnsupportedPayload,
+            Assert.Throws<SiiSaveContainerException>(() =>
+                SiiSaveContainerDecoder.Decode(EncodeThreeNk("not an SII payload"u8.ToArray(), seed: 0))).Error);
+    }
+
     [Fact]
     public void DecryptsScsCWithoutClaimingHeaderAuthentication()
     {
@@ -117,6 +159,21 @@ public sealed class SiiSaveContainerDecoderTests
         using (var zlib = new ZLibStream(compressedStream, CompressionLevel.Optimal, leaveOpen: true))
             zlib.Write(payload);
         return EncryptCompressedData(compressedStream.ToArray(), checked((uint)(payload.Length + announcedLengthDelta)));
+    }
+
+    private static byte[] EncodeThreeNk(byte[] payload, byte seed)
+    {
+        byte[] result = new byte[payload.Length + 6];
+        "3nK\u0001"u8.CopyTo(result);
+        result[4] = 0; // Unknown header byte; retained as an opaque value.
+        result[5] = seed;
+        for (int offset = 0; offset < payload.Length; offset++)
+        {
+            int index = (seed + offset) & 0xff;
+            byte key = (byte)((((index << 2) ^ ~index) << 3) ^ index);
+            result[offset + 6] = (byte)(payload[offset] ^ key);
+        }
+        return result;
     }
 
     private static byte[] EncryptCompressedData(byte[] compressed, uint announcedLength)

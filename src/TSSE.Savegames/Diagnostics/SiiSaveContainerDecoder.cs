@@ -6,7 +6,7 @@ using TSSE.Savegames.Syntax;
 namespace TSSE.Savegames.Diagnostics;
 
 /// <summary>
-/// Bounded read-only decoder for plain SII and ScsC-wrapped SII payloads.
+/// Bounded read-only decoder for plain SII, 3nK-encoded SII and ScsC-wrapped SII payloads.
 /// It never opens files, writes data, or authenticates the ScsC HMAC.
 /// </summary>
 public static class SiiSaveContainerDecoder
@@ -37,18 +37,27 @@ public static class SiiSaveContainerDecoder
 
         bool wrapped = input.StartsWith("ScsC"u8);
         byte[] payload = wrapped ? DecryptAndInflate(input) : input.ToArray();
+        bool threeNk = false;
         try
         {
+            if (payload.AsSpan().StartsWith("3nK\u0001"u8))
+            {
+                byte[] decoded = DecodeThreeNk(payload);
+                if (wrapped) CryptographicOperations.ZeroMemory(payload);
+                payload = decoded;
+                threeNk = true;
+            }
+
             if (payload.AsSpan().StartsWith("BSII"u8))
             {
                 IReadOnlyList<ExperimentalBinaryBlock> blocks = ExperimentalBinarySiiReader.Read(payload);
-                return new SiiDecodedSave(payload, SiiPayloadFormat.Binary, wrapped, null, blocks);
+                return new SiiDecodedSave(payload, SiiPayloadFormat.Binary, wrapped, threeNk, null, blocks);
             }
 
             if (HasTextSiiHeader(payload))
             {
                 SiiEncodedText text = SiiEncodedText.Parse(payload);
-                return new SiiDecodedSave(payload, SiiPayloadFormat.Text, wrapped, text.Syntax, null);
+                return new SiiDecodedSave(payload, SiiPayloadFormat.Text, wrapped, threeNk, text.Syntax, null);
             }
 
             throw new SiiSaveContainerException(SiiSaveContainerError.UnsupportedPayload);
@@ -57,6 +66,27 @@ public static class SiiSaveContainerDecoder
         {
             if (wrapped) CryptographicOperations.ZeroMemory(payload);
         }
+    }
+
+    private static byte[] DecodeThreeNk(ReadOnlySpan<byte> input)
+    {
+        // Format notes describe a six-byte header: 3nK\x01, one unknown byte,
+        // then the byte-table seed. The payload is XORed with a 256-byte key
+        // rotated by that seed. Keep this bounded to the input length and only
+        // accept the decoded SII forms handled below.
+        if (input.Length <= 6)
+            throw new SiiSaveContainerException(SiiSaveContainerError.Truncated);
+
+        byte[] result = input[6..].ToArray();
+        int seed = input[5];
+        for (int offset = 0; offset < result.Length; offset++)
+        {
+            int index = (seed + offset) & 0xff;
+            byte key = (byte)((((index << 2) ^ ~index) << 3) ^ index);
+            result[offset] ^= key;
+        }
+
+        return result;
     }
 
     private static byte[] DecryptAndInflate(ReadOnlySpan<byte> file)
@@ -137,12 +167,14 @@ public sealed class SiiDecodedSave
         byte[] payload,
         SiiPayloadFormat format,
         bool containerAuthenticationUnverified,
+        bool threeNkDecoded,
         SiiSyntaxDocument? textDocument,
         IReadOnlyList<ExperimentalBinaryBlock>? binaryBlocks)
     {
         _payload = (byte[])payload.Clone();
         Format = format;
         ContainerAuthenticationUnverified = containerAuthenticationUnverified;
+        ThreeNkDecoded = threeNkDecoded;
         TextDocument = textDocument;
         BinaryBlocks = binaryBlocks;
     }
@@ -150,6 +182,8 @@ public sealed class SiiDecodedSave
     public SiiPayloadFormat Format { get; }
     /// <summary>True for ScsC; its HMAC is not verified by this read-only decoder.</summary>
     public bool ContainerAuthenticationUnverified { get; }
+    /// <summary>True when the six-byte 3nK wrapper was removed before SII parsing.</summary>
+    public bool ThreeNkDecoded { get; }
     public ReadOnlyMemory<byte> Payload => _payload;
     public SiiSyntaxDocument? TextDocument { get; }
     public IReadOnlyList<ExperimentalBinaryBlock>? BinaryBlocks { get; }

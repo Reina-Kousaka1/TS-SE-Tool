@@ -24,7 +24,7 @@ The in-memory fixture report counts repeated non-null block IDs across types
 and repeated exact field names within each block. Indexed names are compared
 literally. These are diagnostic hints, not schema validation; unclassified
 syntax can make the counts incomplete. Counts are unavailable when parsing fails.
-| Encoding and save containers | Read-only in-memory decoding now accepts plain `SiiN`, raw BSII v2/v3, and the AES-CBC/zlib `ScsC` wrapper under strict input/output limits. `ScsC` HMAC authentication is not checked; no container reconstruction or BSII serialization exists. | Synthetic byte-level tests only; no managed component has been tested against a genuine save. | **Container and game compatibility unverified; decoded `ScsC` data unauthenticated.** |
+| Encoding and save containers | Read-only in-memory decoding accepts plain `SiiN`, raw BSII v2/v3, the six-byte-header `3nK\x01` XOR wrapper, and `ScsC` AES-CBC/zlib payloads, including a `3nK` payload inside `ScsC`, under strict input/output limits. `ScsC` HMAC authentication is not checked; no container reconstruction or BSII serialization exists. | Synthetic byte-level tests only; `3nK` behavior follows the documented format notes in [`scs_tools/FORMAT.md`](https://github.com/Wilps93/scs_tools/blob/main/FORMAT.md#91-3nk); no managed component has been tested against a genuine save. | **Container and game compatibility unverified; decoded `ScsC` data unauthenticated.** |
 
 ## Roundtrip guarantees
 
