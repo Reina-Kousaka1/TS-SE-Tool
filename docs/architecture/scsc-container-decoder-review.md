@@ -122,3 +122,20 @@ independent review**. No Architect tool is available in this session.
   read-only and with no source save modified.
 - Independent security/architecture review before any write or editor
   integration.
+
+## Architecture self-review — BSII ordinal preservation
+
+No Architect tool is available. This is an implementation-agent self-review,
+not an independent review. The experimental BSII-to-text converter previously
+rendered every value of the field names `lashing_method` and
+`lashing_gear_type` as `none`, bypassing the ordinal names stored in the BSII
+field definition. That could silently replace a non-`none` value. The converter
+now uses only the explicit ordinal mapping and rejects values without a mapping
+as `UnresolvedOrdinal`. Synthetic tests cover both fields with a declared
+mapping and with missing mapping metadata. They do not establish real Coaches
+semantics or game compatibility, and no save-copy writer was enabled.
+
+The local .NET 10 SDK reports version 10.0.404, but its installation is missing
+the workload resolver SDK directories required by MSBuild. The targeted test
+run therefore failed before compilation or test discovery. CI validation is
+required before this change can be treated as tested.

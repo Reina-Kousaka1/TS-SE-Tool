@@ -186,7 +186,6 @@ public static class ExperimentalBinarySiiTextSerializer
             case 0x37:
             {
                 uint ordinal = cursor.UInt32();
-                if (definition.Name is "lashing_method" or "lashing_gear_type") return "none";
                 if (!definition.OrdinalValues.TryGetValue(ordinal, out string? text))
                     throw new ExperimentalBinaryTextSerializationException("UnresolvedOrdinal");
                 return FormatString(text);

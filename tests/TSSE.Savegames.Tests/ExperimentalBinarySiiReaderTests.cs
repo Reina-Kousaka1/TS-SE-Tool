@@ -475,6 +475,29 @@ public sealed class ExperimentalBinarySiiReaderTests
         Assert.Empty(document.OpaqueLines);
     }
 
+    [Theory]
+    [InlineData("lashing_method", 1u)]
+    [InlineData("lashing_gear_type", 1u)]
+    public void ExperimentalTextConversionUsesDeclaredLashingOrdinalInsteadOfAssumingNone(string fieldName, uint ordinal)
+    {
+        SiiSyntaxDocument document = SiiEncodedText.Parse(
+            ExperimentalBinarySiiTextSerializer.Serialize(OrdinalFixture(fieldName, ordinal, includeValues: true))).Syntax;
+
+        SiiBlock block = Assert.Single(document.Blocks, candidate => candidate.Type == "synthetic");
+        Assert.Equal("tight", Assert.Single(block.Fields, field => field.Name == fieldName).Value.Trim());
+    }
+
+    [Theory]
+    [InlineData("lashing_method")]
+    [InlineData("lashing_gear_type")]
+    public void ExperimentalTextConversionRejectsUnmappedLashingOrdinals(string fieldName)
+    {
+        ExperimentalBinaryTextSerializationException exception = Assert.Throws<ExperimentalBinaryTextSerializationException>(
+            () => ExperimentalBinarySiiTextSerializer.Serialize(OrdinalFixture(fieldName, 0, includeValues: false)));
+
+        Assert.Equal("UnresolvedOrdinal", exception.Error);
+    }
+
     [Fact]
     public void ExperimentalTextConversionFailsClosedOnUnrepresentableValues()
     {
@@ -614,6 +637,36 @@ public sealed class ExperimentalBinarySiiReaderTests
         writer.Write(uint.MaxValue);
         writer.Write(2u);
         writer.Write(0u); writer.Write((byte)0);
+        return stream.ToArray();
+    }
+
+    private static byte[] OrdinalFixture(string fieldName, uint ordinal, bool includeValues)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+        writer.Write("BSII"u8);
+        writer.Write(3u);
+        writer.Write(0u);
+        writer.Write((byte)1);
+        writer.Write(1u);
+        WriteName(writer, "synthetic");
+        writer.Write(0x37u);
+        WriteName(writer, fieldName);
+        writer.Write(includeValues ? 2u : 0u);
+        if (includeValues)
+        {
+            writer.Write(0u);
+            WriteName(writer, "none");
+            writer.Write(1u);
+            WriteName(writer, "tight");
+        }
+        writer.Write(0u);
+        writer.Write(1u);
+        writer.Write((byte)0xff);
+        writer.Write(0x42ul);
+        writer.Write(ordinal);
+        writer.Write(0u);
+        writer.Write((byte)0);
         return stream.ToArray();
     }
 
