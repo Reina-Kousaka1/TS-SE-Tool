@@ -43,7 +43,7 @@ public static class SiiSaveContainerDecoder
             if (payload.AsSpan().StartsWith("3nK\u0001"u8))
             {
                 byte[] decoded = DecodeThreeNk(payload);
-                if (wrapped) CryptographicOperations.ZeroMemory(payload);
+                CryptographicOperations.ZeroMemory(payload);
                 payload = decoded;
                 threeNk = true;
             }
@@ -64,7 +64,7 @@ public static class SiiSaveContainerDecoder
         }
         finally
         {
-            if (wrapped) CryptographicOperations.ZeroMemory(payload);
+            CryptographicOperations.ZeroMemory(payload);
         }
     }
 
