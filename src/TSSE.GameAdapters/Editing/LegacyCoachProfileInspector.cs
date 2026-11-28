@@ -65,7 +65,7 @@ public sealed class LegacyCoachProfileInspector
         var types = new Dictionary<string, uint?>(StringComparer.Ordinal);
         foreach (string name in LegacyCoachSkillCatalog.FieldNames)
         {
-            if (!economy.RawFields.TryGetValue(name, out ExperimentalBinaryRawField raw))
+            if (!economy.RawFields.TryGetValue(name, out ExperimentalBinaryRawField? raw) || raw is null)
             {
                 types.Add(name, null);
                 continue;

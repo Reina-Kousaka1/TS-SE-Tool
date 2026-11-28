@@ -422,3 +422,7 @@ report is not a complete SII grammar check, a game-version assessment or an
 in-game load test. Fixture provenance, privacy and licensing remain necessary.
 
 Before claiming ETS2, ATS, mods, a save version, or Coaches DLC compatibility, add safely sourced genuine fixtures with provenance and licensing, implement the relevant container decoding and version-aware validation, and demonstrate unchanged roundtrips plus in-game or authoritative format checks. Keep profile scanning and writes disabled until those checks exist and the security gates are separately reviewed.
+
+### Architecture self-review — candidate binary Coaches skill type report
+
+No Architect tool is available. This is the implementation agent's self-review, not an independent review. Matrix run [46108816132](https://github.com/Reina-Kousaka1/TS-SE-Tool/actions/runs/46108816132) failed compilation on all seven targets before their tests started. All seven logs report the same CS8600 at `LegacyCoachProfileInspector.cs:68`: the nullable dictionary lookup result was assigned to a non-nullable local. The fix makes the lookup nullable and explicitly treats a missing or null raw record as absent; it does not infer a field value or change parser behavior. Regression coverage uses only a synthetic BSII record and asserts that a present candidate field's raw type code is surfaced without interpreting its value. The raw code is not proof of Coaches semantics, and genuine save validation remains outstanding.
